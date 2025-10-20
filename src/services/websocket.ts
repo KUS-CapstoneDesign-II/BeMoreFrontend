@@ -5,6 +5,7 @@ import type { WSMessage } from '../types';
 // =====================================
 
 export type WSMessageHandler = (message: WSMessage) => void;
+export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export interface ReconnectOptions {
   maxRetries?: number;
@@ -22,13 +23,13 @@ export class ReconnectingWebSocket {
   private retryDelay: number;
   private maxRetries: number;
   private maxRetryDelay: number;
-  private onStatusChange?: (status: 'connecting' | 'connected' | 'disconnected' | 'error') => void;
+  private onStatusChange?: (status: ConnectionStatus) => void;
 
   constructor(
     url: string,
     name: string,
     options: ReconnectOptions = {},
-    onStatusChange?: (status: 'connecting' | 'connected' | 'disconnected' | 'error') => void
+    onStatusChange?: (status: ConnectionStatus) => void
   ) {
     this.url = url;
     this.name = name;
@@ -179,7 +180,7 @@ export class WebSocketManager {
    */
   connect(
     wsUrls: { landmarks: string; voice: string; session: string },
-    onStatusChange?: (channel: keyof WebSocketChannels, status: string) => void
+    onStatusChange?: (channel: keyof WebSocketChannels, status: ConnectionStatus) => void
   ): WebSocketChannels {
     console.log('🔌 Initializing WebSocket channels...');
 
@@ -219,6 +220,13 @@ export class WebSocketManager {
       this.channels = null;
       console.log('🔌 All WebSocket channels closed');
     }
+  }
+
+  /**
+   * 모든 WebSocket 채널 종료 (별칭)
+   */
+  disconnectAll(): void {
+    this.closeAll();
   }
 
   /**
