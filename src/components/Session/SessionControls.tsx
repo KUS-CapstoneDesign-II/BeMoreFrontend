@@ -25,21 +25,26 @@ export function SessionControls({
   const isEnded = status === 'ended';
 
   return (
-    <div className={`flex items-center justify-center space-x-3 ${className}`}>
+    <div
+      className={`flex items-center justify-center space-x-3 ${className}`}
+      role="toolbar"
+      aria-label="세션 제어"
+    >
       {/* 일시정지/재개 버튼 */}
       {isActive && (
         <button
           onClick={onPause}
           className="
-            flex items-center space-x-2 px-6 py-3
+            flex items-center space-x-2 px-6 py-3 min-h-[44px]
             bg-yellow-500 hover:bg-yellow-600
             text-white font-medium rounded-lg
             transition shadow-md hover:shadow-lg
+            focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2
             active:scale-95
           "
-          title="세션 일시정지"
+          aria-label="세션 일시정지"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
           </svg>
           <span>일시정지</span>
@@ -50,15 +55,16 @@ export function SessionControls({
         <button
           onClick={onResume}
           className="
-            flex items-center space-x-2 px-6 py-3
+            flex items-center space-x-2 px-6 py-3 min-h-[44px]
             bg-green-500 hover:bg-green-600
             text-white font-medium rounded-lg
             transition shadow-md hover:shadow-lg
+            focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2
             active:scale-95
           "
-          title="세션 재개"
+          aria-label="세션 재개"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
           </svg>
           <span>재개</span>
@@ -70,15 +76,16 @@ export function SessionControls({
         <button
           onClick={onEnd}
           className="
-            flex items-center space-x-2 px-6 py-3
+            flex items-center space-x-2 px-6 py-3 min-h-[44px]
             bg-red-500 hover:bg-red-600
             text-white font-medium rounded-lg
             transition shadow-md hover:shadow-lg
+            focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2
             active:scale-95
           "
-          title="세션 종료"
+          aria-label="세션 종료"
         >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
           </svg>
           <span>종료</span>
@@ -86,13 +93,21 @@ export function SessionControls({
       )}
 
       {/* 상태 표시 */}
-      <div className="ml-4 px-4 py-2 bg-gray-100 rounded-lg">
+      <div
+        className="ml-4 px-4 py-2 bg-gray-100 rounded-lg"
+        role="status"
+        aria-live="polite"
+        aria-label={`세션 상태: ${isActive ? '진행 중' : isPaused ? '일시정지' : '종료됨'}`}
+      >
         <div className="flex items-center space-x-2">
-          <div className={`w-2 h-2 rounded-full ${
-            isActive ? 'bg-green-500 animate-pulse' :
-            isPaused ? 'bg-yellow-500' :
-            'bg-gray-400'
-          }`}></div>
+          <div
+            className={`w-2 h-2 rounded-full ${
+              isActive ? 'bg-green-500 animate-pulse' :
+              isPaused ? 'bg-yellow-500' :
+              'bg-gray-400'
+            }`}
+            aria-hidden="true"
+          ></div>
           <span className="text-sm font-medium text-gray-700">
             {isActive ? '진행 중' : isPaused ? '일시정지' : '종료됨'}
           </span>

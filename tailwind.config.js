@@ -8,26 +8,32 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50: '#f0fdfa',
+          100: '#ccfbf1',
+          200: '#99f6e4',
+          300: '#5eead4',
+          400: '#2dd4bf',
+          500: '#14b8a6',
+          600: '#0d9488',
+          700: '#0f766e',
+          800: '#115e59',
+          900: '#134e4a',
         },
         emotion: {
-          happy: '#FCD34D',
-          sad: '#60A5FA',
-          angry: '#EF4444',
-          anxious: '#A78BFA',
-          neutral: '#9CA3AF',
-          surprised: '#F59E0B',
-          disgusted: '#10B981',
-          fearful: '#8B5CF6',
+          happy: '#F59E0B',      // Amber 500 - WCAG AA 개선
+          sad: '#3B82F6',        // Blue 500 - 더 진한 대비
+          angry: '#F87171',      // Red 400 - 부드러운 빨강
+          anxious: '#A78BFA',    // Purple 400 - 유지
+          neutral: '#6B7280',    // Gray 500 - 더 진한 대비
+          surprised: '#FB923C',  // Orange 400 - 밝은 오렌지
+          disgusted: '#10B981',  // Emerald 500 - 유지
+          fearful: '#8B5CF6',    // Violet 500 - 유지
+        },
+        semantic: {
+          success: '#10B981',    // Emerald 500
+          warning: '#F59E0B',    // Amber 500
+          error: '#EF4444',      // Red 500
+          info: '#3B82F6',       // Blue 500
         }
       },
       animation: {

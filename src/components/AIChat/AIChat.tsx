@@ -88,17 +88,29 @@ export function AIChat({ className = '' }: AIChatProps) {
   (AIChat as any).addMessage = addMessage;
 
   return (
-    <div className={`flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+    <div
+      className={`flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}
+      role="region"
+      aria-label="AI 대화"
+    >
       {/* 헤더 */}
       <div className="flex items-center justify-between p-3 border-b border-gray-200">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+          <div
+            className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center"
+            aria-hidden="true"
+          >
             <span className="text-white text-sm font-bold">AI</span>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-gray-700">AI 상담사</h3>
-            <div className="text-xs text-gray-500">
-              {isSpeaking ? '🔊 말하는 중...' : '💬 대화 가능'}
+            <div
+              className="text-xs text-gray-500"
+              role="status"
+              aria-live="polite"
+            >
+              <span aria-hidden="true">{isSpeaking ? '🔊 ' : '💬 '}</span>
+              {isSpeaking ? '말하는 중...' : '대화 가능'}
             </div>
           </div>
         </div>
@@ -107,7 +119,8 @@ export function AIChat({ className = '' }: AIChatProps) {
         {isSpeaking && (
           <button
             onClick={stopSpeaking}
-            className="px-3 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition"
+            className="px-3 py-1 text-xs min-h-[32px] bg-red-100 text-red-600 rounded hover:bg-red-200 transition focus:outline-none focus:ring-2 focus:ring-red-400"
+            aria-label="음성 중지"
           >
             중지
           </button>
@@ -115,10 +128,15 @@ export function AIChat({ className = '' }: AIChatProps) {
       </div>
 
       {/* 메시지 목록 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div
+        className="flex-1 overflow-y-auto p-4 space-y-3"
+        role="log"
+        aria-label="대화 메시지"
+        aria-live="polite"
+      >
         {messages.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-8">
-            <div className="text-4xl mb-2">💬</div>
+            <div className="text-4xl mb-2" aria-hidden="true">💬</div>
             <p>AI와 대화를 시작하세요</p>
           </div>
         ) : (
@@ -135,6 +153,8 @@ export function AIChat({ className = '' }: AIChatProps) {
                     : 'bg-gray-100 text-gray-800 rounded-bl-none'
                   }
                 `}
+                role="article"
+                aria-label={`${message.role === 'user' ? '사용자' : 'AI'} 메시지`}
               >
                 {message.content}
               </div>
@@ -146,8 +166,8 @@ export function AIChat({ className = '' }: AIChatProps) {
 
       {/* 입력 영역 (실제로는 음성 입력만 사용) */}
       <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <div className="text-xs text-gray-500 text-center">
-          🎤 음성으로 대화하세요
+        <div className="text-xs text-gray-500 text-center" role="status">
+          <span aria-hidden="true">🎤 </span>음성으로 대화하세요
         </div>
       </div>
     </div>

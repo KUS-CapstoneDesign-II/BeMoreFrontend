@@ -16,7 +16,7 @@ export function VideoFeed({ onLandmarks, className = '' }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const { isReady, isProcessing, error, landmarks, startCamera, stopCamera } = useMediaPipe({
+  const { isReady, isProcessing, cameraState, error, landmarks, startCamera, stopCamera, retryCamera } = useMediaPipe({
     videoElement: videoRef.current,
     onResults: (results) => {
       onLandmarks?.(results);
@@ -91,7 +91,7 @@ export function VideoFeed({ onLandmarks, className = '' }: VideoFeedProps) {
   };
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className}`} role="region" aria-label="실시간 영상 분석">
       {/* 비디오 스트림 */}
       <video
         ref={videoRef}
@@ -99,41 +99,99 @@ export function VideoFeed({ onLandmarks, className = '' }: VideoFeedProps) {
         playsInline
         muted
         className="w-full h-full object-cover rounded-lg"
+        aria-label="사용자 카메라 영상"
       />
 
       {/* 랜드마크 오버레이 캔버스 */}
       <canvas
         ref={canvasRef}
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        aria-hidden="true"
       />
 
       {/* 로딩 상태 */}
-      {!isProcessing && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
+      {!isProcessing && !error && (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg"
+          role="status"
+          aria-live="polite"
+        >
           <div className="text-center text-white">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-            <p className="text-sm">{isReady ? '카메라 시작 중...' : 'MediaPipe 로딩 중...'}</p>
+            <div
+              className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"
+              aria-hidden="true"
+            ></div>
+            <p className="text-sm">
+              {cameraState === 'requesting-permission' && '카메라 권한 요청 중...'}
+              {cameraState === 'connecting' && '카메라 연결 중...'}
+              {cameraState === 'idle' && isReady && '카메라 시작 중...'}
+              {!isReady && 'MediaPipe 로딩 중...'}
+            </p>
           </div>
         </div>
       )}
 
       {/* 에러 표시 */}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-90 rounded-lg">
-          <div className="text-center text-white p-4">
-            <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-90 rounded-lg"
+          role="alert"
+          aria-live="assertive"
+        >
+          <div className="text-center text-white p-6 max-w-md">
+            <svg
+              className="w-16 h-16 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              {cameraState === 'permission-denied' ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              )}
             </svg>
-            <p className="text-sm font-medium">카메라 오류</p>
-            <p className="text-xs mt-2">{error}</p>
+            <p className="text-lg font-semibold mb-2">
+              {cameraState === 'permission-denied' ? '카메라 권한 필요' : '카메라 오류'}
+            </p>
+            <p className="text-sm mb-4">{error}</p>
+
+            {cameraState === 'permission-denied' && (
+              <div className="text-xs bg-white bg-opacity-20 rounded p-3 mb-4 text-left">
+                <p className="font-semibold mb-1">해결 방법:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>브라우저 주소창의 카메라 아이콘 클릭</li>
+                  <li>"항상 허용" 선택</li>
+                  <li>페이지 새로고침</li>
+                </ol>
+              </div>
+            )}
+
+            <button
+              onClick={retryCamera}
+              className="
+                px-6 py-2 min-h-[44px]
+                bg-white text-red-600 font-medium rounded-lg
+                hover:bg-gray-100 transition
+                focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-red-500
+              "
+              aria-label="카메라 다시 시도"
+            >
+              다시 시도
+            </button>
           </div>
         </div>
       )}
 
       {/* 상태 표시 */}
       {isProcessing && !error && landmarks && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded">
-          ● 감지 중
+        <div
+          className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded"
+          role="status"
+          aria-label="얼굴 감지 중"
+        >
+          <span aria-hidden="true">● </span>감지 중
         </div>
       )}
     </div>

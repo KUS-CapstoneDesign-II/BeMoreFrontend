@@ -13,7 +13,11 @@ interface VADMonitorProps {
 export function VADMonitor({ metrics, className = '' }: VADMonitorProps) {
   if (!metrics) {
     return (
-      <div className={`p-4 rounded-lg bg-gray-100 ${className}`}>
+      <div
+        className={`p-4 rounded-lg bg-gray-100 ${className}`}
+        role="status"
+        aria-label="VAD 대기 중"
+      >
         <div className="text-sm text-gray-500">VAD 대기 중...</div>
       </div>
     );
@@ -29,22 +33,26 @@ export function VADMonitor({ metrics, className = '' }: VADMonitorProps) {
   } = metrics;
 
   return (
-    <div className={`p-4 rounded-lg bg-white border border-gray-200 shadow-sm ${className}`}>
+    <div
+      className={`p-4 rounded-lg bg-white border border-gray-200 shadow-sm ${className}`}
+      role="region"
+      aria-label="음성 활동 분석"
+    >
       {/* 헤더 */}
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-gray-700">음성 활동 분석</h3>
         <div className="flex items-center space-x-1">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="text-xs text-gray-500">실시간</span>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" aria-hidden="true"></div>
+          <span className="text-xs text-gray-500" role="status">실시간</span>
         </div>
       </div>
 
       {/* 메트릭 그리드 */}
-      <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="grid grid-cols-2 gap-3 mb-3" role="group" aria-label="음성 메트릭">
         {/* 발화 비율 */}
         <div className="bg-blue-50 p-2 rounded">
           <div className="text-xs text-gray-600 mb-1">발화 비율</div>
-          <div className="text-lg font-bold text-blue-600">
+          <div className="text-lg font-bold text-blue-600" aria-label={`발화 비율 ${Math.round(speechRatio * 100)}퍼센트`}>
             {Math.round(speechRatio * 100)}%
           </div>
         </div>
@@ -52,7 +60,7 @@ export function VADMonitor({ metrics, className = '' }: VADMonitorProps) {
         {/* 침묵 비율 */}
         <div className="bg-gray-50 p-2 rounded">
           <div className="text-xs text-gray-600 mb-1">침묵 비율</div>
-          <div className="text-lg font-bold text-gray-600">
+          <div className="text-lg font-bold text-gray-600" aria-label={`침묵 비율 ${Math.round(pauseRatio * 100)}퍼센트`}>
             {Math.round(pauseRatio * 100)}%
           </div>
         </div>
@@ -60,7 +68,7 @@ export function VADMonitor({ metrics, className = '' }: VADMonitorProps) {
         {/* 평균 침묵 시간 */}
         <div className="bg-purple-50 p-2 rounded">
           <div className="text-xs text-gray-600 mb-1">평균 침묵</div>
-          <div className="text-lg font-bold text-purple-600">
+          <div className="text-lg font-bold text-purple-600" aria-label={`평균 침묵 시간 ${(averagePauseDuration / 1000).toFixed(1)}초`}>
             {(averagePauseDuration / 1000).toFixed(1)}s
           </div>
         </div>
@@ -68,7 +76,7 @@ export function VADMonitor({ metrics, className = '' }: VADMonitorProps) {
         {/* 최장 침묵 시간 */}
         <div className="bg-red-50 p-2 rounded">
           <div className="text-xs text-gray-600 mb-1">최장 침묵</div>
-          <div className="text-lg font-bold text-red-600">
+          <div className="text-lg font-bold text-red-600" aria-label={`최장 침묵 시간 ${(longestPause / 1000).toFixed(1)}초`}>
             {(longestPause / 1000).toFixed(1)}s
           </div>
         </div>
@@ -77,25 +85,31 @@ export function VADMonitor({ metrics, className = '' }: VADMonitorProps) {
       {/* 발화 횟수 */}
       <div className="mb-3 p-2 bg-green-50 rounded">
         <div className="text-xs text-gray-600 mb-1">발화 횟수</div>
-        <div className="text-lg font-bold text-green-600">{speechBurstCount}회</div>
+        <div className="text-lg font-bold text-green-600" aria-label={`발화 횟수 ${speechBurstCount}회`}>
+          {speechBurstCount}회
+        </div>
       </div>
 
       {/* 요약 */}
       <div className="pt-3 border-t border-gray-200">
         <div className="text-xs text-gray-500 mb-1">분석 요약</div>
-        <div className="text-sm text-gray-700">{summary}</div>
+        <div className="text-sm text-gray-700" role="status" aria-live="polite">
+          {summary}
+        </div>
       </div>
 
       {/* 발화/침묵 비율 바 */}
-      <div className="mt-3">
+      <div className="mt-3" role="img" aria-label={`발화 ${Math.round(speechRatio * 100)}퍼센트, 침묵 ${Math.round(pauseRatio * 100)}퍼센트`}>
         <div className="flex h-2 rounded-full overflow-hidden">
           <div
             className="bg-blue-500 transition-all duration-300"
             style={{ width: `${speechRatio * 100}%` }}
+            aria-hidden="true"
           ></div>
           <div
             className="bg-gray-300 transition-all duration-300"
             style={{ width: `${pauseRatio * 100}%` }}
+            aria-hidden="true"
           ></div>
         </div>
         <div className="flex justify-between text-xs text-gray-500 mt-1">

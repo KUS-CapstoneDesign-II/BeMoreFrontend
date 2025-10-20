@@ -69,9 +69,14 @@ const emotionConfig: Record<EmotionType, {  label: string;
 export function EmotionCard({ emotion, confidence, className = '' }: EmotionCardProps) {
   if (!emotion) {
     return (
-      <div className={`p-4 rounded-lg border-2 bg-gray-50 border-gray-200 ${className}`}>
+      <div
+        className={`p-4 rounded-lg border-2 bg-gray-50 border-gray-200 ${className}`}
+        role="status"
+        aria-live="polite"
+        aria-label="감정 분석 중"
+      >
         <div className="text-center">
-          <div className="text-4xl mb-2">❓</div>
+          <div className="text-4xl mb-2" aria-hidden="true">❓</div>
           <div className="text-sm text-gray-500 font-medium">감정 분석 중...</div>
         </div>
       </div>
@@ -79,6 +84,8 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
   }
 
   const config = emotionConfig[emotion];
+  const confidencePercent = confidence !== undefined ? Math.round(confidence * 100) : null;
+  const ariaLabel = `현재 감정: ${config.label}${confidencePercent !== null ? `, 신뢰도 ${confidencePercent}퍼센트` : ''}`;
 
   return (
     <div
@@ -89,10 +96,13 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
         animate-pulse-slow
         ${className}
       `}
+      role="status"
+      aria-live="polite"
+      aria-label={ariaLabel}
     >
       <div className="text-center">
         {/* 이모티콘 */}
-        <div className="text-5xl mb-3">{config.icon}</div>
+        <div className="text-5xl mb-3" aria-hidden="true">{config.icon}</div>
 
         {/* 감정 라벨 */}
         <div className={`text-lg font-bold ${config.color} mb-1`}>
@@ -100,9 +110,9 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
         </div>
 
         {/* 신뢰도 (선택적) */}
-        {confidence !== undefined && (
-          <div className="text-xs text-gray-500">
-            신뢰도: {Math.round(confidence * 100)}%
+        {confidencePercent !== null && (
+          <div className="text-xs text-gray-600">
+            신뢰도: {confidencePercent}%
           </div>
         )}
       </div>

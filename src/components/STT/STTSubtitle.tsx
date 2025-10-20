@@ -46,6 +46,9 @@ export function STTSubtitle({
         ${isVisible ? 'opacity-100' : 'opacity-0'}
         ${className}
       `}
+      role="status"
+      aria-live="polite"
+      aria-label={`자막: ${displayText}`}
     >
       {displayText}
     </div>

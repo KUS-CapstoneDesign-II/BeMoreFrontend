@@ -11,13 +11,23 @@ interface UseMediaPipeOptions {
   minTrackingConfidence?: number;
 }
 
+export type CameraState =
+  | 'idle'
+  | 'requesting-permission'
+  | 'permission-denied'
+  | 'connecting'
+  | 'connected'
+  | 'error';
+
 interface UseMediaPipeReturn {
   isReady: boolean;
   isProcessing: boolean;
+  cameraState: CameraState;
   error: string | null;
   landmarks: Results | null;
   startCamera: () => Promise<void>;
   stopCamera: () => void;
+  retryCamera: () => Promise<void>;
 }
 
 /**
@@ -60,6 +70,7 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
 
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cameraState, setCameraState] = useState<CameraState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [landmarks, setLandmarks] = useState<Results | null>(null);
 
@@ -116,12 +127,13 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
   const startCamera = useCallback(async () => {
     if (!videoElement || !faceMeshRef.current) {
       setError('MediaPipe가 준비되지 않았습니다.');
+      setCameraState('error');
       return;
     }
 
     try {
       setError(null);
-      setIsProcessing(true);
+      setCameraState('requesting-permission');
 
       // 카메라 권한 요청 및 스트림 시작
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -133,6 +145,8 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         audio: false,
       });
 
+      setCameraState('connecting');
+      setIsProcessing(true);
       videoElement.srcObject = stream;
 
       // Camera 유틸리티로 비디오 프레임 처리
@@ -148,20 +162,37 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
 
       await camera.start();
       cameraRef.current = camera;
+      setCameraState('connected');
 
       console.log('✅ 카메라 시작 완료');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '카메라 시작 실패';
-      setError(errorMessage);
       setIsProcessing(false);
       console.error('❌ 카메라 오류:', err);
 
-      // 권한 거부 메시지
-      if (errorMessage.includes('Permission denied')) {
+      // 권한 거부 또는 에러 상태 구분
+      if (err instanceof Error && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) {
+        setCameraState('permission-denied');
         setError('카메라 권한이 필요합니다. 브라우저 설정에서 카메라 접근을 허용해주세요.');
+      } else if (err instanceof Error && err.name === 'NotFoundError') {
+        setCameraState('error');
+        setError('카메라를 찾을 수 없습니다. 카메라가 연결되어 있는지 확인해주세요.');
+      } else if (err instanceof Error && err.name === 'NotReadableError') {
+        setCameraState('error');
+        setError('카메라가 이미 다른 앱에서 사용 중입니다. 다른 앱을 종료하고 다시 시도해주세요.');
+      } else {
+        setCameraState('error');
+        setError(errorMessage);
       }
     }
   }, [videoElement]);
+
+  // 카메라 재시도
+  const retryCamera = useCallback(async () => {
+    setCameraState('idle');
+    setError(null);
+    await startCamera();
+  }, [startCamera]);
 
   // 카메라 중지
   const stopCamera = useCallback(() => {
@@ -179,6 +210,7 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
     }
 
     setIsProcessing(false);
+    setCameraState('idle');
     setLandmarks(null);
     console.log('✅ 카메라 중지 완료');
   }, [videoElement]);
@@ -193,9 +225,11 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
   return {
     isReady,
     isProcessing,
+    cameraState,
     error,
     landmarks,
     startCamera,
     stopCamera,
+    retryCamera,
   };
 }
