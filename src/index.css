@@ -2,8 +2,58 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --font-scale: 1;
+}
+
 @layer base {
+  html {
+    font-size: calc(16px * var(--font-scale));
+  }
   body {
     @apply m-0 min-h-screen bg-gray-50;
   }
+
+  /* High contrast mode: increase focus visibility and reduce low-contrast UI */
+  :root[data-contrast="high"] :focus {
+    outline: 3px solid #facc15 !important; /* amber-400 */
+    outline-offset: 2px;
+  }
+  :root[data-contrast="high"] .text-gray-500 { color: #111827 !important; }
+  :root[data-contrast="high"] .bg-gray-50 { background-color: #ffffff !important; }
+
+  /* Reduced motion */
+  :root[data-motion="reduced"] * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Skip link utility if not using Tailwind's sr-only */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .skip-link:focus {
+    left: 8px;
+    top: 8px;
+    width: auto;
+    height: auto;
+    padding: 8px 12px;
+    background: #111827;
+    color: #fff;
+    border-radius: 8px;
+    z-index: 1000;
+  }
+
+  /* Density overrides for common spacing utilities */
+  :root[data-density="compact"] .p-4 { padding: 0.75rem !important; }
+  :root[data-density="compact"] .py-4 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+  :root[data-density="compact"] .px-4 { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+  :root[data-density="compact"] .gap-4 { gap: 0.75rem !important; }
+  :root[data-density="compact"] .space-y-4 > :not([hidden]) ~ :not([hidden]) { margin-top: 0.75rem !important; }
 }

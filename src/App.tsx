@@ -1,23 +1,70 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard } from './components/Emotion';
-import { VADMonitor } from './components/VAD';
-import { AIChat } from './components/AIChat';
 import { SessionControls } from './components/Session';
+import { Onboarding } from './components/Onboarding';
+import { Landing } from './components/Landing/Landing';
+import { SessionSummaryModal } from './components/Session/SessionSummaryModal';
+import { ResumePromptModal } from './components/Session/ResumePromptModal';
+import { PrivacyPolicyModal, TermsOfServiceModal } from './components/Common/LegalModals';
+import { ThemeToggle } from './components/ThemeToggle';
+import { ConsentDialog } from './components/Common/ConsentDialog';
+import { NetworkStatusBanner } from './components/Common/NetworkStatusBanner';
+import { SessionTimer } from './components/Common/SessionTimer';
+import { IdleTimeoutModal } from './components/Common/IdleTimeoutModal';
+import { useIdleTimeout } from './hooks/useIdleTimeout';
+import { useConsent } from './contexts/ConsentContext';
+import { SettingsPanel } from './components/Settings/SettingsPanel';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { sessionAPI } from './services/api';
 import { useWebSocket } from './hooks/useWebSocket';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { useTheme } from './contexts/ThemeContext';
 import type { EmotionType, VADMetrics, SessionStatus } from './types';
+import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
+import { AIChatSkeleton, VADMonitorSkeleton } from './components/Skeleton/Skeleton';
+import { collectWebVitals, logPerformanceMetrics } from './utils/performance';
+import { funnelEvent, markAndMeasure } from './utils/analytics_extra';
+import { trackWebVitals } from './utils/analytics';
+import { initAnalytics, trackPageView } from './utils/analytics';
+import { initSentry } from './utils/sentry';
+
+// Lazy load non-critical components
+const AIChat = lazy(() => import('./components/AIChat').then(module => ({ default: module.AIChat })));
+const VADMonitor = lazy(() => import('./components/VAD').then(module => ({ default: module.VADMonitor })));
+
+const ONBOARDING_KEY = 'bemore_onboarding_completed';
 
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
 const DEMO_MODE = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
 function App() {
+  // Theme hook
+  const { toggleTheme } = useTheme();
+  const { consent, openDialog, isDialogOpen } = useConsent();
+
+  // 온보딩 상태
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    const completed = localStorage.getItem(ONBOARDING_KEY);
+    return completed !== 'true';
+  });
+
+  // 키보드 단축키 도움말
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
   // 세션 상태
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionStatus, setSessionStatus] = useState<SessionStatus>('ended');
+  const [sessionStartAt, setSessionStartAt] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [idlePromptOpen, setIdlePromptOpen] = useState(false);
+  const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(60);
 
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
@@ -51,14 +98,24 @@ function App() {
 
   // 세션 시작
   const handleStartSession = async () => {
+    // Onboarding guard
+    const completed = localStorage.getItem(ONBOARDING_KEY) === 'true';
+    if (!completed) {
+      setShowOnboarding(true);
+      funnelEvent('onboarding_required');
+      return;
+    }
     setIsLoading(true);
     setError(null);
 
     try {
       // 1. 세션 시작 API 호출
-      const response = await sessionAPI.start('frontend_user_001', 'ai_counselor_001');
+      const response = await (markAndMeasure('StartSessionAPI', () => {}), sessionAPI.start('frontend_user_001', 'ai_counselor_001'));
       setSessionId(response.sessionId);
       setSessionStatus('active');
+      const started = Date.now();
+      setSessionStartAt(started);
+      localStorage.setItem('bemore_last_session', JSON.stringify({ sessionId: response.sessionId, started }));
 
       // 2. WebSocket 연결
       connectWS({
@@ -68,9 +125,11 @@ function App() {
       });
 
       console.log('✅ 세션 시작:', response.sessionId);
+      funnelEvent('session_started');
     } catch (err) {
       console.error('❌ 세션 시작 실패:', err);
       setError(err instanceof Error ? err.message : '세션 시작 실패');
+      funnelEvent('session_start_failed');
     } finally {
       setIsLoading(false);
     }
@@ -113,12 +172,110 @@ function App() {
       setSessionStatus('ended');
       disconnectWS();
       setSessionId(null);
+      setSessionStartAt(null);
       console.log('⏹️ 세션 종료');
+      funnelEvent('session_ended');
+      setShowSummary(true);
     } catch (err) {
       console.error('❌ 종료 실패:', err);
       setError(err instanceof Error ? err.message : '종료 실패');
     }
   };
+
+  // 온보딩 완료 처리
+  const handleOnboardingComplete = () => {
+    localStorage.setItem(ONBOARDING_KEY, 'true');
+    setShowOnboarding(false);
+  };
+
+  // 온보딩 건너뛰기
+  const handleOnboardingSkip = () => {
+    localStorage.setItem(ONBOARDING_KEY, 'true');
+    setShowOnboarding(false);
+  };
+  // Resume prompt on return
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  useEffect(() => {
+    if (sessionId) return;
+    try {
+      const raw = localStorage.getItem('bemore_last_session');
+      if (raw) {
+        const last = JSON.parse(raw) as { sessionId: string; started: number };
+        if (last.sessionId && Date.now() - last.started < 60 * 60 * 1000) {
+          setShowResumePrompt(true);
+        }
+      }
+    } catch {}
+  }, [sessionId]);
+
+  const resumeLastSession = () => {
+    try {
+      const raw = localStorage.getItem('bemore_last_session');
+      if (!raw) return;
+      const last = JSON.parse(raw) as { sessionId: string; started: number };
+      setSessionId(last.sessionId);
+      setSessionStatus('active');
+      setSessionStartAt(last.started);
+      connectWS({
+        landmarks: `${WS_URL}/ws/landmarks/${last.sessionId}`,
+        voice: `${WS_URL}/ws/voice/${last.sessionId}`,
+        session: `${WS_URL}/ws/session/${last.sessionId}`,
+      });
+    } catch {}
+    setShowResumePrompt(false);
+  };
+
+  const discardLastSession = () => {
+    localStorage.removeItem('bemore_last_session');
+    setShowResumePrompt(false);
+  };
+
+  // 키보드 단축키 설정
+  const shortcuts: KeyboardShortcut[] = [
+    {
+      key: '?',
+      description: '키보드 단축키 도움말 표시',
+      action: () => setShowShortcutsHelp((prev) => !prev),
+    },
+    {
+      key: 't',
+      ctrlKey: true,
+      description: '테마 전환 (라이트/다크/시스템)',
+      action: toggleTheme,
+    },
+    {
+      key: 's',
+      ctrlKey: true,
+      description: '세션 시작/종료',
+      action: () => {
+        if (sessionId) {
+          handleEndSession();
+        } else {
+          handleStartSession();
+        }
+      },
+    },
+    {
+      key: 'p',
+      ctrlKey: true,
+      description: '세션 일시정지/재개',
+      action: () => {
+        if (!sessionId) return;
+        if (sessionStatus === 'active') {
+          handlePauseSession();
+        } else if (sessionStatus === 'paused') {
+          handleResumeSession();
+        }
+      },
+    },
+    {
+      key: 'Escape',
+      description: '모달 닫기',
+      action: () => setShowShortcutsHelp(false),
+    },
+  ];
+
+  useKeyboardShortcuts({ shortcuts, enabled: !showOnboarding });
 
   // 데모용 VAD 메트릭
   const demoVADMetrics: VADMetrics = {
@@ -141,17 +298,115 @@ function App() {
     };
   }, [sessionId, disconnectWS]);
 
+  // Idle timeout: show modal after inactivity; countdown to auto-end
+  useIdleTimeout({
+    idleMs: 5 * 60 * 1000,
+    onIdle: () => {
+      if (sessionStatus === 'active') {
+        setIdleSecondsRemaining(60);
+        setIdlePromptOpen(true);
+      }
+    },
+  });
+
+  useEffect(() => {
+    if (!idlePromptOpen) return;
+    const t = window.setInterval(() => {
+      setIdleSecondsRemaining((s) => {
+        if (s <= 1) {
+          window.clearInterval(t);
+          if (sessionId) handleEndSession();
+          setIdlePromptOpen(false);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [idlePromptOpen]);
+
+  // 성능 메트릭 수집 (개발 모드)
+  useEffect(() => {
+    collectWebVitals().then((m) => {
+      if (import.meta.env.DEV) logPerformanceMetrics(m);
+      trackWebVitals(m);
+    });
+  }, []);
+
+  // Initialize analytics & sentry when consent available (respect DNT)
+  useEffect(() => {
+    const respectDNT = navigator.doNotTrack === '1' || (window as any).doNotTrack === '1' || (navigator as any).msDoNotTrack === '1';
+    initAnalytics(consent, respectDNT);
+    initSentry(consent, respectDNT);
+    trackPageView(location.pathname + location.search);
+  }, [consent]);
+
+  // 첫 방문 시 동의 다이얼로그 표출
+  useEffect(() => {
+    if (!consent) {
+      openDialog();
+    }
+  }, [consent, openDialog]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div id="main" className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      {/* 랜딩 */}
+      {!sessionId && !showOnboarding && (
+        <Landing onStart={() => setShowOnboarding(true)} />
+      )}
+
+      {/* 온보딩 플로우 */}
+      {showOnboarding && (
+        <Onboarding
+          onComplete={handleOnboardingComplete}
+          onSkip={handleOnboardingSkip}
+        />
+      )}
+
+      {/* 키보드 단축키 도움말 */}
+      <KeyboardShortcutsHelp
+        shortcuts={shortcuts}
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
+      />
+
+      {/* 네트워크 상태 */}
+      <NetworkStatusBanner />
+
       {/* 헤더 */}
-      <header className="bg-white shadow-sm sticky top-0 z-10">
+      <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">BeMore</h1>
-              <p className="text-xs sm:text-sm text-gray-500">AI 심리 상담 시스템</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">BeMore</h1>
+              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">AI 심리 상담 시스템</p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Language and Theme */}
+              <div className="hidden sm:flex items-center gap-2">
+                <select
+                  aria-label="언어 선택"
+                  className="px-2 py-2 rounded border text-xs bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  onChange={(e) => {
+                    const val = e.target.value as 'ko'|'en';
+                    try { localStorage.setItem('bemore_settings_v1', JSON.stringify({ ...JSON.parse(localStorage.getItem('bemore_settings_v1')||'{}'), language: val })); } catch {}
+                    window.location.reload();
+                  }}
+                  value={(() => { try { return (JSON.parse(localStorage.getItem('bemore_settings_v1')||'{}').language) || 'ko'; } catch { return 'ko'; } })()}
+                >
+                  <option value="ko">한국어</option>
+                  <option value="en">English</option>
+                </select>
+                <ThemeToggle />
+              </div>
+              {/* Settings Button */}
+              <button
+                onClick={() => setShowSettings(true)}
+                className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                aria-label="설정 열기"
+              >설정</button>
+              {/* Session Timer */}
+              <SessionTimer running={sessionStatus === 'active'} resetKey={sessionId} initialElapsedMs={sessionStartAt ? Date.now() - sessionStartAt : 0} />
               {/* 세션 시작 버튼 */}
               {!sessionId && (
                 <button
@@ -184,8 +439,8 @@ function App() {
       {/* 에러 메시지 */}
       {error && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4" role="alert">
+            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
           </div>
         </div>
       )}
@@ -196,8 +451,8 @@ function App() {
           {/* 왼쪽: 비디오 피드 */}
           <div className="lg:col-span-2 space-y-4">
             {/* 비디오 */}
-            <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-fade-in-up">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">실시간 영상</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-fade-in-up">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">실시간 영상</h2>
               <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
                 <VideoFeed className="w-full h-full" />
                 {sttText && <STTSubtitle text={sttText} />}
@@ -205,10 +460,12 @@ function App() {
             </div>
 
             {/* AI 채팅 - 모바일에서 숨김 */}
-            <div className="hidden sm:block bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">AI 대화</h2>
+            <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">AI 대화</h2>
               <div className="h-80 sm:h-96">
-                <AIChat />
+                <Suspense fallback={<AIChatSkeleton />}>
+                  <AIChat />
+                </Suspense>
               </div>
             </div>
           </div>
@@ -216,45 +473,47 @@ function App() {
           {/* 오른쪽: 사이드바 */}
           <div className="space-y-4">
             {/* 감정 카드 */}
-            <div className="bg-white rounded-xl shadow-soft p-3 sm:p-4 animate-slide-in-left">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">현재 감정</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-3 sm:p-4 animate-slide-in-left">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">현재 감정</h2>
               <EmotionCard emotion={currentEmotion} confidence={0.85} />
             </div>
 
             {/* VAD 모니터 */}
-            <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">음성 분석</h2>
-              <VADMonitor metrics={DEMO_MODE ? demoVADMetrics : vadMetrics} />
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">음성 분석</h2>
+              <Suspense fallback={<VADMonitorSkeleton />}>
+                <VADMonitor metrics={DEMO_MODE ? demoVADMetrics : vadMetrics} />
+              </Suspense>
             </div>
 
             {/* 시스템 정보 */}
-            <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">시스템 상태</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
+              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">시스템 상태</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">WebSocket</span>
+                  <span className="text-gray-600 dark:text-gray-400">WebSocket</span>
                   <span className={`${wsConnected ? 'text-green-600' : 'text-red-600'} font-medium`}>
                     <span aria-hidden="true">● </span>
                     {wsConnected ? '연결됨' : '연결 끊김'}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Landmarks</span>
-                  <span className={`${connectionStatus.landmarks === 'connected' ? 'text-green-600' : 'text-gray-400'} font-medium`}>
+                  <span className="text-gray-600 dark:text-gray-400">Landmarks</span>
+                  <span className={`${connectionStatus.landmarks === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
                     <span aria-hidden="true">● </span>
                     {connectionStatus.landmarks}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Voice</span>
-                  <span className={`${connectionStatus.voice === 'connected' ? 'text-green-600' : 'text-gray-400'} font-medium`}>
+                  <span className="text-gray-600 dark:text-gray-400">Voice</span>
+                  <span className={`${connectionStatus.voice === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
                     <span aria-hidden="true">● </span>
                     {connectionStatus.voice}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Session</span>
-                  <span className={`${connectionStatus.session === 'connected' ? 'text-green-600' : 'text-gray-400'} font-medium`}>
+                  <span className="text-gray-600 dark:text-gray-400">Session</span>
+                  <span className={`${connectionStatus.session === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
                     <span aria-hidden="true">● </span>
                     {connectionStatus.session}
                   </span>
@@ -267,7 +526,7 @@ function App() {
 
       {/* 모바일 하단 고정 세션 컨트롤 */}
       {sessionId && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:hidden shadow-lg z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-3 sm:hidden shadow-lg z-20">
           <SessionControls
             status={sessionStatus}
             onPause={handlePauseSession}
@@ -280,7 +539,7 @@ function App() {
       {/* 데스크톱 세션 컨트롤 */}
       {sessionId && (
         <div className="hidden sm:block max-w-7xl mx-auto px-4 sm:px-6 pb-6 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-          <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-4">
             <SessionControls
               status={sessionStatus}
               onPause={handlePauseSession}
@@ -292,12 +551,44 @@ function App() {
       )}
 
       {/* 푸터 */}
-      <footer className="mt-8 sm:mt-12 py-4 sm:py-6 bg-white border-t border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs sm:text-sm text-gray-500">
+      <footer className="mt-8 sm:mt-12 py-4 sm:py-6 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-xs sm:text-sm text-gray-500 dark:text-gray-400">
           <p>BeMore - AI 기반 심리 상담 시스템</p>
           <p className="mt-1">Powered by MediaPipe, Gemini AI, Web Speech API</p>
+          <div className="mt-2 space-x-4">
+            <button className="underline" onClick={() => setShowPrivacy(true)}>개인정보 처리방침</button>
+            <button className="underline" onClick={() => setShowTerms(true)}>이용약관</button>
+          </div>
         </div>
       </footer>
+      <ConsentDialog isOpen={isDialogOpen} onClose={() => { /* handled by context */ }} />
+      <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <IdleTimeoutModal
+        isOpen={idlePromptOpen}
+        onContinue={() => setIdlePromptOpen(false)}
+        onEnd={() => { if (sessionId) handleEndSession(); setIdlePromptOpen(false); }}
+        secondsRemaining={idleSecondsRemaining}
+      />
+      <SessionSummaryModal
+        isOpen={showSummary}
+        onClose={() => setShowSummary(false)}
+        onSubmitFeedback={(rating, note) => {
+          console.log('Session feedback:', { rating, note });
+          setShowSummary(false);
+        }}
+        durationLabel={sessionStartAt ? (() => {
+          const ms = Date.now() - sessionStartAt;
+          const s = Math.floor(ms / 1000);
+          const m = Math.floor(s / 60);
+          const h = Math.floor(m / 60);
+          const mm = String(m % 60).padStart(2, '0');
+          const ss = String(s % 60).padStart(2, '0');
+          return h > 0 ? `${String(h).padStart(2,'0')}:${mm}:${ss}` : `${mm}:${ss}`;
+        })() : '00:00'}
+      />
+      <ResumePromptModal isOpen={showResumePrompt} onResume={resumeLastSession} onDiscard={discardLastSession} />
+      <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+      <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
   );
 }

@@ -32,10 +32,12 @@ export function AIChat({ className = '' }: AIChatProps) {
 
   // 메시지 추가
   const addMessage = (role: 'user' | 'ai', content: string) => {
+    // Basic sanitization: strip script tags
+    const safeContent = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/javascript:/gi, '');
     const newMessage: Message = {
       id: `${Date.now()}-${Math.random()}`,
       role,
-      content,
+      content: safeContent,
       timestamp: Date.now(),
     };
     setMessages((prev) => [...prev, newMessage]);
