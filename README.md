@@ -28,17 +28,17 @@ src/
 │   └── Common/          # 공통 컴포넌트
 ├── hooks/               # 커스텀 훅
 │   ├── useSession.ts    # 세션 관리 ✅
-│   ├── useWebSocket.ts  # WebSocket 연결 (TODO)
-│   ├── useMediaPipe.ts  # 얼굴 인식 (TODO)
-│   ├── useVAD.ts        # 음성 활동 감지 (TODO)
-│   └── useEmotion.ts    # 감정 분석 (TODO)
+│   ├── useWebSocket.ts  # WebSocket 연결 ✅
+│   ├── useMediaPipe.ts  # 얼굴 인식 ✅
+│   ├── useVAD.ts        # 음성 활동 감지 ✅
+│   └── useEmotion.ts    # 감정 분석 ✅
 ├── services/            # API & WebSocket 서비스
 │   ├── api.ts           # REST API 클라이언트 ✅
 │   └── websocket.ts     # WebSocket 매니저 ✅
 ├── stores/              # Zustand 스토어
-│   ├── sessionStore.ts  # 세션 상태 (TODO)
-│   ├── emotionStore.ts  # 감정 데이터 (TODO)
-│   └── vadStore.ts      # VAD 데이터 (TODO)
+│   ├── sessionStore.ts  # 세션 상태 ✅
+│   ├── emotionStore.ts  # 감정 데이터 ✅
+│   └── vadStore.ts      # VAD 데이터 ✅
 ├── types/               # TypeScript 타입
 │   └── index.ts         # 타입 정의 ✅
 └── utils/               # 유틸리티 함수
@@ -66,20 +66,19 @@ src/
 - [x] REST API 클라이언트 (sessionAPI, sttAPI, monitoringAPI)
 - [x] WebSocket 서비스 (ReconnectingWebSocket, WebSocketManager)
 
-### Phase 3: 커스텀 훅 구현 (진행 중)
+### Phase 3: 커스텀 훅 구현 ✅
 - [x] useSession - 세션 관리 훅
-- [ ] useWebSocket - WebSocket 연결 훅
-- [ ] useMediaPipe - 얼굴 인식 훅
-- [ ] useVAD - 음성 활동 감지 훅
-- [ ] useEmotion - 감정 분석 훅
+- [x] useWebSocket - WebSocket 연결 훅
+- [x] useMediaPipe - 얼굴 인식 훅
+- [x] useVAD - 음성 활동 감지 훅
+- [x] useEmotion - 감정 분석 훅
+
+### Phase 3-B: 상태 관리 ✅
+- [x] sessionStore - 세션 전역 상태
+- [x] emotionStore - 감정 데이터 저장
+- [x] vadStore - VAD 데이터 저장
 
 ## 📋 남은 작업
-
-### Phase 3: 커스텀 훅 완성 (1.5시간)
-- [ ] useWebSocket - WebSocket 3개 채널 관리
-- [ ] useMediaPipe - FaceMesh 초기화 및 랜드마크 추출
-- [ ] useVAD - 음량 측정 및 STT 조건 판단
-- [ ] useEmotion - 감정 업데이트 수신
 
 ### Phase 4: UI 컴포넌트 (2시간)
 - [ ] Header - 헤더 (세션 ID, 상태 표시)
@@ -93,26 +92,44 @@ src/
 - [ ] LoadingOverlay - 로딩 화면
 - [ ] Toast - 알림
 
-### Phase 5: 상태 관리 (30분)
-- [ ] sessionStore - 세션 전역 상태
-- [ ] emotionStore - 감정 데이터 저장
-- [ ] vadStore - VAD 데이터 저장
+### Phase 5: 백엔드 연동 ✅
+- [x] BeMoreBackend CORS 설정
+- [x] Vite 프록시 설정 (vite.config.ts)
+- [x] 환경 변수 설정 (.env)
 
-### Phase 6: 백엔드 연동 (30분)
-- [ ] BeMoreBackend CORS 설정
-- [ ] Vite 프록시 설정 (vite.config.ts)
-- [ ] 환경 변수 설정 (.env)
+### Phase 6: 배포 설정 ✅
+- [x] Node.js 18 호환성 수정 (Vite 5.4.x)
+- [x] Vercel 배포 설정
+- [x] 배포 가이드 문서
 
-### Phase 7: 스타일링 (1시간)
-- [ ] CSS 모듈 또는 Tailwind CSS 설정
-- [ ] 기존 디자인 시스템 마이그레이션
+### Phase 7: 스타일링 (예정)
+- [ ] Tailwind CSS 설정
+- [ ] 디자인 시스템 구현
 - [ ] 반응형 레이아웃
 
-### Phase 8: 테스트 및 디버깅 (1시간)
+### Phase 8: 테스트 및 디버깅 (예정)
 - [ ] WebSocket 연결 테스트
 - [ ] MediaPipe 얼굴 인식 테스트
 - [ ] VAD + STT 통합 테스트
 - [ ] 전체 플로우 테스트
+
+## 🎉 Week 1 완료 현황
+
+### ✅ 완료된 작업 (Day 1-5)
+1. **프로젝트 초기 설정** - Vite + React + TypeScript
+2. **타입 시스템** - 210줄의 종합 타입 정의
+3. **REST API 클라이언트** - Axios 기반 API 래퍼
+4. **WebSocket 서비스** - 3채널 자동 재연결
+5. **커스텀 훅 4개** - useWebSocket, useMediaPipe, useVAD, useEmotion
+6. **Zustand 스토어 3개** - session, emotion, vad
+7. **백엔드 통합** - CORS, 프록시, 환경변수
+8. **배포 준비** - Vercel 설정, 빌드 최적화
+
+### 📊 통계
+- **총 파일**: 13개 핵심 파일
+- **총 코드**: ~1,300줄 (타입 안전 TypeScript)
+- **빌드 시간**: 430ms
+- **번들 크기**: 194KB (gzip: 60KB)
 
 ## 🔧 환경 변수
 
@@ -138,13 +155,28 @@ npm run dev
 - 프론트엔드: http://localhost:5173
 - 백엔드 API: http://localhost:8000
 
-## 📝 다음 세션 작업
+## 📝 다음 작업 (Week 2)
 
-1. **커스텀 훅 완성** (useWebSocket, useMediaPipe, useVAD, useEmotion)
-2. **Zustand 스토어 구현**
-3. **UI 컴포넌트 구현** (Header, VideoFeed, EmotionCard 등)
-4. **백엔드 CORS 설정**
-5. **통합 테스트**
+### Phase 4: UI 컴포넌트 구현
+1. **세션 페이지 코어**
+   - VideoFeed - 카메라 스트림
+   - FaceMeshOverlay - 468개 랜드마크 시각화
+   - STTSubtitle - 실시간 자막 (유튜브 스타일)
+   - EmotionCard - 감정 표시 카드
+   - VADMonitor - 음성 활동 모니터
+   - AIChat - AI 대화 + TTS
+   - SessionControls - 일시정지/재개/종료
+
+2. **페이지 라우팅**
+   - React Router 설정
+   - 온보딩 3단계 페이지
+   - 세션 페이지
+   - 리포트 페이지
+
+3. **Tailwind CSS 스타일링**
+   - 디자인 시스템 구축
+   - 컴포넌트 스타일링
+   - 반응형 레이아웃
 
 ## 📚 참고 문서
 
