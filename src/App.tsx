@@ -57,7 +57,7 @@ function App() {
           {/* 왼쪽: 비디오 피드 */}
           <div className="lg:col-span-2 space-y-4">
             {/* 비디오 */}
-            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-fade-in-up">
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">실시간 영상</h2>
               <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
                 <VideoFeed className="w-full h-full" />
@@ -65,7 +65,7 @@ function App() {
               </div>
               <button
                 onClick={changeSttText}
-                className="mt-3 px-4 py-2 min-h-[44px] bg-blue-500 text-white rounded hover:bg-blue-600 transition text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                className="mt-3 px-4 py-2 min-h-[44px] bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium rounded-lg shadow-soft hover:shadow-soft-lg transition-all text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 active:scale-95 transform"
                 aria-label="STT 텍스트 변경"
               >
                 STT 텍스트 변경
@@ -73,7 +73,7 @@ function App() {
             </div>
 
             {/* AI 채팅 - 모바일에서 숨김 */}
-            <div className="hidden sm:block bg-white rounded-lg shadow-md p-3 sm:p-4">
+            <div className="hidden sm:block bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">AI 대화</h2>
               <div className="h-80 sm:h-96">
                 <AIChat />
@@ -84,19 +84,19 @@ function App() {
           {/* 오른쪽: 사이드바 */}
           <div className="space-y-4">
             {/* 감정 카드 */}
-            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-soft p-3 sm:p-4 animate-slide-in-left">
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">현재 감정</h2>
               <EmotionCard emotion={currentEmotion} confidence={0.85} />
             </div>
 
             {/* VAD 모니터 */}
-            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">음성 분석</h2>
               <VADMonitor metrics={demoVADMetrics} />
             </div>
 
             {/* 시스템 정보 */}
-            <div className="bg-white rounded-lg shadow-md p-3 sm:p-4">
+            <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 mb-2 sm:mb-3">시스템 상태</h2>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
@@ -132,8 +132,8 @@ function App() {
       </div>
 
       {/* 데스크톱 세션 컨트롤 */}
-      <div className="hidden sm:block max-w-7xl mx-auto px-4 sm:px-6 pb-6">
-        <div className="bg-white rounded-lg shadow-md p-4">
+      <div className="hidden sm:block max-w-7xl mx-auto px-4 sm:px-6 pb-6 animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+        <div className="bg-white rounded-xl shadow-soft hover:shadow-soft-lg transition-shadow duration-300 p-4">
           <SessionControls
             status="active"
             onPause={() => alert('일시정지')}

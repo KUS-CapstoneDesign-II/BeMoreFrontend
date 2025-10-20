@@ -36,11 +36,12 @@ export function SessionControls({
           onClick={onPause}
           className="
             flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-yellow-500 hover:bg-yellow-600
-            text-white font-medium rounded-lg
-            transition shadow-md hover:shadow-lg
+            bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600
+            text-white font-semibold rounded-lg
+            transition-all duration-200 shadow-soft hover:shadow-soft-lg
             focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2
-            active:scale-95
+            active:scale-95 transform
+            animate-fade-in
           "
           aria-label="세션 일시정지"
         >
@@ -56,11 +57,12 @@ export function SessionControls({
           onClick={onResume}
           className="
             flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-green-500 hover:bg-green-600
-            text-white font-medium rounded-lg
-            transition shadow-md hover:shadow-lg
+            bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600
+            text-white font-semibold rounded-lg
+            transition-all duration-200 shadow-soft hover:shadow-soft-lg
             focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2
-            active:scale-95
+            active:scale-95 transform
+            animate-scale-in
           "
           aria-label="세션 재개"
         >
@@ -77,11 +79,12 @@ export function SessionControls({
           onClick={onEnd}
           className="
             flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-red-500 hover:bg-red-600
-            text-white font-medium rounded-lg
-            transition shadow-md hover:shadow-lg
+            bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600
+            text-white font-semibold rounded-lg
+            transition-all duration-200 shadow-soft hover:shadow-soft-lg
             focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2
-            active:scale-95
+            active:scale-95 transform
+            animate-fade-in
           "
           aria-label="세션 종료"
         >
@@ -94,21 +97,21 @@ export function SessionControls({
 
       {/* 상태 표시 */}
       <div
-        className="ml-4 px-4 py-2 bg-gray-100 rounded-lg"
+        className="ml-4 px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg shadow-inner-soft animate-fade-in"
         role="status"
         aria-live="polite"
         aria-label={`세션 상태: ${isActive ? '진행 중' : isPaused ? '일시정지' : '종료됨'}`}
       >
         <div className="flex items-center space-x-2">
           <div
-            className={`w-2 h-2 rounded-full ${
-              isActive ? 'bg-green-500 animate-pulse' :
-              isPaused ? 'bg-yellow-500' :
+            className={`w-2.5 h-2.5 rounded-full ${
+              isActive ? 'bg-green-500 animate-pulse shadow-lg shadow-green-300' :
+              isPaused ? 'bg-yellow-500 shadow-lg shadow-yellow-300' :
               'bg-gray-400'
             }`}
             aria-hidden="true"
           ></div>
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-semibold text-gray-700">
             {isActive ? '진행 중' : isPaused ? '일시정지' : '종료됨'}
           </span>
         </div>

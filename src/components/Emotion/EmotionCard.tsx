@@ -6,58 +6,77 @@ interface EmotionCardProps {
   className?: string;
 }
 
-const emotionConfig: Record<EmotionType, {  label: string;
+const emotionConfig: Record<EmotionType, {
+  label: string;
   icon: string;
   color: string;
   bgColor: string;
+  animation: string;
+  message: string;
 }> = {
   happy: {
     label: '행복',
     icon: '😊',
-    color: 'text-yellow-600',
-    bgColor: 'bg-yellow-50 border-yellow-200'
+    color: 'text-amber-600',
+    bgColor: 'bg-amber-50 border-amber-200',
+    animation: 'animate-bounce-subtle',
+    message: '긍정적인 에너지가 느껴지네요!'
   },
   sad: {
     label: '슬픔',
     icon: '😢',
     color: 'text-blue-600',
-    bgColor: 'bg-blue-50 border-blue-200'
+    bgColor: 'bg-blue-50 border-blue-200',
+    animation: 'animate-fade-in-up',
+    message: '힘든 시간을 겪고 계시는군요.'
   },
   angry: {
     label: '화남',
     icon: '😠',
-    color: 'text-red-600',
-    bgColor: 'bg-red-50 border-red-200'
+    color: 'text-red-500',
+    bgColor: 'bg-red-50 border-red-200',
+    animation: 'animate-scale-in',
+    message: '감정이 격해진 상태입니다.'
   },
   anxious: {
     label: '불안',
     icon: '😰',
     color: 'text-purple-600',
-    bgColor: 'bg-purple-50 border-purple-200'
+    bgColor: 'bg-purple-50 border-purple-200',
+    animation: 'animate-fade-in',
+    message: '불안함을 느끼고 계시는군요.'
   },
   neutral: {
     label: '중립',
     icon: '😐',
     color: 'text-gray-600',
-    bgColor: 'bg-gray-50 border-gray-200'
+    bgColor: 'bg-gray-50 border-gray-200',
+    animation: 'animate-fade-in',
+    message: '안정적인 상태입니다.'
   },
   surprised: {
     label: '놀람',
     icon: '😲',
     color: 'text-orange-600',
-    bgColor: 'bg-orange-50 border-orange-200'
+    bgColor: 'bg-orange-50 border-orange-200',
+    animation: 'animate-scale-in',
+    message: '놀라운 일이 있었나요?'
   },
   disgusted: {
     label: '혐오',
     icon: '🤢',
     color: 'text-green-600',
-    bgColor: 'bg-green-50 border-green-200'
+    bgColor: 'bg-green-50 border-green-200',
+    animation: 'animate-fade-in-up',
+    message: '불편함을 느끼고 계시네요.'
   },
   fearful: {
     label: '두려움',
     icon: '😨',
     color: 'text-indigo-600',
-    bgColor: 'bg-indigo-50 border-indigo-200'
+    bgColor: 'bg-indigo-50 border-indigo-200',
+    animation: 'animate-fade-in',
+    message: '두려움이 느껴지는 상황입니다.'
   }
 };
 
@@ -90,10 +109,11 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
   return (
     <div
       className={`
-        p-4 rounded-lg border-2
+        p-5 rounded-xl border-2 shadow-soft
         ${config.bgColor}
-        transition-all duration-300
-        animate-pulse-slow
+        transition-all duration-300 ease-smooth
+        hover:shadow-soft-lg hover:scale-[1.02]
+        ${config.animation}
         ${className}
       `}
       role="status"
@@ -102,17 +122,33 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
     >
       <div className="text-center">
         {/* 이모티콘 */}
-        <div className="text-5xl mb-3" aria-hidden="true">{config.icon}</div>
+        <div className="text-6xl mb-4 animate-pulse-slow" aria-hidden="true">
+          {config.icon}
+        </div>
 
         {/* 감정 라벨 */}
-        <div className={`text-lg font-bold ${config.color} mb-1`}>
+        <div className={`text-xl font-bold ${config.color} mb-2`}>
           {config.label}
         </div>
 
-        {/* 신뢰도 (선택적) */}
+        {/* 감정 메시지 */}
+        <p className="text-sm text-gray-600 mb-3 leading-relaxed">
+          {config.message}
+        </p>
+
+        {/* 신뢰도 바 */}
         {confidencePercent !== null && (
-          <div className="text-xs text-gray-600">
-            신뢰도: {confidencePercent}%
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-gray-500">
+              <span>신뢰도</span>
+              <span className="font-semibold">{confidencePercent}%</span>
+            </div>
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full ${config.color.replace('text', 'bg')} transition-all duration-500 ease-out`}
+                style={{ width: `${confidencePercent}%` }}
+              />
+            </div>
           </div>
         )}
       </div>
