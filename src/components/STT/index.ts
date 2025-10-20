@@ -1,0 +1,1 @@
+export { STTSubtitle } from './STTSubtitle';
