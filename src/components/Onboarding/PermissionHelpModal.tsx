@@ -15,7 +15,7 @@ export function PermissionHelpModal({ isOpen, onClose }: PermissionHelpModalProp
           <li>카메라와 마이크 권한을 "허용"으로 변경하세요.</li>
           <li>변경 후 페이지를 새로고침하세요.</li>
         </ol>
-        <div className="mt-4 text-xs text-gray-500">Safari: 사파리 > 설정 > 웹사이트 > 카메라/마이크에서 도메인 권한을 확인하세요.</div>
+        <div className="mt-4 text-xs text-gray-500">Safari: 사파리 &gt; 설정 &gt; 웹사이트 &gt; 카메라/마이크에서 도메인 권한을 확인하세요.</div>
         <div className="mt-5 text-right">
           <button onClick={onClose} className="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700">닫기</button>
         </div>
