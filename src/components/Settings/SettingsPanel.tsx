@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSettings } from '../../contexts/SettingsContext';
 import { subscribeToPush, unsubscribeFromPush } from '../../utils/push';
 import { useAccessibility } from '../../contexts/AccessibilityContext';
+import { useToast } from '../../contexts/ToastContext';
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   const panelRef = useRef<HTMLDivElement>(null);
   const { highContrast, reducedMotion, setHighContrast, setReducedMotion } = useAccessibility();
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,7 +54,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <button
                   key={s}
                   className={`px-3 py-2 rounded border text-sm ${fontScale===s? 'bg-primary-500 text-white border-primary-500':'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setFontScale(s)}
+                  onClick={() => { setFontScale(s); addToast('글꼴 크기를 적용했습니다', 'success', 2200); }}
                   aria-pressed={fontScale===s}
                 >{s.toUpperCase()}</button>
               ))}
@@ -66,7 +68,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <button
                   key={d}
                   className={`px-3 py-2 rounded border text-sm ${layoutDensity===d? 'bg-primary-500 text-white border-primary-500':'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setLayoutDensity(d)}
+                  onClick={() => { setLayoutDensity(d); addToast('레이아웃 밀도를 적용했습니다', 'success', 2200); }}
                   aria-pressed={layoutDensity===d}
                 >{d === 'compact' ? '컴팩트' : '넓게'}</button>
               ))}
@@ -80,7 +82,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <button
                   key={lng}
                   className={`px-3 py-2 rounded border text-sm ${language===lng? 'bg-primary-500 text-white border-primary-500':'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => setLanguage(lng)}
+                  onClick={() => { setLanguage(lng); addToast('언어 설정을 적용했습니다', 'success', 2200); }}
                   aria-pressed={language===lng}
                 >{lng === 'ko' ? '한국어' : 'English'}</button>
               ))}
@@ -99,10 +101,14 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                     const sub = await subscribeToPush();
                     if (!sub) {
                       setNotificationsOptIn(false);
+                      addToast('푸시 구독에 실패했습니다', 'error');
+                    } else {
+                      addToast('브라우저 알림이 활성화되었습니다', 'success', 2500);
                     }
                   } else {
                     await unsubscribeFromPush();
                     setNotificationsOptIn(false);
+                    addToast('브라우저 알림이 비활성화되었습니다', 'info', 2500);
                   }
                 }}
                 aria-pressed={notificationsOptIn}
@@ -115,11 +121,11 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             <div className="mt-2 space-y-2">
               <label className="flex items-center justify-between gap-4">
                 <span className="text-sm text-gray-700 dark:text-gray-300">고대비 모드</span>
-                <input type="checkbox" checked={highContrast} onChange={(e) => setHighContrast(e.target.checked)} />
+                <input type="checkbox" checked={highContrast} onChange={(e) => { setHighContrast(e.target.checked); addToast('고대비 모드를 변경했습니다', 'success', 2000); }} />
               </label>
               <label className="flex items-center justify-between gap-4">
                 <span className="text-sm text-gray-700 dark:text-gray-300">감소된 모션</span>
-                <input type="checkbox" checked={reducedMotion} onChange={(e) => setReducedMotion(e.target.checked)} />
+                <input type="checkbox" checked={reducedMotion} onChange={(e) => { setReducedMotion(e.target.checked); addToast('모션 감소 설정을 변경했습니다', 'success', 2000); }} />
               </label>
             </div>
           </section>
