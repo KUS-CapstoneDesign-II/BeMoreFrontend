@@ -205,6 +205,8 @@ export interface SessionReport {
   };
   emotionTimeline: EmotionData[];
   vadSummary: VADMetrics;
+  vadTimeline?: Array<{ t?: number; timestamp?: number; valence?: number; arousal?: number; dominance?: number }>;
+  vadVector?: { valence: number; arousal: number; dominance: number };
   cbtFindings?: CBTAnalysis[];
 }
 

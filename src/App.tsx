@@ -4,7 +4,7 @@ import { STTSubtitle } from './components/STT';
 import { EmotionCard } from './components/Emotion';
 import { SessionControls } from './components/Session';
 import { Onboarding } from './components/Onboarding';
-import { Landing } from './components/Landing/Landing';
+// import { Landing } from './components/Landing/Landing';
 import { SessionSummaryModal } from './components/Session/SessionSummaryModal';
 import { SessionResult } from './components/Session/SessionResult';
 import { Dashboard } from './pages/Home/Dashboard';
