@@ -9,10 +9,12 @@ type VADPoint = {
   timestamp?: number;
 };
 
+type Marker = { x: number; label?: string; color?: string };
+
 interface Props {
   data: VADPoint[];
   height?: number;
-  markers?: number[]; // x domain values to mark (t or timestamp)
+  markers?: Marker[]; // marker objects with optional label/color
 }
 
 export function VADTimeline({ data, height = 140, markers = [] }: Props) {
@@ -153,12 +155,18 @@ export function VADTimeline({ data, height = 140, markers = [] }: Props) {
         )}
         {/* Overlay markers */}
         {markers && markers.length > 0 && (
-          (markers as number[]).map((mx, i) => {
-            const cx = (processed as any).scaleX(mx);
-            const tx = Math.min(Math.max(cx, 6), width-6);
+          markers.map((m, i) => {
+            const cx = (processed as any).scaleX(m.x);
+            const tx = Math.min(Math.max(cx, 8), width-8);
+            const c = m.color || '#f59e0b';
             return (
               <g key={`m-${i}`}>
-                <path d={`M ${tx} 6 l 6 10 l -12 0 Z`} fill="#f59e0b" opacity={0.9} />
+                <path d={`M ${tx} 8 l 5 9 l -10 0 Z`} fill={c} opacity={0.95} />
+                {m.label && (
+                  <text x={tx + 6} y={16} fontSize={10} fill={c}>
+                    {m.label}
+                  </text>
+                )}
               </g>
             );
           })

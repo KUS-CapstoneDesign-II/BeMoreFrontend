@@ -11,7 +11,8 @@ export function SessionResult({ sessionId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
-  const [bookmarks, setBookmarks] = useState<number[]>([]);
+  const [bookmarks, setBookmarks] = useState<{x:number; label?:string; color?:string}[]>([]);
+  const [autoMarkers, setAutoMarkers] = useState<{x:number; label?:string; color?:string}[]>([]);
   const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
 
   useEffect(() => {
@@ -34,7 +35,25 @@ export function SessionResult({ sessionId }: Props) {
     (async () => {
       try {
         const report = await sessionAPI.getReport(sessionId);
-        if (mounted) setTimeline(report?.vadTimeline || []);
+        if (mounted) {
+          setTimeline(report?.vadTimeline || []);
+          // naive auto-markers: big valence delta, low arousal windows
+          const tl = report?.vadTimeline || [];
+          const mks: {x:number; label?:string; color?:string}[] = [];
+          for (let i = 1; i < tl.length; i++) {
+            const prev = tl[i-1];
+            const cur = tl[i];
+            const t = typeof cur.t === 'number' ? cur.t : (typeof cur.timestamp === 'number' ? cur.timestamp : i);
+            if (typeof prev?.valence === 'number' && typeof cur?.valence === 'number') {
+              const dv = Math.abs(cur.valence - prev.valence);
+              if (dv > 0.5) mks.push({ x: t, label: '급변', color: '#ef4444' });
+            }
+            if (typeof cur?.arousal === 'number' && cur.arousal < -0.5) {
+              mks.push({ x: t, label: '저각성', color: '#3b82f6' });
+            }
+          }
+          setAutoMarkers(mks);
+        }
       } catch {}
     })();
     return () => { mounted = false; };
@@ -143,7 +162,7 @@ export function SessionResult({ sessionId }: Props) {
               onClick={() => {
                 const last = timeline[timeline.length - 1];
                 const t = typeof last?.t === 'number' ? last.t : (typeof last?.timestamp === 'number' ? last.timestamp : timeline.length);
-                setBookmarks((b) => [...b, t]);
+                setBookmarks((b) => [...b, { x: t, label: '북마크', color: '#10b981' }]);
               }}
               className="px-3 py-2 text-xs rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
             >현재 시점 북마크</button>
@@ -152,7 +171,7 @@ export function SessionResult({ sessionId }: Props) {
               className="px-3 py-2 text-xs rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
             >북마크 초기화</button>
           </div>
-          <VADTimeline data={timeline} markers={bookmarks} />
+          <VADTimeline data={timeline} markers={[...autoMarkers, ...bookmarks]} />
         </div>
       )}
 
