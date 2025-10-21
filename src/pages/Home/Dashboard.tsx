@@ -21,7 +21,20 @@ export function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  if (loading) return <div className="p-4 text-sm text-gray-600">대시보드 불러오는 중…</div>;
+  if (loading) return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {[0,1,2].map(i => (
+        <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 animate-pulse">
+          <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="mt-3 space-y-2">
+            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   if (error) return <div className="p-4 text-sm text-red-600">{error}</div>;
 
   const today = data?.todayAvg || {};
@@ -34,32 +47,62 @@ export function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <div className="text-xs text-gray-500">오늘 평균 VAD</div>
-          <div className="mt-2 text-sm">Valence: {today.valence?.toFixed?.(2) ?? '-'}</div>
-          <div className="text-sm">Arousal: {today.arousal?.toFixed?.(2) ?? '-'}</div>
-          <div className="text-sm">Dominance: {today.dominance?.toFixed?.(2) ?? '-'}</div>
+          <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div className="text-[10px] text-gray-500">V</div>
+              <div className="text-lg font-semibold">{today.valence?.toFixed?.(2) ?? '-'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500">A</div>
+              <div className="text-lg font-semibold">{today.arousal?.toFixed?.(2) ?? '-'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500">D</div>
+              <div className="text-lg font-semibold">{today.dominance?.toFixed?.(2) ?? '-'}</div>
+            </div>
+          </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <div className="text-xs text-gray-500">전일 대비 변화</div>
-          <div className="mt-2 text-sm">ΔV: {trend.valence?.toFixed?.(2) ?? '-'}</div>
-          <div className="text-sm">ΔA: {trend.arousal?.toFixed?.(2) ?? '-'}</div>
-          <div className="text-sm">ΔD: {trend.dominance?.toFixed?.(2) ?? '-'}</div>
+          <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+            <div>
+              <div className="text-[10px] text-gray-500">ΔV</div>
+              <div className={`text-lg font-semibold ${trend.valence > 0 ? 'text-green-600' : trend.valence < 0 ? 'text-red-600' : ''}`}>{trend.valence?.toFixed?.(2) ?? '-'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500">ΔA</div>
+              <div className={`text-lg font-semibold ${trend.arousal > 0 ? 'text-green-600' : trend.arousal < 0 ? 'text-red-600' : ''}`}>{trend.arousal?.toFixed?.(2) ?? '-'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-gray-500">ΔD</div>
+              <div className={`text-lg font-semibold ${trend.dominance > 0 ? 'text-green-600' : trend.dominance < 0 ? 'text-red-600' : ''}`}>{trend.dominance?.toFixed?.(2) ?? '-'}</div>
+            </div>
+          </div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <div className="text-xs text-gray-500">추천 행동</div>
-          <ul className="mt-2 space-y-1 text-sm">
+          <ul className="mt-3 space-y-2 text-sm">
             {recs.length === 0 && <li>추천 없음</li>}
-            {recs.map((r) => <li key={r.id}><span className="font-medium">{r.title}</span> — {r.desc}</li>)}
+            {recs.map((r) => (
+              <li key={r.id} className="flex items-center justify-between">
+                <div>
+                  <div className="font-medium">{r.title}</div>
+                  <div className="text-gray-500 text-xs">{r.desc}</div>
+                </div>
+                <button className="px-2 py-1 text-xs rounded-md bg-primary-600 text-white hover:bg-primary-700">{r.cta || '진행'}</button>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
         <div className="text-xs text-gray-500 mb-2">최근 세션</div>
-        <ul className="text-sm">
-          {recent.length === 0 && <li>최근 세션이 없습니다</li>}
+        <ul className="text-sm divide-y divide-gray-100 dark:divide-gray-700">
+          {recent.length === 0 && <li className="py-2">최근 세션이 없습니다</li>}
           {recent.map((s) => (
-            <li key={s.reportId} className="py-1 flex justify-between">
-              <span>{s.sessionId}</span>
+            <li key={s.reportId} className="py-2 flex justify-between">
+              <span className="font-mono text-xs">{s.sessionId}</span>
               <span className="text-gray-500">{new Date(s.createdAt).toLocaleString()}</span>
             </li>
           ))}
