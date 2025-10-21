@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { FaceMesh } from '@mediapipe/face_mesh';
+import * as FaceMeshNS from '@mediapipe/face_mesh';
 import type { Results } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
 
@@ -65,7 +65,7 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
     minTrackingConfidence = 0.7,
   } = options;
 
-  const faceMeshRef = useRef<FaceMesh | null>(null);
+  const faceMeshRef = useRef<any | null>(null);
   const cameraRef = useRef<Camera | null>(null);
 
   const [isReady, setIsReady] = useState(false);
@@ -83,10 +83,9 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         setError(null);
 
         // FaceMesh 인스턴스 생성
-        const faceMesh = new FaceMesh({
-          locateFile: (file) => {
-            return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-          },
+        const FaceMeshCtor: any = (FaceMeshNS as any).FaceMesh || (FaceMeshNS as any);
+        const faceMesh = new FaceMeshCtor({
+          locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`,
         });
 
         // FaceMesh 설정
