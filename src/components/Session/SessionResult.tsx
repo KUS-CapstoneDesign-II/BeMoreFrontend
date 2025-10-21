@@ -11,6 +11,7 @@ export function SessionResult({ sessionId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
+  const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
 
   useEffect(() => {
@@ -136,7 +137,23 @@ export function SessionResult({ sessionId }: Props) {
       )}
 
       {tab === 'details' && (
-        <VADTimeline data={timeline} />
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const last = timeline[timeline.length - 1];
+                const t = typeof last?.t === 'number' ? last.t : (typeof last?.timestamp === 'number' ? last.timestamp : timeline.length);
+                setBookmarks((b) => [...b, t]);
+              }}
+              className="px-3 py-2 text-xs rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+            >현재 시점 북마크</button>
+            <button
+              onClick={() => setBookmarks([])}
+              className="px-3 py-2 text-xs rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+            >북마크 초기화</button>
+          </div>
+          <VADTimeline data={timeline} markers={bookmarks} />
+        </div>
       )}
 
       {tab === 'pdf' && (

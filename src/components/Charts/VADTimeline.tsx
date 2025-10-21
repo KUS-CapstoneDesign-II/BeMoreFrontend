@@ -12,9 +12,10 @@ type VADPoint = {
 interface Props {
   data: VADPoint[];
   height?: number;
+  markers?: number[]; // x domain values to mark (t or timestamp)
 }
 
-export function VADTimeline({ data, height = 140 }: Props) {
+export function VADTimeline({ data, height = 140, markers = [] }: Props) {
   const width = 480;
   const [visible, setVisible] = useState<{valence:boolean; arousal:boolean; dominance:boolean}>({ valence: true, arousal: true, dominance: true });
   const [hover, setHover] = useState<{x:number; y:number} | null>(null);
@@ -149,6 +150,18 @@ export function VADTimeline({ data, height = 140 }: Props) {
               </g>
             );
           })()
+        )}
+        {/* Overlay markers */}
+        {markers && markers.length > 0 && (
+          (markers as number[]).map((mx, i) => {
+            const cx = (processed as any).scaleX(mx);
+            const tx = Math.min(Math.max(cx, 6), width-6);
+            return (
+              <g key={`m-${i}`}>
+                <path d={`M ${tx} 6 l 6 10 l -12 0 Z`} fill="#f59e0b" opacity={0.9} />
+              </g>
+            );
+          })
         )}
       </svg>
       <div className="mt-1 text-[10px] text-gray-400">Range: {processed.minY.toFixed(2)} ~ {processed.maxY.toFixed(2)}</div>
