@@ -181,6 +181,16 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
                     {m.label}
                   </text>
                 )}
+                {/* focusable marker hit area for accessibility */}
+                <rect x={tx-8} y={6} width={24} height={16} fill="transparent" tabIndex={0}
+                  role="button" aria-label={`Marker at ${m.x}${m.label ? `, ${m.label}`: ''}`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (onSelectPoint) onSelectPoint({ x: m.x, valence: null, arousal: null, dominance: null });
+                    }
+                  }}
+                />
               </g>
             );
           })

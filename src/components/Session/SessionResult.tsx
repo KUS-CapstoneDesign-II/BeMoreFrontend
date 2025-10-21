@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sessionAPI } from '../../services/api';
 import { VADTimeline } from '../Charts/VADTimeline';
+import { LoadingState, ErrorState } from '../common/States';
 
 interface Props {
   sessionId: string;
@@ -75,21 +76,9 @@ export function SessionResult({ sessionId }: Props) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft p-4">
-        <p className="text-sm text-gray-600 dark:text-gray-300">결과를 불러오는 중...</p>
-      </div>
-    );
-  }
+  if (loading) return <LoadingState text="결과를 불러오는 중..." />;
 
-  if (error) {
-    return (
-      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-        <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-      </div>
-    );
-  }
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   const vad = summary?.vadVector || { valence: '-', arousal: '-', dominance: '-' };
   const keyObs: string[] = summary?.keyObservations || [];
@@ -159,7 +148,8 @@ export function SessionResult({ sessionId }: Props) {
 
       {tab === 'details' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Sticky toolbar */}
+          <div className="flex items-center gap-2 flex-wrap sticky top-0 z-10 bg-white/80 dark:bg-gray-800/80 backdrop-blur px-2 py-2 rounded-md">
             <button
               onClick={() => {
                 const last = timeline[timeline.length - 1];
