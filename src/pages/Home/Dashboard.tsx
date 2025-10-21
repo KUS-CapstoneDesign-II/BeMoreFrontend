@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { dashboardAPI } from '../../services/api';
+import { LoadingState, ErrorState, EmptyState } from '../../components/Common/States';
 
 export function Dashboard() {
   const [data, setData] = useState<any>(null);
@@ -21,21 +22,8 @@ export function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
-  if (loading) return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {[0,1,2].map(i => (
-        <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow p-4 animate-pulse">
-          <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="mt-3 space-y-2">
-            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="h-4 w-28 bg-gray-200 dark:bg-gray-700 rounded" />
-            <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-  if (error) return <div className="p-4 text-sm text-red-600">{error}</div>;
+  if (loading) return <LoadingState text="대시보드를 불러오는 중..." />;
+  if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
   const today = data?.todayAvg || {};
   const trend = data?.trend?.dayOverDay || {};
@@ -98,8 +86,8 @@ export function Dashboard() {
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
         <div className="text-xs text-gray-500 mb-2">최근 세션</div>
+        {recent.length === 0 && <EmptyState title="최근 세션이 없습니다" desc="세션을 종료하면 이곳에 표시됩니다" />}
         <ul className="text-sm divide-y divide-gray-100 dark:divide-gray-700">
-          {recent.length === 0 && <li className="py-2">최근 세션이 없습니다</li>}
           {recent.map((s) => (
             <li key={s.reportId} className="py-2 flex justify-between">
               <span className="font-mono text-xs">{s.sessionId}</span>
