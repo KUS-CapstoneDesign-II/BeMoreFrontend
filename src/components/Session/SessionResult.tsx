@@ -11,6 +11,7 @@ export function SessionResult({ sessionId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
+  const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
 
   useEffect(() => {
     let mounted = true;
@@ -76,41 +77,59 @@ export function SessionResult({ sessionId }: Props) {
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">세션 결과</h2>
-        <button
-          onClick={handleDownloadPdf}
-          className="px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
-        >PDF로 저장</button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
-          <div className="text-xs text-gray-500">Valence</div>
-          <div className="text-xl font-bold">{vad.valence}</div>
+      <div className="bg-gray-50 dark:bg-gray-900/40 rounded-lg p-1 inline-flex gap-1 text-sm">
+        <button onClick={() => setTab('summary')} className={`px-3 py-1 rounded-md ${tab==='summary'?'bg-white dark:bg-gray-800 shadow':''}`}>요약</button>
+        <button onClick={() => setTab('details')} className={`px-3 py-1 rounded-md ${tab==='details'?'bg-white dark:bg-gray-800 shadow':''}`}>세부</button>
+        <button onClick={() => setTab('pdf')} className={`px-3 py-1 rounded-md ${tab==='pdf'?'bg-white dark:bg-gray-800 shadow':''}`}>PDF</button>
+      </div>
+
+      {tab === 'summary' && (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
+              <div className="text-xs text-gray-500">Valence</div>
+              <div className="text-xl font-bold">{vad.valence}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
+              <div className="text-xs text-gray-500">Arousal</div>
+              <div className="text-xl font-bold">{vad.arousal}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
+              <div className="text-xs text-gray-500">Dominance</div>
+              <div className="text-xl font-bold">{vad.dominance}</div>
+            </div>
+          </div>
+
+          <div>
+            <div className="text-xs text-gray-500 mb-1">지배적 감정</div>
+            <div className="text-base font-medium">{domEmotion}</div>
+          </div>
+
+          <div>
+            <div className="text-xs text-gray-500 mb-1">핵심 관찰</div>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700 dark:text-gray-200">
+              {keyObs.length === 0 && <li>관찰 항목 없음</li>}
+              {keyObs.map((o, i) => <li key={i}>{o}</li>)}
+            </ul>
+          </div>
+        </>
+      )}
+
+      {tab === 'details' && (
+        <VADTimeline data={timeline} />
+      )}
+
+      {tab === 'pdf' && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-gray-600 dark:text-gray-300">세션 리포트를 PDF로 저장할 수 있어요.</p>
+          <button
+            onClick={handleDownloadPdf}
+            className="px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400"
+          >PDF로 저장</button>
         </div>
-        <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
-          <div className="text-xs text-gray-500">Arousal</div>
-          <div className="text-xl font-bold">{vad.arousal}</div>
-        </div>
-        <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
-          <div className="text-xs text-gray-500">Dominance</div>
-          <div className="text-xl font-bold">{vad.dominance}</div>
-        </div>
-      </div>
-
-      <div>
-        <div className="text-xs text-gray-500 mb-1">지배적 감정</div>
-        <div className="text-base font-medium">{domEmotion}</div>
-      </div>
-
-      <div>
-        <div className="text-xs text-gray-500 mb-1">핵심 관찰</div>
-        <ul className="list-disc pl-5 space-y-1 text-sm text-gray-700 dark:text-gray-200">
-          {keyObs.length === 0 && <li>관찰 항목 없음</li>}
-          {keyObs.map((o, i) => <li key={i}>{o}</li>)}
-        </ul>
-      </div>
-
-      <VADTimeline data={timeline} />
+      )}
     </div>
   );
 }
