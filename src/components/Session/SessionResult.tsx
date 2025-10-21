@@ -72,6 +72,8 @@ export function SessionResult({ sessionId }: Props) {
   const vad = summary?.vadVector || { valence: '-', arousal: '-', dominance: '-' };
   const keyObs: string[] = summary?.keyObservations || [];
   const domEmotion = summary?.dominantEmotion?.emotion || '-';
+  const cbt = summary?.cbt || { totalDistortions: 0, mostCommon: null };
+  const recommendations: string[] = summary?.recommendations || [];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft p-4 space-y-4">
@@ -113,6 +115,22 @@ export function SessionResult({ sessionId }: Props) {
               {keyObs.length === 0 && <li>관찰 항목 없음</li>}
               {keyObs.map((o, i) => <li key={i}>{o}</li>)}
             </ul>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
+              <div className="text-xs text-gray-500 mb-1">CBT 하이라이트</div>
+              <div className="text-sm">왜곡 총계: <span className="font-medium">{cbt.totalDistortions}</span></div>
+              <div className="text-sm">가장 흔한 왜곡: <span className="font-medium">{cbt.mostCommon || '-'}</span></div>
+            </div>
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
+              <div className="text-xs text-gray-500 mb-2">다음 행동 제안</div>
+              <div className="flex flex-wrap gap-2">
+                {(recommendations && recommendations.length ? recommendations : ['4-6 호흡', '감사 저널', '1분 스트레칭']).slice(0,3).map((r, i) => (
+                  <button key={i} className="px-3 py-2 text-xs rounded-md bg-primary-600 text-white hover:bg-primary-700">{r}</button>
+                ))}
+              </div>
+            </div>
           </div>
         </>
       )}
