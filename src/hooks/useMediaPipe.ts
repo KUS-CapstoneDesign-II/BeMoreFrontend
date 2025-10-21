@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import * as FaceMeshNS from '@mediapipe/face_mesh';
+// Use dynamic import inside effect to avoid SSR/bundle shape issues
 import type { Results } from '@mediapipe/face_mesh';
 import { Camera } from '@mediapipe/camera_utils';
 
@@ -82,8 +82,9 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
       try {
         setError(null);
 
-        // FaceMesh 인스턴스 생성
-        const FaceMeshCtor: any = (FaceMeshNS as any).FaceMesh || (FaceMeshNS as any);
+        const mp = await import('@mediapipe/face_mesh');
+        const FaceMeshCtor: any = (mp as any).FaceMesh || (mp as any).default?.FaceMesh || (mp as any).default;
+        if (!FaceMeshCtor) throw new Error('FaceMesh ctor not found');
         const faceMesh = new FaceMeshCtor({
           locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`,
         });

@@ -43,6 +43,14 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // Ignore non-HTTP(S) schemes and extension requests (e.g., chrome-extension:)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return;
+  }
+  if (url.protocol === 'chrome-extension:') {
+    return;
+  }
+
   // API 요청은 캐싱하지 않음
   if (url.pathname.startsWith('/api') || url.pathname.startsWith('/ws')) {
     return;
