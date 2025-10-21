@@ -37,7 +37,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
     const key = urlBase64ToUint8Array(publicKey);
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: key.buffer,
+      applicationServerKey: key, // Uint8Array satisfies BufferSource
     });
 
     // Send to backend
