@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { userAPI } from '../services/api';
 import type { ReactNode } from 'react';
 
 export type FontScale = 'sm' | 'md' | 'lg' | 'xl';
@@ -58,6 +59,18 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
+  // Load backend preferences on mount (merge into local)
+  useEffect(() => {
+    (async () => {
+      try {
+        const remote = await userAPI.getPreferences();
+        if (remote && typeof remote === 'object') {
+          setSettings((s) => ({ ...s, ...remote }));
+        }
+      } catch {}
+    })();
+  }, []);
+
   // Apply font scale to root for rem-based scaling
   useEffect(() => {
     const root = document.documentElement;
@@ -72,6 +85,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setLayoutDensity = (density: LayoutDensity) => setSettings((s) => ({ ...s, layoutDensity: density }));
   const setLanguage = (lang: LanguageCode) => setSettings((s) => ({ ...s, language: lang }));
   const setNotificationsOptIn = (optIn: boolean) => setSettings((s) => ({ ...s, notificationsOptIn: optIn }));
+
+  // Sync to backend when settings change (debounced-like simple)
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      userAPI.setPreferences(settings).catch(() => {});
+    }, 300);
+    return () => window.clearTimeout(id);
+  }, [settings]);
 
   const requestNotificationPermission = async (): Promise<NotificationPermission> => {
     if (!('Notification' in window)) {
