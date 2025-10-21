@@ -8,7 +8,7 @@ export function initSentry(consent: ConsentState | null, respectDNT: boolean) {
   if (respectDNT) return;
   if (!consent?.crashReporting) return;
   // Lazy import to avoid bundle impact
-  import('@sentry/browser').then(Sentry => {
+  import('@sentry/browser').then((Sentry: any) => {
     Sentry.init({ dsn, tracesSampleRate: 0.1 });
     sentryInitialized = true;
   }).catch(() => {});
@@ -16,7 +16,7 @@ export function initSentry(consent: ConsentState | null, respectDNT: boolean) {
 
 export function captureError(error: unknown) {
   if (!sentryInitialized) return;
-  import('@sentry/browser').then(Sentry => {
+  import('@sentry/browser').then((Sentry: any) => {
     Sentry.captureException(error);
   }).catch(() => {});
 }

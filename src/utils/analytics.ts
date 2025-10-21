@@ -1,4 +1,4 @@
-import { ConsentState } from '../contexts/ConsentContext';
+import type { ConsentState } from '../contexts/ConsentContext';
 
 let gaInitialized = false;
 
