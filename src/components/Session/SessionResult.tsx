@@ -12,8 +12,9 @@ export function SessionResult({ sessionId }: Props) {
   const [summary, setSummary] = useState<any>(null);
   const [timeline, setTimeline] = useState<any[]>([]);
   const [bookmarks, setBookmarks] = useState<{x:number; label?:string; color?:string}[]>([]);
-  const [autoMarkers, setAutoMarkers] = useState<{x:number; label?:string; color?:string}[]>([]);
+  const [autoMarkers, setAutoMarkers] = useState<{x:number; label?:string; color?:string; type?:'spike'|'low'}[]>([]);
   const [selected, setSelected] = useState<{x:number; valence?:number|null; arousal?:number|null; dominance?:number|null} | null>(null);
+  const [filter, setFilter] = useState<{ spike:boolean; low:boolean; bookmark:boolean }>({ spike: true, low: true, bookmark: true });
   const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
 
   useEffect(() => {
@@ -40,17 +41,17 @@ export function SessionResult({ sessionId }: Props) {
           setTimeline(report?.vadTimeline || []);
           // naive auto-markers: big valence delta, low arousal windows
           const tl = report?.vadTimeline || [];
-          const mks: {x:number; label?:string; color?:string}[] = [];
+          const mks: {x:number; label?:string; color?:string; type?:'spike'|'low'}[] = [];
           for (let i = 1; i < tl.length; i++) {
             const prev = tl[i-1];
             const cur = tl[i];
             const t = typeof cur.t === 'number' ? cur.t : (typeof cur.timestamp === 'number' ? cur.timestamp : i);
             if (typeof prev?.valence === 'number' && typeof cur?.valence === 'number') {
               const dv = Math.abs(cur.valence - prev.valence);
-              if (dv > 0.5) mks.push({ x: t, label: '급변', color: '#ef4444' });
+              if (dv > 0.5) mks.push({ x: t, label: '급변', color: '#ef4444', type: 'spike' });
             }
             if (typeof cur?.arousal === 'number' && cur.arousal < -0.5) {
-              mks.push({ x: t, label: '저각성', color: '#3b82f6' });
+              mks.push({ x: t, label: '저각성', color: '#3b82f6', type: 'low' });
             }
           }
           setAutoMarkers(mks);
@@ -158,7 +159,7 @@ export function SessionResult({ sessionId }: Props) {
 
       {tab === 'details' && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => {
                 const last = timeline[timeline.length - 1];
@@ -171,6 +172,40 @@ export function SessionResult({ sessionId }: Props) {
               onClick={() => setBookmarks([])}
               className="px-3 py-2 text-xs rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
             >북마크 초기화</button>
+
+            {/* Marker filters */}
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" checked={filter.spike} onChange={() => setFilter(f => ({...f, spike: !f.spike}))} /> 급변
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" checked={filter.low} onChange={() => setFilter(f => ({...f, low: !f.low}))} /> 저각성
+            </label>
+            <label className="flex items-center gap-1 text-xs">
+              <input type="checkbox" checked={filter.bookmark} onChange={() => setFilter(f => ({...f, bookmark: !f.bookmark}))} /> 북마크
+            </label>
+
+            {/* CSV export */}
+            <button
+              onClick={() => {
+                const header = 't,valence,arousal,dominance';
+                const rows = timeline.map((p:any, i:number) => {
+                  const t = typeof p.t === 'number' ? p.t : (typeof p.timestamp === 'number' ? p.timestamp : i);
+                  const v = (typeof p.valence === 'number') ? p.valence : '';
+                  const a = (typeof p.arousal === 'number') ? p.arousal : '';
+                  const d = (typeof p.dominance === 'number') ? p.dominance : '';
+                  return `${t},${v},${a},${d}`;
+                });
+                const csv = [header, ...rows].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vad-timeline-${sessionId}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="ml-auto px-3 py-2 text-xs rounded-md bg-primary-600 text-white hover:bg-primary-700"
+            >CSV 내보내기</button>
           </div>
           {selected && (
             <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 text-sm">
@@ -181,7 +216,14 @@ export function SessionResult({ sessionId }: Props) {
               <div>D: {typeof selected.dominance === 'number' ? selected.dominance.toFixed(2) : '-'}</div>
             </div>
           )}
-          <VADTimeline data={timeline} markers={[...autoMarkers, ...bookmarks]} onSelectPoint={(p) => setSelected(p)} />
+          <VADTimeline
+            data={timeline}
+            markers={[
+              ...autoMarkers.filter(m => (m.type === 'spike' ? filter.spike : m.type === 'low' ? filter.low : true)),
+              ...((filter.bookmark ? bookmarks : []) as any)
+            ]}
+            onSelectPoint={(p) => setSelected(p)}
+          />
         </div>
       )}
 
