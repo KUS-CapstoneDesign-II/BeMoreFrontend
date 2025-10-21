@@ -35,9 +35,12 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
 
   try {
     const key = urlBase64ToUint8Array(publicKey);
+    // Ensure ArrayBuffer (not ArrayBufferLike) for strict TS DOM types
+    const ab = new ArrayBuffer(key.byteLength);
+    new Uint8Array(ab).set(key);
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: key, // Uint8Array satisfies BufferSource
+      applicationServerKey: ab,
     });
 
     // Send to backend
