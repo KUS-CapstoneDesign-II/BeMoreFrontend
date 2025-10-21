@@ -13,6 +13,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@mediapipe/camera_utils": "^0.3.1675466862",
     "@mediapipe/face_mesh": "^0.4.1633559619",
+    "@sentry/browser": "^7.120.0",
     "axios": "^1.12.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
