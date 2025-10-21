@@ -227,4 +227,31 @@ export const monitoringAPI = {
   },
 };
 
+// =====================================
+// Dashboard & User API
+// =====================================
+
+export const dashboardAPI = {
+  summary: async (): Promise<any> => {
+    const response = await api.get<ApiResponse>('/api/dashboard/summary');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to get dashboard summary');
+    }
+    return response.data.data;
+  }
+};
+
+export const userAPI = {
+  getPreferences: async (): Promise<any> => {
+    const response = await api.get<ApiResponse>('/api/user/preferences');
+    if (!response.data.success) throw new Error(response.data.error?.message || 'Failed to get preferences');
+    return response.data.data;
+  },
+  setPreferences: async (preferences: any): Promise<any> => {
+    const response = await api.put<ApiResponse>('/api/user/preferences', { preferences });
+    if (!response.data.success) throw new Error(response.data.error?.message || 'Failed to set preferences');
+    return response.data.data;
+  }
+};
+
 export default api;

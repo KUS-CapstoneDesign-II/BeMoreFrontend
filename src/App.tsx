@@ -7,6 +7,7 @@ import { Onboarding } from './components/Onboarding';
 import { Landing } from './components/Landing/Landing';
 import { SessionSummaryModal } from './components/Session/SessionSummaryModal';
 import { SessionResult } from './components/Session/SessionResult';
+import { Dashboard } from './pages/Home/Dashboard';
 import { ResumePromptModal } from './components/Session/ResumePromptModal';
 import { PrivacyPolicyModal, TermsOfServiceModal } from './components/Common/LegalModals';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -353,7 +354,9 @@ function App() {
     <div id="main" className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* 랜딩 */}
       {!sessionId && !showOnboarding && (
-        <Landing onStart={() => setShowOnboarding(true)} />
+        <div className="mb-4">
+          <Dashboard />
+        </div>
       )}
 
       {/* 온보딩 플로우 */}
