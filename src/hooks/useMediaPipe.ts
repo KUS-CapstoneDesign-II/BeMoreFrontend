@@ -82,9 +82,40 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
       try {
         setError(null);
 
-        const mp = await import('@mediapipe/face_mesh');
-        const FaceMeshCtor: any = (mp as any).FaceMesh || (mp as any).default?.FaceMesh || (mp as any).default;
-        if (!FaceMeshCtor) throw new Error('FaceMesh ctor not found');
+        // Resolve FaceMesh constructor with robust fallbacks (ESM -> UMD global)
+        const resolveFaceMeshCtor = async (): Promise<any> => {
+          try {
+            const mp = await import('@mediapipe/face_mesh');
+            const ctor = (mp as any).FaceMesh || (mp as any).default?.FaceMesh || (mp as any).default;
+            if (typeof ctor === 'function') return ctor;
+          } catch (_) {
+            // ignore and try CDN fallback
+          }
+
+          // Fallback: load UMD build from CDN and access global
+          await new Promise<void>((resolve, reject) => {
+            const scriptId = 'mp-face-mesh-umd-script';
+            if (document.getElementById(scriptId)) {
+              resolve();
+              return;
+            }
+            const script = document.createElement('script');
+            script.id = scriptId;
+            script.async = true;
+            script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load MediaPipe FaceMesh UMD script'));
+            document.head.appendChild(script);
+          });
+
+          const globalCtor = (window as any).FaceMesh || (window as any).faceMesh || (window as any).facemesh?.FaceMesh;
+          if (typeof globalCtor !== 'function') {
+            throw new Error('FaceMesh constructor unavailable');
+          }
+          return globalCtor;
+        };
+
+        const FaceMeshCtor: any = await resolveFaceMeshCtor();
         const faceMesh = new FaceMeshCtor({
           locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`,
         });
