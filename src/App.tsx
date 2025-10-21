@@ -67,6 +67,7 @@ function App() {
   const [showTerms, setShowTerms] = useState(false);
   const [idlePromptOpen, setIdlePromptOpen] = useState(false);
   const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(60);
+  const [sidebarTab, setSidebarTab] = useState<'analyze'|'result'>('analyze');
 
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
@@ -178,6 +179,7 @@ function App() {
       console.log('⏹️ 세션 종료');
       funnelEvent('session_ended');
       setShowSummary(true);
+      setSidebarTab('result');
     } catch (err) {
       console.error('❌ 종료 실패:', err);
       setError(err instanceof Error ? err.message : '종료 실패');
@@ -474,60 +476,76 @@ function App() {
             </div>
           </div>
 
-          {/* 오른쪽: 사이드바 */}
-          <div className="space-y-4">
-            {/* 감정 카드 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-3 sm:p-4 animate-slide-in-left">
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">현재 감정</h2>
-              <EmotionCard emotion={currentEmotion} confidence={0.85} />
-            </div>
-
-            {/* VAD 모니터 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">음성 분석</h2>
-              <Suspense fallback={<VADMonitorSkeleton />}>
-                <VADMonitor metrics={DEMO_MODE ? demoVADMetrics : vadMetrics} />
-              </Suspense>
-            </div>
-
-            {/* 시스템 정보 */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">시스템 상태</h2>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">WebSocket</span>
-                  <span className={`${wsConnected ? 'text-green-600' : 'text-red-600'} font-medium`}>
-                    <span aria-hidden="true">● </span>
-                    {wsConnected ? '연결됨' : '연결 끊김'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Landmarks</span>
-                  <span className={`${connectionStatus.landmarks === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
-                    <span aria-hidden="true">● </span>
-                    {connectionStatus.landmarks}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Voice</span>
-                  <span className={`${connectionStatus.voice === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
-                    <span aria-hidden="true">● </span>
-                    {connectionStatus.voice}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Session</span>
-                  <span className={`${connectionStatus.session === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
-                    <span aria-hidden="true">● </span>
-                    {connectionStatus.session}
-                  </span>
-                </div>
+          {/* 오른쪽: 사이드바 with Tabs */}
+          <div className="space-y-3">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-2">
+              <div role="tablist" aria-label="분석 탭" className="flex gap-2">
+                <button
+                  role="tab"
+                  aria-selected={sidebarTab==='analyze'}
+                  className={`px-3 py-2 rounded-md text-sm ${sidebarTab==='analyze' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                  onClick={() => setSidebarTab('analyze')}
+                >분석</button>
+                <button
+                  role="tab"
+                  aria-selected={sidebarTab==='result'}
+                  className={`px-3 py-2 rounded-md text-sm ${sidebarTab==='result' ? 'bg-primary-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                  onClick={() => setSidebarTab('result')}
+                  disabled={sessionStatus!=='ended'}
+                >결과</button>
               </div>
             </div>
 
-            {/* 세션 결과 카드 (세션 종료 후 표시) */}
-            {sessionStatus === 'ended' && (
-              <div className="animate-slide-in-left" style={{animationDelay: '0.3s'}}>
+            {sidebarTab === 'analyze' && (
+              <>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-3 sm:p-4 animate-slide-in-left">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">현재 감정</h2>
+                  <EmotionCard emotion={currentEmotion} confidence={0.85} />
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">음성 분석</h2>
+                  <Suspense fallback={<VADMonitorSkeleton />}>
+                    <VADMonitor metrics={DEMO_MODE ? demoVADMetrics : vadMetrics} />
+                  </Suspense>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">시스템 상태</h2>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">WebSocket</span>
+                      <span className={`${wsConnected ? 'text-green-600' : 'text-red-600'} font-medium`}>
+                        <span aria-hidden="true">● </span>
+                        {wsConnected ? '연결됨' : '연결 끊김'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Landmarks</span>
+                      <span className={`${connectionStatus.landmarks === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
+                        <span aria-hidden="true">● </span>
+                        {connectionStatus.landmarks}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Voice</span>
+                      <span className={`${connectionStatus.voice === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
+                        <span aria-hidden="true">● </span>
+                        {connectionStatus.voice}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600 dark:text-gray-400">Session</span>
+                      <span className={`${connectionStatus.session === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
+                        <span aria-hidden="true">● </span>
+                        {connectionStatus.session}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {sidebarTab === 'result' && (
+              <div className="animate-slide-in-left" style={{animationDelay: '0.05s'}}>
                 <SessionResult sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''} />
               </div>
             )}
