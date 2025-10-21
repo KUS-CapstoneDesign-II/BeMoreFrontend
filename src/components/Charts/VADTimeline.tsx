@@ -10,14 +10,16 @@ type VADPoint = {
 };
 
 type Marker = { x: number; label?: string; color?: string };
+type OnSelect = (point: { x:number; valence?:number|null; arousal?:number|null; dominance?:number|null }) => void;
 
 interface Props {
   data: VADPoint[];
   height?: number;
   markers?: Marker[]; // marker objects with optional label/color
+  onSelectPoint?: OnSelect;
 }
 
-export function VADTimeline({ data, height = 140, markers = [] }: Props) {
+export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }: Props) {
   const width = 480;
   const [visible, setVisible] = useState<{valence:boolean; arousal:boolean; dominance:boolean}>({ valence: true, arousal: true, dominance: true });
   const [hover, setHover] = useState<{x:number; y:number} | null>(null);
@@ -102,6 +104,18 @@ export function VADTimeline({ data, height = 140, markers = [] }: Props) {
           setHover({ x: e.clientX - rect.left, y: e.clientY - rect.top });
         }}
         onMouseLeave={() => setHover(null)}
+        onClick={() => {
+          if (!onSelectPoint || !hover) return;
+          // pick nearest
+          let best = (processed as any).points[0];
+          let bestDist = Infinity;
+          for (const p of (processed as any).points) {
+            const sx = (processed as any).scaleX(p.x);
+            const d = Math.abs(sx - hover.x);
+            if (d < bestDist) { bestDist = d; best = p; }
+          }
+          onSelectPoint(best);
+        }}
       >
         <rect x={0} y={0} width={width} height={height} fill="transparent" />
         {processed.paths.valence && visible.valence && (
