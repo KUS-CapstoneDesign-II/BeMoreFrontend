@@ -133,6 +133,29 @@ export const sessionAPI = {
   },
 
   /**
+   * 세션 요약 조회
+   */
+  getSummary: async (sessionId: string): Promise<any> => {
+    const response = await api.get<ApiResponse>(`/api/session/${sessionId}/summary`);
+
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to get session summary');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * 세션 PDF 다운로드 (Blob)
+   */
+  downloadPdf: async (sessionId: string): Promise<Blob> => {
+    const response = await api.get(`/api/session/${sessionId}/report/pdf`, {
+      responseType: 'blob'
+    });
+    return response.data as Blob;
+  },
+
+  /**
    * 세션 리포트 요약 조회
    */
   getReportSummary: async (sessionId: string): Promise<any> => {

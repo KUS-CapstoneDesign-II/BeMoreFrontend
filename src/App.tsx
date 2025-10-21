@@ -6,6 +6,7 @@ import { SessionControls } from './components/Session';
 import { Onboarding } from './components/Onboarding';
 import { Landing } from './components/Landing/Landing';
 import { SessionSummaryModal } from './components/Session/SessionSummaryModal';
+import { SessionResult } from './components/Session/SessionResult';
 import { ResumePromptModal } from './components/Session/ResumePromptModal';
 import { PrivacyPolicyModal, TermsOfServiceModal } from './components/Common/LegalModals';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -520,6 +521,13 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* 세션 결과 카드 (세션 종료 후 표시) */}
+            {sessionStatus === 'ended' && (
+              <div className="animate-slide-in-left" style={{animationDelay: '0.3s'}}>
+                <SessionResult sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''} />
+              </div>
+            )}
           </div>
         </div>
       </main>
