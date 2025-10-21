@@ -184,28 +184,41 @@ export function SessionResult({ sessionId }: Props) {
               <input type="checkbox" checked={filter.bookmark} onChange={() => setFilter(f => ({...f, bookmark: !f.bookmark}))} /> 북마크
             </label>
 
-            {/* CSV export */}
-            <button
-              onClick={() => {
-                const header = 't,valence,arousal,dominance';
-                const rows = timeline.map((p:any, i:number) => {
-                  const t = typeof p.t === 'number' ? p.t : (typeof p.timestamp === 'number' ? p.timestamp : i);
-                  const v = (typeof p.valence === 'number') ? p.valence : '';
-                  const a = (typeof p.arousal === 'number') ? p.arousal : '';
-                  const d = (typeof p.dominance === 'number') ? p.dominance : '';
-                  return `${t},${v},${a},${d}`;
-                });
-                const csv = [header, ...rows].join('\n');
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `vad-timeline-${sessionId}.csv`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="ml-auto px-3 py-2 text-xs rounded-md bg-primary-600 text-white hover:bg-primary-700"
-            >CSV 내보내기</button>
+            {/* CSV export (backend-generated) */}
+            <div className="ml-auto inline-flex gap-2">
+              <button
+                onClick={async () => {
+                  try {
+                    const blob = await sessionAPI.downloadCsv(sessionId, 'vad');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `vad-timeline-${sessionId}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : 'Failed to download VAD CSV');
+                  }
+                }}
+                className="px-3 py-2 text-xs rounded-md bg-primary-600 text-white hover:bg-primary-700"
+              >VAD CSV</button>
+              <button
+                onClick={async () => {
+                  try {
+                    const blob = await sessionAPI.downloadCsv(sessionId, 'emotion');
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `emotion-timeline-${sessionId}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : 'Failed to download Emotion CSV');
+                  }
+                }}
+                className="px-3 py-2 text-xs rounded-md bg-gray-800 text-white hover:bg-gray-900"
+              >Emotion CSV</button>
+            </div>
           </div>
           {selected && (
             <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 text-sm">

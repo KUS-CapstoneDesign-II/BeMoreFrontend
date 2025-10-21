@@ -174,6 +174,17 @@ export const sessionAPI = {
 
     return response.data.data;
   },
+
+  /**
+   * 세션 CSV 다운로드 (Blob)
+   */
+  downloadCsv: async (sessionId: string, kind: 'vad' | 'emotion' = 'vad'): Promise<Blob> => {
+    const response = await api.get(`/api/session/${sessionId}/report/csv`, {
+      params: { kind },
+      responseType: 'blob'
+    });
+    return response.data as Blob;
+  },
 };
 
 // =====================================
