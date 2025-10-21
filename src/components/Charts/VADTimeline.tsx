@@ -132,7 +132,7 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
           (() => {
             // find nearest by x
             const invX = (px: number) => {
-              const { minX, maxX, scaleX } = processed as any;
+              const { scaleX } = processed as any;
               // approximate inverse by scanning
               let best = processed.points[0];
               let bestDist = Infinity;
