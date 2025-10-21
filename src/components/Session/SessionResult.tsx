@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { sessionAPI } from '../../services/api';
+import { VADTimeline } from '../Charts/VADTimeline';
 
 interface Props {
   sessionId: string;
@@ -9,6 +10,7 @@ export function SessionResult({ sessionId }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<any>(null);
+  const [timeline, setTimeline] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -21,6 +23,17 @@ export function SessionResult({ sessionId }: Props) {
       } finally {
         if (mounted) setLoading(false);
       }
+    })();
+    return () => { mounted = false; };
+  }, [sessionId]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const report = await sessionAPI.getReport(sessionId);
+        if (mounted) setTimeline(report?.vadTimeline || []);
+      } catch {}
     })();
     return () => { mounted = false; };
   }, [sessionId]);
@@ -96,6 +109,8 @@ export function SessionResult({ sessionId }: Props) {
           {keyObs.map((o, i) => <li key={i}>{o}</li>)}
         </ul>
       </div>
+
+      <VADTimeline data={timeline} />
     </div>
   );
 }
