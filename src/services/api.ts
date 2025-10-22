@@ -278,4 +278,18 @@ export const userAPI = {
   }
 };
 
+// =====================================
+// Emotion API
+// =====================================
+
+export const emotionAPI = {
+  analyze: async (text: string): Promise<{ emotion: string }> => {
+    const response = await api.post<ApiResponse<{ emotion: string }>>('/api/emotion', { text });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to analyze emotion');
+    }
+    return response.data.data;
+  }
+};
+
 export default api;
