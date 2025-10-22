@@ -38,7 +38,8 @@ const VADMonitor = lazy(() => import('./components/VAD').then(module => ({ defau
 
 const ONBOARDING_KEY = 'bemore_onboarding_completed';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
+const API_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') as string;
+const WS_URL = API_URL.replace(/^http/, 'ws');
 const DEMO_MODE = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
 function App() {
@@ -121,11 +122,13 @@ function App() {
       localStorage.setItem('bemore_last_session', JSON.stringify({ sessionId: response.sessionId, started }));
 
       // 2. WebSocket 연결
-      connectWS({
+      const wsUrls = {
         landmarks: `${WS_URL}/ws/landmarks/${response.sessionId}`,
         voice: `${WS_URL}/ws/voice/${response.sessionId}`,
         session: `${WS_URL}/ws/session/${response.sessionId}`,
-      });
+      };
+      console.log('[WebSocket] 연결 시도:', wsUrls);
+      connectWS(wsUrls);
 
       console.log('✅ 세션 시작:', response.sessionId);
       funnelEvent('session_started');
@@ -220,11 +223,13 @@ function App() {
       setSessionId(last.sessionId);
       setSessionStatus('active');
       setSessionStartAt(last.started);
-      connectWS({
+      const wsResume = {
         landmarks: `${WS_URL}/ws/landmarks/${last.sessionId}`,
         voice: `${WS_URL}/ws/voice/${last.sessionId}`,
         session: `${WS_URL}/ws/session/${last.sessionId}`,
-      });
+      };
+      console.log('[WebSocket] 재연결 시도:', wsResume);
+      connectWS(wsResume);
     } catch {}
     setShowResumePrompt(false);
   };
