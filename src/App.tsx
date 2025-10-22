@@ -411,6 +411,13 @@ function App() {
                 className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
                 aria-label="설정 열기"
               >설정</button>
+              {/* Shortcuts Help Button */}
+              <button
+                onClick={() => setShowShortcutsHelp(true)}
+                className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                aria-label="단축키 도움말 열기"
+                title="키보드 단축키(?)"
+              >?</button>
               {/* Session Timer */}
               <SessionTimer running={sessionStatus === 'active'} resetKey={sessionId} initialElapsedMs={sessionStartAt ? Date.now() - sessionStartAt : 0} />
               {/* 세션 시작 버튼 */}
