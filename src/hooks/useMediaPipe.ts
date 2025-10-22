@@ -76,7 +76,6 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
 
   // MediaPipe Face Mesh 초기화
   useEffect(() => {
-    if (!videoElement) return;
 
     const initFaceMesh = async () => {
       try {
@@ -152,7 +151,7 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         faceMeshRef.current = null;
       }
     };
-  }, [videoElement, maxNumFaces, minDetectionConfidence, minTrackingConfidence, onResults]);
+  }, [maxNumFaces, minDetectionConfidence, minTrackingConfidence, onResults]);
 
   // 카메라 시작
   const startCamera = useCallback(async () => {
