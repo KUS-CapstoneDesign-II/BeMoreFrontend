@@ -474,6 +474,7 @@ function App() {
               <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
                 <VideoFeed
                   className="w-full h-full"
+                  startTrigger={sessionId}
                   onLandmarks={(results) => {
                     try {
                       const payload = (results as any)?.multiFaceLandmarks?.[0] || (results as any)?.multiFaceLandmarks;

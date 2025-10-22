@@ -5,6 +5,8 @@ import type { Results } from '@mediapipe/face_mesh';
 interface VideoFeedProps {
   onLandmarks?: (results: Results) => void;
   className?: string;
+  /** When this value changes, the component will attempt to (re)start the camera */
+  startTrigger?: string | number | null;
 }
 
 /**
@@ -12,7 +14,7 @@ interface VideoFeedProps {
  *
  * 카메라 스트림을 표시하고 MediaPipe로 얼굴 랜드마크를 감지합니다.
  */
-export function VideoFeed({ onLandmarks, className = '' }: VideoFeedProps) {
+export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -24,7 +26,7 @@ export function VideoFeed({ onLandmarks, className = '' }: VideoFeedProps) {
     },
   });
 
-  // 카메라 시작
+  // 카메라 시작: 준비되었거나 startTrigger가 변경될 때 시도
   useEffect(() => {
     if (isReady) {
       startCamera();
@@ -32,7 +34,7 @@ export function VideoFeed({ onLandmarks, className = '' }: VideoFeedProps) {
     return () => {
       stopCamera();
     };
-  }, [isReady, startCamera, stopCamera]);
+  }, [isReady, startCamera, stopCamera, startTrigger]);
 
   // 랜드마크 그리기
   const drawLandmarks = (results: Results) => {
