@@ -76,7 +76,7 @@ function App() {
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
 
   // WebSocket 연결
-  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS } = useWebSocket({
+  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, sendToLandmarks } = useWebSocket({
     onVoiceMessage: (message) => {
       console.log('🎤 Voice message:', message);
       if (message.type === 'stt_received') {
@@ -472,7 +472,17 @@ function App() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-fade-in-up">
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">실시간 영상</h2>
               <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                <VideoFeed className="w-full h-full" />
+                <VideoFeed
+                  className="w-full h-full"
+                  onLandmarks={(results) => {
+                    try {
+                      const payload = (results as any)?.multiFaceLandmarks?.[0] || (results as any)?.multiFaceLandmarks;
+                      if (payload) {
+                        sendToLandmarks({ type: 'landmarks', data: payload });
+                      }
+                    } catch {}
+                  }}
+                />
                 {sttText && <STTSubtitle text={sttText} />}
               </div>
             </div>
