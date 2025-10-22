@@ -101,7 +101,7 @@ export function SessionControls({
             </button>
           ) : (
             <button
-              onClick={() => endSession()}
+              onClick={() => (onEnd ? onEnd() : endSession())}
               className="
                 flex items-center space-x-2 px-6 py-3 min-h-[44px]
                 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600
