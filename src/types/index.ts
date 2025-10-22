@@ -144,6 +144,7 @@ export type WSMessageType =
   | 'ai_response'
   | 'stt_received'
   | 'status_update'
+  | 'landmarks'
   | 'error';
 
 export interface WSMessage<T = any> {
