@@ -1,5 +1,7 @@
 import type { SessionStatus } from '../../types';
 
+import { useSessionStore } from '../../stores/sessionStore';
+
 interface SessionControlsProps {
   status: SessionStatus;
   onPause?: () => void;
@@ -23,6 +25,8 @@ export function SessionControls({
   const isPaused = status === 'paused';
   const isActive = status === 'active';
   const isEnded = status === 'ended';
+
+  const { isSessionActive, startSession, endSession } = useSessionStore();
 
   return (
     <div
@@ -73,26 +77,49 @@ export function SessionControls({
         </button>
       )}
 
-      {/* 종료 버튼 */}
+      {/* 시작/종료 버튼 */}
       {!isEnded && (
-        <button
-          onClick={onEnd}
-          className="
-            flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600
-            text-white font-semibold rounded-lg
-            transition-all duration-200 shadow-soft hover:shadow-soft-lg
-            focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2
-            active:scale-95 transform
-            animate-fade-in
-          "
-          aria-label="세션 종료"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
-          </svg>
-          <span>종료</span>
-        </button>
+        <>
+          {!isSessionActive ? (
+            <button
+              onClick={() => startSession('frontend_user_001', 'ai_counselor_001')}
+              className="
+                flex items-center space-x-2 px-6 py-3 min-h-[44px]
+                bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700
+                text-white font-semibold rounded-lg
+                transition-all duration-200 shadow-soft hover:shadow-soft-lg
+                focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2
+                active:scale-95 transform
+                animate-fade-in
+              "
+              aria-label="세션 시작"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 10l6-3v6l-6-3z" clipRule="evenodd" />
+              </svg>
+              <span>세션 시작</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => endSession()}
+              className="
+                flex items-center space-x-2 px-6 py-3 min-h-[44px]
+                bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600
+                text-white font-semibold rounded-lg
+                transition-all duration-200 shadow-soft hover:shadow-soft-lg
+                focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2
+                active:scale-95 transform
+                animate-fade-in
+              "
+              aria-label="세션 종료"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+              </svg>
+              <span>종료</span>
+            </button>
+          )}
+        </>
       )}
 
       {/* 상태 표시 */}
