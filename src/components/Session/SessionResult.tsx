@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { sessionAPI } from '../../services/api';
 import { VADTimeline } from '../Charts/VADTimeline';
-import { LoadingState, ErrorState } from '../common/States';
+import { LoadingState, ErrorState } from '../Common/States';
 
 interface Props {
   sessionId: string;
