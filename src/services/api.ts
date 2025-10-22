@@ -41,6 +41,12 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    try {
+      const reqId = error?.response?.data?.error?.requestId || (error?.response?.headers && (error.response.headers as any)['x-request-id']);
+      if (reqId) {
+        error.message = `${error.message} [requestId=${reqId}]`;
+      }
+    } catch {}
     console.error(`❌ API Error: ${error.config?.url}`, error.message);
     return Promise.reject(error);
   }
