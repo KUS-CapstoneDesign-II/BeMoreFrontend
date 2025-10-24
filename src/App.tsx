@@ -283,18 +283,20 @@ function App() {
 
     try {
       await sessionAPI.end(sessionId);
-      setSessionStatus('ended');
-      disconnectWS();
-      setSessionId(null);
-      setSessionStartAt(null);
-      console.log('⏹️ 세션 종료');
-      funnelEvent('session_ended');
-      setShowSummary(true);
-      setSidebarTab('result');
     } catch (err) {
-      console.error('❌ 종료 실패:', err);
-      setError(err instanceof Error ? err.message : '종료 실패');
+      // 백엔드 end 엔드포인트 실패 시 로그만 기록하고 계속 진행
+      console.warn('⚠️ 세션 end API 실패:', err instanceof Error ? err.message : 'Unknown error');
     }
+
+    // end API 성공/실패와 관계없이 항상 진행
+    setSessionStatus('ended');
+    disconnectWS();
+    setSessionId(null);
+    setSessionStartAt(null);
+    console.log('⏹️ 세션 종료');
+    funnelEvent('session_ended');
+    setShowSummary(true);
+    setSidebarTab('result');
   };
 
   // 온보딩 완료 처리
