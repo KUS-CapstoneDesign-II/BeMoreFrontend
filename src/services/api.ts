@@ -8,7 +8,7 @@ import type {
 } from '../types';
 
 // 런타임 주입 환경변수 지원 (on‑prem 대비)
-const runtimeEnv = (window as any).__ENV__ || {};
+const runtimeEnv = (typeof window !== 'undefined' ? (window as unknown as { __ENV__?: { API_URL?: string } }).__ENV__ : undefined) || {};
 const API_BASE_URL: string =
   (import.meta.env.VITE_API_URL as string) ||
   (runtimeEnv.API_URL as string) ||

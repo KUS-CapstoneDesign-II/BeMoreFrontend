@@ -90,7 +90,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // Density and language attributes for global CSS hooks
     root.setAttribute('data-density', settings.layoutDensity === 'compact' ? 'compact' : 'spacious');
     root.setAttribute('lang', settings.language);
-  }, [settings.fontScale]);
+  }, [settings.fontScale, settings.layoutDensity, settings.language]);
 
   const setFontScale = (scale: FontScale) => setSettings((s) => ({ ...s, fontScale: scale }));
   const setLayoutDensity = (density: LayoutDensity) => setSettings((s) => ({ ...s, layoutDensity: density }));
@@ -126,7 +126,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setLanguage,
     setNotificationsOptIn,
     requestNotificationPermission,
-  }), [settings]);
+  }), [settings, requestNotificationPermission]);
 
   return (
     <SettingsContext.Provider value={value}>
