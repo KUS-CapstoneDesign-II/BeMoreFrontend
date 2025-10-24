@@ -152,7 +152,7 @@ export type WSMessageType =
   | 'ai_stream_complete'
   | 'ai_stream_error';
 
-export interface WSMessage<T = any> {
+export interface WSMessage<T = unknown> {
   type: WSMessageType;
   data: T;
 }
@@ -181,7 +181,7 @@ export interface AIResponseData {
 // API Types
 // =====================================
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {

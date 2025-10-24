@@ -1,5 +1,5 @@
 import { Component } from 'react';
-import type { ReactNode } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import { captureError } from '../../utils/sentry';
 
 interface ErrorBoundaryProps {
@@ -21,8 +21,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true, message: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.' };
   }
 
-  componentDidCatch(error: unknown, errorInfo: any) {
-    try { captureError({ error, errorInfo }); } catch {}
+  componentDidCatch(error: unknown, errorInfo: ErrorInfo) {
+    try { captureError({ error, errorInfo }); } catch (e) {
+      // ignore
+    }
   }
 
   handleReload = () => {

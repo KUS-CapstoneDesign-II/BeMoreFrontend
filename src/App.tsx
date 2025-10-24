@@ -38,7 +38,7 @@ const VADMonitor = lazy(() => import('./components/VAD').then(module => ({ defau
 
 const ONBOARDING_KEY = 'bemore_onboarding_completed';
 
-const runtimeEnv = (window as any).__ENV__ || {};
+const runtimeEnv = (window as unknown as { __ENV__?: { API_URL?: string; WS_URL?: string } }).__ENV__ || {};
 const API_URL = (
   (runtimeEnv.API_URL as string) ||
   (import.meta.env.VITE_API_URL as string) ||
@@ -95,7 +95,8 @@ function App() {
     onVoiceMessage: (message) => {
       console.log('🎤 Voice message:', message);
       if (message.type === 'stt_received') {
-        setSttText(message.data?.text || '');
+        const d = message.data as { text?: string };
+        setSttText(d?.text ?? '');
       }
       if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {
         setVadMetrics(message.data as VADMetrics);
@@ -104,7 +105,8 @@ function App() {
     onLandmarksMessage: (message) => {
       console.log('👤 Landmarks message:', message);
       if (message.type === 'emotion_update') {
-        setCurrentEmotion(message.data?.emotion as EmotionType);
+        const d = message.data as { emotion?: EmotionType };
+        setCurrentEmotion(d?.emotion as EmotionType);
       }
     },
     onSessionMessage: (message) => {
@@ -117,13 +119,15 @@ function App() {
         window.dispatchEvent(new CustomEvent('ai:begin'));
       }
       if (message.type === 'ai_stream_chunk') {
-        window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: message.data?.text || '' } }));
+        const d = message.data as { text?: string };
+        window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: d?.text ?? '' } }));
       }
       if (message.type === 'ai_stream_complete') {
         window.dispatchEvent(new CustomEvent('ai:complete'));
       }
       if (message.type === 'ai_stream_error') {
-        window.dispatchEvent(new CustomEvent('ai:fail', { detail: { error: message.data?.error || 'AI stream failed' } }));
+        const d = message.data as { error?: string };
+        window.dispatchEvent(new CustomEvent('ai:fail', { detail: { error: d?.error ?? 'AI stream failed' } }));
       }
     },
   });
@@ -428,10 +432,15 @@ function App() {
                   className="px-2 py-2 rounded border text-xs bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600"
                   onChange={(e) => {
                     const val = e.target.value as 'ko'|'en';
-                    try { localStorage.setItem('bemore_settings_v1', JSON.stringify({ ...JSON.parse(localStorage.getItem('bemore_settings_v1')||'{}'), language: val })); } catch {}
+                    try {
+                      const current = JSON.parse(localStorage.getItem('bemore_settings_v1')||'{}') as Record<string, unknown>;
+                      localStorage.setItem('bemore_settings_v1', JSON.stringify({ ...current, language: val }));
+                    } catch {
+                      // ignore
+                    }
                     window.location.reload();
                   }}
-                  value={(() => { try { return (JSON.parse(localStorage.getItem('bemore_settings_v1')||'{}').language) || 'ko'; } catch { return 'ko'; } })()}
+                  value={(() => { try { return ((JSON.parse(localStorage.getItem('bemore_settings_v1')||'{}') as Record<string, unknown>).language as string) || 'ko'; } catch { return 'ko'; } })()}
                 >
                   <option value="ko">한국어</option>
                   <option value="en">English</option>

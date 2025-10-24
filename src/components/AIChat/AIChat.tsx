@@ -119,8 +119,8 @@ export function AIChat({ className = '' }: AIChatProps) {
   }, []);
 
   // 컴포넌트 외부에서 사용할 수 있도록 export (React.forwardRef나 useImperativeHandle로 개선 가능)
-  (AIChat as any).addMessage = addMessage;
-  (AIChat as any).stream = {
+  (AIChat as unknown as { addMessage: typeof addMessage; stream: { begin: () => void; append: (c: string) => void; complete: () => void; fail: (e: string) => void } }).addMessage = addMessage;
+  (AIChat as unknown as { addMessage: typeof addMessage; stream: { begin: () => void; append: (c: string) => void; complete: () => void; fail: (e: string) => void } }).stream = {
     begin: beginAIStream,
     append: appendAIStream,
     complete: completeAIStream,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useI18n } from '../../contexts/I18nContext';
 
 export function NetworkStatusBanner() {
+  const { t } = useI18n();
   const [online, setOnline] = useState<boolean>(navigator.onLine);
   const [visible, setVisible] = useState<boolean>(!navigator.onLine);
 
@@ -26,7 +27,6 @@ export function NetworkStatusBanner() {
   }, []);
 
   if (!visible) return null;
-  const { t } = useI18n();
 
   return (
     <div className={`w-full sticky top-0 z-20`}>

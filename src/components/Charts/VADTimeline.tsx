@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 type VADPoint = {
-  [key: string]: any;
+  [key: string]: unknown;
   valence?: number;
   arousal?: number;
   dominance?: number;
@@ -107,10 +107,10 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
         onClick={() => {
           if (!onSelectPoint || !hover) return;
           // pick nearest
-          let best = (processed as any).points[0];
+          let best = processed.points[0];
           let bestDist = Infinity;
-          for (const p of (processed as any).points) {
-            const sx = (processed as any).scaleX(p.x);
+          for (const p of processed.points) {
+            const sx = processed.scaleX(p.x);
             const d = Math.abs(sx - hover.x);
             if (d < bestDist) { bestDist = d; best = p; }
           }
@@ -132,7 +132,7 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
           (() => {
             // find nearest by x
             const invX = (px: number) => {
-              const { scaleX } = processed as any;
+              const { scaleX } = processed;
               // approximate inverse by scanning
               let best = processed.points[0];
               let bestDist = Infinity;
@@ -144,11 +144,11 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
               return best;
             };
             const nearest = invX(hover.x);
-            const cx = (processed as any).scaleX(nearest.x);
+            const cx = processed.scaleX(nearest.x);
             const vals: Array<{label:string;color:string;value:number|null}> = [
-              { label: 'V', color: '#ef4444', value: nearest.valence as any },
-              { label: 'A', color: '#3b82f6', value: nearest.arousal as any },
-              { label: 'D', color: '#22c55e', value: nearest.dominance as any },
+              { label: 'V', color: '#ef4444', value: typeof nearest.valence === 'number' ? nearest.valence : null },
+              { label: 'A', color: '#3b82f6', value: typeof nearest.arousal === 'number' ? nearest.arousal : null },
+              { label: 'D', color: '#22c55e', value: typeof nearest.dominance === 'number' ? nearest.dominance : null },
             ];
             return (
               <g>
@@ -170,7 +170,7 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
         {/* Overlay markers */}
         {markers && markers.length > 0 && (
           markers.map((m, i) => {
-            const cx = (processed as any).scaleX(m.x);
+            const cx = processed.scaleX(m.x);
             const tx = Math.min(Math.max(cx, 8), width-8);
             const c = m.color || '#f59e0b';
             return (
