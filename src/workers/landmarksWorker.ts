@@ -6,16 +6,18 @@
 let ctx: OffscreenCanvasRenderingContext2D | null = null;
 
 self.onmessage = (e: MessageEvent) => {
-  const data = e.data as any;
+  const data = e.data as { type: 'init' | 'draw'; canvas?: OffscreenCanvas; width?: number; height?: number; points?: Array<{ x: number; y: number }> };
   if (data?.type === 'init' && data.canvas) {
     try {
       const off = data.canvas as OffscreenCanvas;
       ctx = off.getContext('2d');
-    } catch {}
+    } catch {
+      // ignore
+    }
     return;
   }
   if (data?.type === 'draw' && ctx) {
-    const { width, height, points } = data as { width: number; height: number; points: Array<{x:number;y:number}> };
+    const { width = 0, height = 0, points = [] } = data;
     ctx.canvas.width = width;
     ctx.canvas.height = height;
     ctx.clearRect(0, 0, width, height);

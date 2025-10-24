@@ -1,9 +1,12 @@
 import type { ConsentState } from '../contexts/ConsentContext';
 
+type GtagFn = (command: string, eventNameOrConfig: string, params?: Record<string, unknown>) => void;
+type WindowWithGA = Window & { gtag?: GtagFn };
+
 let gaInitialized = false;
 
-function hasWindowGA() {
-  return typeof window !== 'undefined' && (window as any).gtag;
+function hasWindowGA(): boolean {
+  return typeof window !== 'undefined' && typeof (window as WindowWithGA).gtag === 'function';
 }
 
 function injectGAScript(measurementId: string) {
@@ -29,9 +32,9 @@ export function initAnalytics(consent: ConsentState | null, respectDNT: boolean)
   gaInitialized = true;
 }
 
-export function trackEvent(name: string, params?: Record<string, any>) {
+export function trackEvent(name: string, params?: Record<string, unknown>) {
   if (!gaInitialized || !hasWindowGA()) return;
-  (window as any).gtag('event', name, params || {});
+  (window as WindowWithGA).gtag!('event', name, params || {});
 }
 
 export function trackTiming(name: string, ms: number) {
@@ -40,7 +43,7 @@ export function trackTiming(name: string, ms: number) {
 
 export function trackPageView(path: string) {
   if (!gaInitialized || !hasWindowGA()) return;
-  (window as any).gtag('event', 'page_view', { page_path: path });
+  (window as WindowWithGA).gtag!('event', 'page_view', { page_path: path });
 }
 
 // Web Vitals/Performance metrics mapping to GA timings

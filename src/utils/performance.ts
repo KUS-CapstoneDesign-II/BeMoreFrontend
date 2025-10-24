@@ -102,8 +102,9 @@ export function measureRender(componentName: string, callback: () => void): void
  * 메모리 사용량 측정 (Chrome only)
  */
 export function logMemoryUsage(): void {
-  if ('memory' in performance && (performance as any).memory) {
-    const memory = (performance as any).memory;
+  const perf = performance as unknown as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } };
+  if ('memory' in perf && perf.memory) {
+    const memory = perf.memory;
     const usedMB = (memory.usedJSHeapSize / 1048576).toFixed(2);
     const totalMB = (memory.totalJSHeapSize / 1048576).toFixed(2);
     const limitMB = (memory.jsHeapSizeLimit / 1048576).toFixed(2);

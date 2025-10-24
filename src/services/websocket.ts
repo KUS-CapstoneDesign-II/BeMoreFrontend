@@ -154,8 +154,8 @@ export class ReconnectingWebSocket {
         }
       };
 
-      this.ws.onerror = (error) => {
-        console.error(`❌ ${this.name} error:`, error);
+      this.ws.onerror = () => {
+        // Error handled via onclose/reconnect
         this.onStatusChange?.('error');
       };
     } catch (error) {

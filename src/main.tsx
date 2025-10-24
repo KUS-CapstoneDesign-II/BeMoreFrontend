@@ -10,11 +10,17 @@ import { ToastProvider } from './contexts/ToastContext'
 import { ErrorBoundary } from './components/Common/ErrorBoundary'
 import { AccessibilityProvider } from './contexts/AccessibilityContext'
 import { registerServiceWorker, initPWAInstall } from './utils/registerSW'
+import { initA11y } from './utils/a11y'
 
 // PWA 초기화
 if (import.meta.env.PROD) {
   registerServiceWorker();
   initPWAInstall();
+}
+
+// Dev a11y checks (axe)
+if (import.meta.env.DEV) {
+  initA11y();
 }
 
 createRoot(document.getElementById('root')!).render(
