@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { apiMonitoring } from '../utils/apiMonitoring';
 import type {
   ApiResponse,
   SessionStartResponse,
@@ -31,6 +32,11 @@ api.interceptors.request.use(
     if (import.meta.env.DEV) {
       console.log(`📡 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     }
+
+    // API 모니터링 시작
+    const monitoring = apiMonitoring.startRequest(config.url || '', config.method?.toUpperCase());
+    (config as any).__monitoring = monitoring;
+
     try {
       const token = localStorage.getItem('bemore_token');
       if (token) {
@@ -52,6 +58,13 @@ api.interceptors.response.use(
     if (import.meta.env.DEV) {
       console.log(`✅ API Response: ${response.config.url} (${response.status})`, response.data);
     }
+
+    // 성공한 요청 모니터링 기록
+    const monitoring = (response.config as any).__monitoring;
+    if (monitoring) {
+      apiMonitoring.recordRequest(monitoring, true, response.status);
+    }
+
     return response;
   },
   (error) => {
@@ -69,6 +82,12 @@ api.interceptors.response.use(
     const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
     const statusCode = error?.response?.status || 'unknown';
     const endpoint = error.config?.url || 'unknown';
+
+    // 실패한 요청 모니터링 기록
+    const monitoring = (error.config as any)?.__monitoring;
+    if (monitoring) {
+      apiMonitoring.recordRequest(monitoring, false, statusCode, isTimeout);
+    }
 
     if (isTimeout) {
       console.warn(`⏱️ API Timeout (${statusCode}): ${endpoint} - ${errorMsg}`);
@@ -319,5 +338,15 @@ export const emotionAPI = {
     return response.data.data;
   }
 };
+
+// Export monitoring API for developer console debugging
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as any).__apiMonitoring = apiMonitoring;
+  console.log('🔍 API Monitoring available at window.__apiMonitoring');
+  console.log('  __apiMonitoring.getStats() - Overall statistics');
+  console.log('  __apiMonitoring.getEndpointStats() - Per-endpoint statistics');
+  console.log('  __apiMonitoring.getMetrics() - All recorded metrics');
+  console.log('  __apiMonitoring.reset() - Clear metrics');
+}
 
 export default api;
