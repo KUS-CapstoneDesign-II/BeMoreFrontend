@@ -1,9 +1,31 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
+import { configDefaults } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    visualizer({
+      filename: 'dist/stats.html',
+      template: 'treemap',
+      gzipSize: true,
+      brotliSize: true,
+    })
+  ],
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+    coverage: {
+      reporter: ['text', 'html', 'lcov'],
+      provider: 'v8',
+      reportsDirectory: './coverage',
+      exclude: [...configDefaults.coverage.exclude!, 'src/**/__tests__/helpers/**']
+    },
+    globals: true,
+    include: ['src/**/*.{test,spec}.{ts,tsx}']
+  },
   server: {
     port: 5173,
     proxy: {

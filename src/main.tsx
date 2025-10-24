@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import AppRouter from './AppRouter'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ConsentProvider } from './contexts/ConsentContext'
 import { SettingsProvider } from './contexts/SettingsContext'
@@ -24,7 +24,7 @@ createRoot(document.getElementById('root')!).render(
           <AccessibilityProvider>
             <ErrorBoundary>
               <ToastProvider>
-                <App />
+                <AppRouter />
               </ToastProvider>
             </ErrorBoundary>
           </AccessibilityProvider>

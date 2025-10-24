@@ -7,25 +7,38 @@ import type {
   SessionStats,
 } from '../types';
 
+// 런타임 주입 환경변수 지원 (on‑prem 대비)
+const runtimeEnv = (window as any).__ENV__ || {};
+const API_BASE_URL: string =
+  (import.meta.env.VITE_API_URL as string) ||
+  (runtimeEnv.API_URL as string) ||
+  'http://localhost:8000';
+
 // Axios 인스턴스 생성
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: false,
 });
 
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
-    console.log(`📡 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    // 간단한 요청 로깅 (개발 환경에서만 상세)
+    if (import.meta.env.DEV) {
+      console.log(`📡 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+    }
     try {
       const token = localStorage.getItem('bemore_token');
       if (token) {
         config.headers = config.headers || {};
         (config.headers as any)['Authorization'] = `Bearer ${token}`;
       }
+      // 요청 식별자
+      (config.headers as any)['x-request-id'] = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
     } catch {}
     return config;
   },
@@ -37,7 +50,9 @@ api.interceptors.request.use(
 // 응답 인터셉터
 api.interceptors.response.use(
   (response) => {
-    console.log(`✅ API Response: ${response.config.url}`, response.data);
+    if (import.meta.env.DEV) {
+      console.log(`✅ API Response: ${response.config.url}`, response.data);
+    }
     return response;
   },
   (error) => {

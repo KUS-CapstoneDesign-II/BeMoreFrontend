@@ -1,5 +1,6 @@
-const CACHE_NAME = 'bemore-v1';
-const RUNTIME_CACHE = 'bemore-runtime-v1';
+const VERSION = 'v1.1.0';
+const CACHE_NAME = `bemore-${VERSION}`;
+const RUNTIME_CACHE = `bemore-runtime-${VERSION}`;
 
 // 캐시할 정적 파일 목록
 const STATIC_CACHE_URLS = [
@@ -10,12 +11,16 @@ const STATIC_CACHE_URLS = [
 
 // 서비스 워커 설치
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    try {
+      await cache.addAll(STATIC_CACHE_URLS);
       console.log('💾 Caching static assets');
-      return cache.addAll(STATIC_CACHE_URLS);
-    })
-  );
+    } catch (e) {
+      // 일부 에셋 실패는 무시
+      console.warn('⚠️ Static cache failed for some assets', e);
+    }
+  })());
   self.skipWaiting();
 });
 
@@ -86,15 +91,24 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Default cache-first
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-      return caches.open(RUNTIME_CACHE).then((cache) => fetch(request).then((response) => {
-        if (response && response.status === 200) cache.put(request, response.clone());
-        return response;
-      }));
-    })
-  );
+  event.respondWith((async () => {
+    const cachedResponse = await caches.match(request);
+    if (cachedResponse) return cachedResponse;
+    try {
+      const networkResponse = await fetch(request);
+      if (networkResponse && networkResponse.status === 200 && request.url.startsWith(self.location.origin)) {
+        const cache = await caches.open(RUNTIME_CACHE);
+        cache.put(request, networkResponse.clone());
+      }
+      return networkResponse;
+    } catch (e) {
+      // 네트워크 실패 시 문서 요청이면 index.html로 폴백
+      if (request.destination === 'document') {
+        return caches.match('/index.html');
+      }
+      throw e;
+    }
+  })());
 });
 
 // 주기적인 백그라운드 동기화 (향후 확장용)

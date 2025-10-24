@@ -24,6 +24,10 @@ export class ReconnectingWebSocket {
   private maxRetries: number;
   private maxRetryDelay: number;
   private onStatusChange?: (status: ConnectionStatus) => void;
+  private heartbeatTimer: number | null = null;
+  private lastActivityAt = 0;
+  private visibilityHandler?: () => void;
+  private onlineHandler?: () => void;
 
   constructor(
     url: string,
@@ -48,6 +52,14 @@ export class ReconnectingWebSocket {
       return;
     }
 
+    // 오프라인이면 온라인 이벤트까지 대기
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      console.log(`🌐 Offline detected. ${this.name} will wait for online event.`);
+      this.onStatusChange?.('disconnected');
+      this.registerOnlineListener();
+      return;
+    }
+
     console.log(`🔌 ${this.name} connecting to ${this.url}...`);
     this.onStatusChange?.('connecting');
 
@@ -59,12 +71,16 @@ export class ReconnectingWebSocket {
         this.retryCount = 0;
         this.retryDelay = 1000; // 재연결 성공 시 리셋
         this.onStatusChange?.('connected');
+        this.lastActivityAt = Date.now();
+        this.startHeartbeat();
+        this.registerVisibilityListener();
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message: WSMessage = JSON.parse(event.data);
           this.messageHandlers.forEach((handler) => handler(message));
+          this.lastActivityAt = Date.now();
         } catch (error) {
           console.error(`❌ ${this.name} message parse error:`, error);
         }
@@ -73,6 +89,8 @@ export class ReconnectingWebSocket {
       this.ws.onclose = () => {
         console.log(`🔌 ${this.name} disconnected`);
         this.onStatusChange?.('disconnected');
+        this.stopHeartbeat();
+        this.unregisterVisibilityListener();
 
         if (this.shouldReconnect) {
           this.reconnect();
@@ -97,6 +115,12 @@ export class ReconnectingWebSocket {
     if (this.retryCount >= this.maxRetries) {
       console.error(`🚨 ${this.name} max retries reached (${this.maxRetries})`);
       this.onStatusChange?.('error');
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      console.log(`🌐 Offline. ${this.name} will reconnect when back online.`);
+      this.registerOnlineListener();
       return;
     }
 
@@ -145,6 +169,8 @@ export class ReconnectingWebSocket {
     this.ws = null;
     this.messageHandlers.clear();
     console.log(`🔌 ${this.name} closed`);
+    this.stopHeartbeat();
+    this.unregisterVisibilityListener();
   }
 
   /**
@@ -236,5 +262,68 @@ export class WebSocketManager {
     return this.channels;
   }
 }
+
+// =============================
+// Helpers
+// =============================
+
+const HEARTBEAT_INTERVAL_VISIBLE_MS = 15000;
+const HEARTBEAT_INTERVAL_HIDDEN_MS = 30000;
+const HEARTBEAT_STALE_THRESHOLD_MS = 45000; // 활동 없으면 재연결 유도
+
+ReconnectingWebSocket.prototype['startHeartbeat'] = function startHeartbeat(this: ReconnectingWebSocket) {
+  this.stopHeartbeat();
+  const isHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+  const interval = isHidden ? HEARTBEAT_INTERVAL_HIDDEN_MS : HEARTBEAT_INTERVAL_VISIBLE_MS;
+  this.heartbeatTimer = setInterval(() => {
+    try {
+      // 활동 확인: 최근 메시지 없으면 연결 재시도
+      if (Date.now() - this.lastActivityAt > HEARTBEAT_STALE_THRESHOLD_MS) {
+        console.warn(`❤️‍🩹 Heartbeat stale for ${this.name}. Forcing reconnect.`);
+        this.ws?.close();
+        return;
+      }
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    } catch {}
+  }, interval) as unknown as number;
+};
+
+ReconnectingWebSocket.prototype['stopHeartbeat'] = function stopHeartbeat(this: ReconnectingWebSocket) {
+  if (this.heartbeatTimer) {
+    clearInterval(this.heartbeatTimer);
+    this.heartbeatTimer = null;
+  }
+};
+
+ReconnectingWebSocket.prototype['registerVisibilityListener'] = function registerVisibilityListener(this: ReconnectingWebSocket) {
+  this.visibilityHandler = () => {
+    // 가시성 변경 시 하트비트 주기를 조정
+    this.startHeartbeat();
+  };
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+  }
+};
+
+ReconnectingWebSocket.prototype['unregisterVisibilityListener'] = function unregisterVisibilityListener(this: ReconnectingWebSocket) {
+  if (this.visibilityHandler && typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
+    this.visibilityHandler = undefined;
+  }
+};
+
+ReconnectingWebSocket.prototype['registerOnlineListener'] = function registerOnlineListener(this: ReconnectingWebSocket) {
+  this.onlineHandler = () => {
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      console.log(`🌐 Back online. Reconnecting ${this.name}...`);
+      window.removeEventListener('online', this.onlineHandler!);
+      this.onlineHandler = undefined;
+      this.reconnect();
+    }
+  };
+  window.addEventListener('online', this.onlineHandler);
+};
 
 export default WebSocketManager;

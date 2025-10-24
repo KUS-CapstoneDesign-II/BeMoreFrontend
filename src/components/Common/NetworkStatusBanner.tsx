@@ -29,11 +29,24 @@ export function NetworkStatusBanner() {
   return (
     <div className={`w-full sticky top-0 z-20`}>
       <div className={
-        `text-center text-xs sm:text-sm py-2 ` +
+        `flex items-center justify-center gap-3 px-3 text-center text-xs sm:text-sm py-2 ` +
         (online ? 'bg-green-50 text-green-800 border-b border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800'
                 : 'bg-amber-50 text-amber-800 border-b border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800')
       }>
-        {online ? '온라인에 연결되었습니다.' : '오프라인 상태입니다. 일부 기능이 제한될 수 있습니다.'}
+        <span>{online ? '온라인에 연결되었습니다.' : '오프라인 상태입니다. 일부 기능이 제한될 수 있습니다.'}</span>
+        {!online && (
+          <button
+            className="px-2 py-1 rounded border text-xs bg-white/70 dark:bg-gray-700 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 hover:bg-white/90 dark:hover:bg-gray-600"
+            onClick={async () => {
+              try {
+                // 간단한 핑 요청으로 네트워크 복구 시도
+                await fetch('/', { cache: 'no-store', mode: 'no-cors' });
+              } catch {}
+              // 브라우저의 online 이벤트를 기다리지 않고 UI를 시도 갱신
+              setOnline(navigator.onLine);
+            }}
+          >재시도</button>
+        )}
       </div>
     </div>
   );
