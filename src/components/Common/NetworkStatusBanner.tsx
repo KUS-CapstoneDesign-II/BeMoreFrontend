@@ -43,7 +43,9 @@ export function NetworkStatusBanner() {
               try {
                 // 간단한 핑 요청으로 네트워크 복구 시도
                 await fetch('/', { cache: 'no-store', mode: 'no-cors' });
-              } catch {}
+              } catch {
+                // ignore
+              }
               // 브라우저의 online 이벤트를 기다리지 않고 UI를 시도 갱신
               setOnline(navigator.onLine);
             }}

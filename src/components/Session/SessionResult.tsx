@@ -10,8 +10,8 @@ interface Props {
 export function SessionResult({ sessionId }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [summary, setSummary] = useState<any>(null);
-  const [timeline, setTimeline] = useState<any[]>([]);
+  const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
+  const [timeline, setTimeline] = useState<Array<Record<string, unknown>>>([]);
   const [bookmarks, setBookmarks] = useState<{x:number; label?:string; color?:string}[]>([]);
   const [autoMarkers, setAutoMarkers] = useState<{x:number; label?:string; color?:string; type?:'spike'|'low'}[]>([]);
   const [selected, setSelected] = useState<{x:number; valence?:number|null; arousal?:number|null; dominance?:number|null} | null>(null);
@@ -57,7 +57,9 @@ export function SessionResult({ sessionId }: Props) {
           }
           setAutoMarkers(mks);
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
     })();
     return () => { mounted = false; };
   }, [sessionId]);
@@ -80,11 +82,17 @@ export function SessionResult({ sessionId }: Props) {
 
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
-  const vad = summary?.vadVector || { valence: '-', arousal: '-', dominance: '-' };
-  const keyObs: string[] = summary?.keyObservations || [];
-  const domEmotion = summary?.dominantEmotion?.emotion || '-';
-  const cbt = summary?.cbt || { totalDistortions: 0, mostCommon: null };
-  const recommendations: string[] = summary?.recommendations || [];
+  const vad = (summary?.vadVector as { valence?: string | number; arousal?: string | number; dominance?: string | number } | undefined)
+    ?? { valence: '-', arousal: '-', dominance: '-' };
+  const keyObs: string[] = Array.isArray((summary as Record<string, unknown>)?.keyObservations)
+    ? ((summary as Record<string, unknown>).keyObservations as string[])
+    : [];
+  const domEmotion = ((summary?.dominantEmotion as { emotion?: string } | undefined)?.emotion) || '-';
+  const cbt = (summary?.cbt as { totalDistortions?: number; mostCommon?: string } | undefined)
+    ?? { totalDistortions: 0, mostCommon: null };
+  const recommendations: string[] = Array.isArray((summary as Record<string, unknown>)?.recommendations)
+    ? ((summary as Record<string, unknown>).recommendations as string[])
+    : [];
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft p-4 space-y-4">

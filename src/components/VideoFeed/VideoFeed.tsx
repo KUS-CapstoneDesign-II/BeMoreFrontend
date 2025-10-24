@@ -47,15 +47,16 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
     if (!canvasRef.current || !videoRef.current) return;
 
     const canvas = canvasRef.current;
-    const points = (results as any)?.multiFaceLandmarks?.[0] || (results as any)?.multiFaceLandmarks || [];
+    const points = (results?.multiFaceLandmarks && Array.isArray(results.multiFaceLandmarks))
+      ? (results.multiFaceLandmarks[0] as unknown as Array<{ x: number; y: number }>)
+      : ([] as Array<{ x: number; y: number }>);
     const width = videoRef.current.videoWidth;
     const height = videoRef.current.videoHeight;
 
     // Lazy init worker with OffscreenCanvas if supported
     if (!workerRef.current && 'OffscreenCanvas' in window) {
       try {
-        // @ts-ignore - vite will handle worker bundling via new URL pattern
-        const worker = new Worker(new URL('../../workers/landmarksWorker.ts', import.meta.url), { type: 'module' });
+        const worker = new Worker(new URL('../../workers/landmarksWorker.ts', import.meta.url), { type: 'module' } as WorkerOptions);
         const offscreen = canvas.transferControlToOffscreen();
         worker.postMessage({ type: 'init', canvas: offscreen }, [offscreen as any]);
         workerRef.current = worker;

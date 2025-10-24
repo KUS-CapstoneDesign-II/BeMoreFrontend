@@ -27,7 +27,12 @@ export function DeviceTestStep({ onOpenHelp }: DeviceTestStepProps) {
       setHasVideo(true);
 
       // Simple audio activity check
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AC: typeof AudioContext | undefined = (window as unknown as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext }).AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const audioCtx = AC ? new AC() : null;
+      if (!audioCtx) {
+        setHasAudio(null);
+        return;
+      }
       const source = audioCtx.createMediaStreamSource(s);
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
@@ -47,7 +52,7 @@ export function DeviceTestStep({ onOpenHelp }: DeviceTestStepProps) {
         if (stream) requestAnimationFrame(check);
       };
       check();
-    } catch (e) {
+    } catch {
       setHasVideo(false);
       setHasAudio(false);
     }
