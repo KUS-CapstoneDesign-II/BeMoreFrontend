@@ -51,7 +51,7 @@ export function VideoFeed({
 
       ctx.clearRect(0, 0, width, height);
       if (points && points.length) {
-        ctx.fillStyle = '#00FF00';
+        ctx.fillStyle = '#dc143c';
         for (let i = 0; i < points.length; i++) {
           const p = points[i];
           const x = p.x * width;
@@ -61,7 +61,7 @@ export function VideoFeed({
           ctx.fill();
         }
         const faceOval = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
-        ctx.strokeStyle = '#00FF00';
+        ctx.strokeStyle = '#dc143c';
         ctx.lineWidth = 1;
         ctx.beginPath();
         for (let i = 0; i < faceOval.length; i++) {
