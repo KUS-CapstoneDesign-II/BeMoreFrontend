@@ -32,8 +32,11 @@ export function SessionResult({ sessionId }: Props) {
         const data = await sessionAPI.getSummary(sessionId);
         if (mounted) setSummary(data);
       } catch (e) {
-        // 요약 데이터 실패 시 기본값으로 계속 진행 (백엔드 API 준비 중)
-        console.warn('⚠️ Summary API failed, using default values:', e instanceof Error ? e.message : 'Unknown error');
+        // 요약 데이터 실패 시 기본값으로 계속 진행
+        // 개발 환경에서만 로그 출력
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ Summary API failed, using default values:', e instanceof Error ? e.message : 'Unknown error');
+        }
         if (mounted) setSummary({});
       } finally {
         if (mounted) setLoading(false);
@@ -74,8 +77,11 @@ export function SessionResult({ sessionId }: Props) {
           setAutoMarkers(mks);
         }
       } catch (e) {
-        // 리포트 데이터 실패 시 무시하고 진행 (백엔드 API 준비 중)
-        console.warn('⚠️ Report API failed, using empty timeline:', e instanceof Error ? e.message : 'Unknown error');
+        // 리포트 데이터 실패 시 무시하고 진행
+        // 개발 환경에서만 로그 출력
+        if (import.meta.env.DEV) {
+          console.warn('⚠️ Report API failed, using empty timeline:', e instanceof Error ? e.message : 'Unknown error');
+        }
         if (mounted) {
           setTimeline([]);
           setAutoMarkers([]);
