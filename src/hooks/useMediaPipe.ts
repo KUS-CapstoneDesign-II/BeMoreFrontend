@@ -82,12 +82,13 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         setError(null);
 
         // Resolve FaceMesh constructor with robust fallbacks (ESM -> UMD global)
-        const resolveFaceMeshCtor = async (): Promise<any> => {
+        const resolveFaceMeshCtor = async (): Promise<unknown> => {
           try {
             const mp = await import('@mediapipe/face_mesh');
-            const ctor = (mp as any).FaceMesh || (mp as any).default?.FaceMesh || (mp as any).default;
+            const maybe: unknown = (mp as unknown as { FaceMesh?: unknown; default?: unknown }).FaceMesh || (mp as unknown as { default?: unknown }).default;
+            const ctor = maybe as unknown;
             if (typeof ctor === 'function') return ctor;
-          } catch (_) {
+          } catch {
             // ignore and try CDN fallback
           }
 
@@ -107,14 +108,21 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
             document.head.appendChild(script);
           });
 
-          const globalCtor = (window as any).FaceMesh || (window as any).faceMesh || (window as any).facemesh?.FaceMesh;
+          const globalCtor: unknown = (window as unknown as { FaceMesh?: unknown; faceMesh?: unknown; facemesh?: { FaceMesh?: unknown } }).FaceMesh
+            || (window as unknown as { faceMesh?: unknown }).faceMesh
+            || (window as unknown as { facemesh?: { FaceMesh?: unknown } }).facemesh?.FaceMesh;
           if (typeof globalCtor !== 'function') {
             throw new Error('FaceMesh constructor unavailable');
           }
           return globalCtor;
         };
 
-        const FaceMeshCtor: any = await resolveFaceMeshCtor();
+        const FaceMeshCtor = await resolveFaceMeshCtor() as new (opts: { locateFile: (f: string) => string }) => {
+          setOptions: (opts: Record<string, unknown>) => void;
+          onResults: (cb: (r: Results) => void) => void;
+          close: () => void;
+          send: (arg: { image: HTMLVideoElement }) => Promise<void>;
+        };
         const faceMesh = new FaceMeshCtor({
           locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`,
         });
