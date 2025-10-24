@@ -17,6 +17,8 @@ interface VideoFeedProps {
 export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const useWorkerRef = useRef<boolean>(false);
 
   const { isReady, isProcessing, cameraState, error, landmarks, startCamera, stopCamera, retryCamera } = useMediaPipe({
     videoElement: videoRef.current,
@@ -33,6 +35,10 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
     }
     return () => {
       stopCamera();
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
     };
   }, [isReady, startCamera, stopCamera, startTrigger]);
 
@@ -41,52 +47,57 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
     if (!canvasRef.current || !videoRef.current) return;
 
     const canvas = canvasRef.current;
+    const points = (results as any)?.multiFaceLandmarks?.[0] || (results as any)?.multiFaceLandmarks || [];
+    const width = videoRef.current.videoWidth;
+    const height = videoRef.current.videoHeight;
+
+    // Lazy init worker with OffscreenCanvas if supported
+    if (!workerRef.current && 'OffscreenCanvas' in window) {
+      try {
+        // @ts-ignore - vite will handle worker bundling via new URL pattern
+        const worker = new Worker(new URL('../../workers/landmarksWorker.ts', import.meta.url), { type: 'module' });
+        const offscreen = canvas.transferControlToOffscreen();
+        worker.postMessage({ type: 'init', canvas: offscreen }, [offscreen as any]);
+        workerRef.current = worker;
+        useWorkerRef.current = true;
+      } catch {
+        useWorkerRef.current = false;
+      }
+    }
+
+    if (useWorkerRef.current && workerRef.current) {
+      workerRef.current.postMessage({ type: 'draw', width, height, points });
+      return;
+    }
+
+    // Fallback to main-thread drawing
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
-    // 캔버스 크기 설정
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-
-    // 캔버스 클리어
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // 얼굴 랜드마크 그리기
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-      const landmarks = results.multiFaceLandmarks[0];
-
-      // 랜드마크 포인트 그리기
+    canvas.width = width;
+    canvas.height = height;
+    ctx.clearRect(0, 0, width, height);
+    if (points && points.length) {
       ctx.fillStyle = '#00FF00';
-      landmarks.forEach((landmark) => {
-        const x = landmark.x * canvas.width;
-        const y = landmark.y * canvas.height;
+      for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        const x = p.x * width;
+        const y = p.y * height;
         ctx.beginPath();
-        ctx.arc(x, y, 1, 0, 2 * Math.PI);
+        ctx.arc(x, y, 1, 0, Math.PI * 2);
         ctx.fill();
-      });
-
-      // 얼굴 윤곽 그리기 (선택적)
+      }
+      const faceOval = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
       ctx.strokeStyle = '#00FF00';
       ctx.lineWidth = 1;
-
-      // 얼굴 윤곽선 (FACEMESH_FACE_OVAL)
-      const faceOval = [
-        10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
-        397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
-        172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
-      ];
-
       ctx.beginPath();
-      faceOval.forEach((index, i) => {
-        const point = landmarks[index];
-        const x = point.x * canvas.width;
-        const y = point.y * canvas.height;
-        if (i === 0) {
-          ctx.moveTo(x, y);
-        } else {
-          ctx.lineTo(x, y);
-        }
-      });
+      for (let i = 0; i < faceOval.length; i++) {
+        const idx = faceOval[i];
+        const p = points[idx];
+        if (!p) continue;
+        const x = p.x * width;
+        const y = p.y * height;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
       ctx.closePath();
       ctx.stroke();
     }

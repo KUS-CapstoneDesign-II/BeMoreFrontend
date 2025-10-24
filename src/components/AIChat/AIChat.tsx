@@ -20,6 +20,9 @@ interface AIChatProps {
 export function AIChat({ className = '' }: AIChatProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamMessageId, setStreamMessageId] = useState<string | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const synthRef = useRef<SpeechSynthesis | null>(null);
 
@@ -51,6 +54,35 @@ export function AIChat({ className = '' }: AIChatProps) {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
+  };
+
+  // Streaming helpers
+  const beginAIStream = () => {
+    const id = `${Date.now()}-ai`;
+    setStreamMessageId(id);
+    setIsStreaming(true);
+    setLastError(null);
+    const msg: Message = { id, role: 'ai', content: '', timestamp: Date.now() };
+    setMessages((prev) => [...prev, msg]);
+  };
+
+  const appendAIStream = (chunk: string) => {
+    if (!streamMessageId) return;
+    const safeChunk = chunk.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/javascript:/gi, '');
+    setMessages((prev) => prev.map((m) => m.id === streamMessageId ? { ...m, content: (m.content || '') + safeChunk } : m));
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  };
+
+  const completeAIStream = () => {
+    setIsStreaming(false);
+    const final = messages.find((m) => m.id === streamMessageId)?.content || '';
+    if (final && synthRef.current) speakText(final);
+    setStreamMessageId(null);
+  };
+
+  const failAIStream = (errorMessage: string) => {
+    setIsStreaming(false);
+    setLastError(errorMessage);
   };
 
   // TTS로 텍스트 읽기
@@ -88,6 +120,12 @@ export function AIChat({ className = '' }: AIChatProps) {
 
   // 컴포넌트 외부에서 사용할 수 있도록 export (React.forwardRef나 useImperativeHandle로 개선 가능)
   (AIChat as any).addMessage = addMessage;
+  (AIChat as any).stream = {
+    begin: beginAIStream,
+    append: appendAIStream,
+    complete: completeAIStream,
+    fail: failAIStream,
+  };
 
   return (
     <div
@@ -162,6 +200,23 @@ export function AIChat({ className = '' }: AIChatProps) {
               </div>
             </div>
           ))
+        )}
+        {isStreaming && (
+          <div className="text-xs text-gray-500" role="status" aria-live="polite">
+            <span aria-hidden="true">⏳ </span>응답 생성 중...
+          </div>
+        )}
+        {lastError && (
+          <div className="text-xs text-red-600" role="alert">
+            {lastError}
+            <button
+              className="ml-2 underline"
+              onClick={() => {
+                setLastError(null);
+                window.dispatchEvent(new CustomEvent('ai:retry'));
+              }}
+            >재시도</button>
+          </div>
         )}
         <div ref={messagesEndRef} />
       </div>
