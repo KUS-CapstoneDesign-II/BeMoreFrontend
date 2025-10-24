@@ -5,6 +5,6 @@ class MockResizeObserver {
   unobserve() {}
   disconnect() {}
 }
-// @ts-ignore
+// @ts-expect-error: jsdom lacks ResizeObserver by default
 global.ResizeObserver = global.ResizeObserver || MockResizeObserver;
 
