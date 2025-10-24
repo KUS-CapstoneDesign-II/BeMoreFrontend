@@ -37,8 +37,7 @@ api.interceptors.request.use(
         config.headers = config.headers || {};
         (config.headers as any)['Authorization'] = `Bearer ${token}`;
       }
-      // 요청 식별자
-      (config.headers as any)['x-request-id'] = crypto.randomUUID ? crypto.randomUUID() : String(Date.now());
+      // Note: avoid custom headers that can trigger CORS preflight failures
     } catch {}
     return config;
   },
