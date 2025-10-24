@@ -256,27 +256,57 @@ function App() {
   };
   // Resume prompt on return
   const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [resumeSessionStartedAt, setResumeSessionStartedAt] = useState<number | undefined>();
+
   useEffect(() => {
     if (sessionId) return;
     try {
       const raw = localStorage.getItem('bemore_last_session');
       if (raw) {
         const last = JSON.parse(raw) as { sessionId: string; started: number };
-        if (last.sessionId && Date.now() - last.started < 60 * 60 * 1000) {
+        const elapsedMs = Date.now() - last.started;
+        const MAX_RESUME_TIME = 30 * 60 * 1000; // 30분 이상 된 세션은 자동 폐기
+
+        if (last.sessionId && elapsedMs < MAX_RESUME_TIME) {
+          // 30분 이내의 세션만 재개 옵션 제시
+          setResumeSessionStartedAt(last.started);
           setShowResumePrompt(true);
+        } else if (last.sessionId && elapsedMs >= MAX_RESUME_TIME) {
+          // 30분 이상 경과한 세션은 자동으로 폐기
+          console.log('⏱️ 세션 자동 폐기: 30분 이상 경과');
+          localStorage.removeItem('bemore_last_session');
         }
       }
-    } catch {}
+    } catch (error) {
+      console.error('세션 복구 중 오류:', error);
+      localStorage.removeItem('bemore_last_session');
+    }
   }, [sessionId]);
 
   const resumeLastSession = () => {
     try {
       const raw = localStorage.getItem('bemore_last_session');
-      if (!raw) return;
+      if (!raw) {
+        console.warn('⚠️ 재개할 세션 정보 없음');
+        setShowResumePrompt(false);
+        return;
+      }
+
       const last = JSON.parse(raw) as { sessionId: string; started: number };
+
+      // 유효성 검증
+      if (!last.sessionId) {
+        console.warn('⚠️ 세션 ID 없음');
+        discardLastSession();
+        return;
+      }
+
+      console.log('♻️ 세션 재개 시작:', last.sessionId);
       setSessionId(last.sessionId);
       setSessionStatus('active');
       setSessionStartAt(last.started);
+
+      // WebSocket 재연결
       const wsResume = {
         landmarks: `${WS_URL}/ws/landmarks/${last.sessionId}`,
         voice: `${WS_URL}/ws/voice/${last.sessionId}`,
@@ -284,13 +314,21 @@ function App() {
       };
       console.log('[WebSocket] 재연결 시도:', wsResume);
       connectWS(wsResume);
-    } catch {}
-    setShowResumePrompt(false);
+
+      setShowResumePrompt(false);
+      setResumeSessionStartedAt(undefined);
+    } catch (error) {
+      console.error('❌ 세션 재개 실패:', error);
+      setError('세션을 재개할 수 없습니다. 새로 시작해주세요.');
+      discardLastSession();
+    }
   };
 
   const discardLastSession = () => {
+    console.log('🗑️ 이전 세션 폐기');
     localStorage.removeItem('bemore_last_session');
     setShowResumePrompt(false);
+    setResumeSessionStartedAt(undefined);
   };
 
   // 키보드 단축키 설정
@@ -694,7 +732,7 @@ function App() {
           return h > 0 ? `${String(h).padStart(2,'0')}:${mm}:${ss}` : `${mm}:${ss}`;
         })() : '00:00'}
       />
-      <ResumePromptModal isOpen={showResumePrompt} onResume={resumeLastSession} onDiscard={discardLastSession} />
+      <ResumePromptModal isOpen={showResumePrompt} onResume={resumeLastSession} onDiscard={discardLastSession} sessionStartedAt={resumeSessionStartedAt} />
       <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
       <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
     </div>
