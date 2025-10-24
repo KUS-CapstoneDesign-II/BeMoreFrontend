@@ -78,7 +78,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         if (remote && typeof remote === 'object') {
           setSettings((s) => ({ ...s, ...remote }));
         }
-      } catch {}
+      } catch (error) {
+        // Silently fail - use local defaults if remote preferences unavailable
+        console.debug('Failed to load remote preferences, using local defaults', error);
+      }
     })();
   }, []);
 
@@ -100,7 +103,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   // Sync to backend when settings change (debounced-like simple)
   useEffect(() => {
     const id = window.setTimeout(() => {
-      userAPI.setPreferences(settings).catch(() => {});
+      userAPI.setPreferences(settings).catch((error) => {
+        // Silently fail - local storage is sufficient fallback
+        console.debug('Failed to sync preferences to backend', error);
+      });
     }, 300);
     return () => window.clearTimeout(id);
   }, [settings]);

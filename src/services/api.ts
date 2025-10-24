@@ -17,7 +17,7 @@ const API_BASE_URL: string =
 // Axios 인스턴스 생성
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 20000, // Increased from 10s to 20s for slower API endpoints
   headers: {
     'Content-Type': 'application/json',
   },
@@ -50,18 +50,32 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => {
     if (import.meta.env.DEV) {
-      console.log(`✅ API Response: ${response.config.url}`, response.data);
+      console.log(`✅ API Response: ${response.config.url} (${response.status})`, response.data);
     }
     return response;
   },
   (error) => {
+    let errorMsg = error.message;
+
+    // Add request ID if available
     try {
       const reqId = error?.response?.data?.error?.requestId || (error?.response?.headers && (error.response.headers as any)['x-request-id']);
       if (reqId) {
-        error.message = `${error.message} [requestId=${reqId}]`;
+        errorMsg = `${errorMsg} [${reqId}]`;
       }
     } catch {}
-    console.error(`❌ API Error: ${error.config?.url}`, error.message);
+
+    // More detailed error logging
+    const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
+    const statusCode = error?.response?.status || 'unknown';
+    const endpoint = error.config?.url || 'unknown';
+
+    if (isTimeout) {
+      console.warn(`⏱️ API Timeout (${statusCode}): ${endpoint} - ${errorMsg}`);
+    } else {
+      console.error(`❌ API Error (${statusCode}): ${endpoint} - ${errorMsg}`);
+    }
+
     return Promise.reject(error);
   }
 );
