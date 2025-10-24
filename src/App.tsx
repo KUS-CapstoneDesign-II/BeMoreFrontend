@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard } from './components/Emotion';
@@ -132,6 +132,12 @@ function App() {
     },
   });
 
+  // Ref to track current connection status (avoids closure issues in Promise polling)
+  const connectionStatusRef = useRef(connectionStatus);
+  useEffect(() => {
+    connectionStatusRef.current = connectionStatus;
+  }, [connectionStatus]);
+
   // 세션 시작
   const handleStartSession = async () => {
     // 이미 진행 중인 경우 중복 실행 방지
@@ -165,15 +171,41 @@ function App() {
       connectWS(wsUrls);
 
       // 3. WebSocket 연결 완료를 기다림 (최대 5초)
+      // Use a promise that resolves when WebSocket is connected
+      // Using connectionStatusRef to avoid closure stale value issues
       await new Promise<void>((resolve, reject) => {
+        console.log('[WebSocket] Starting connection wait - current state:', connectionStatusRef.current);
+
+        // If already connected, resolve immediately
+        const currentStatus = connectionStatusRef.current;
+        const allConnected = Object.values(currentStatus).every((s) => s === 'connected');
+        if (allConnected) {
+          console.log('[WebSocket] ✅ Already connected, resolving immediately');
+          resolve();
+          return;
+        }
+
+        let resolved = false;
         const timeout = setTimeout(() => {
-          reject(new Error('WebSocket 연결 시간 초과'));
+          if (!resolved) {
+            resolved = true;
+            console.error('❌ WebSocket connection timeout after 5s');
+            console.error('   Current status:', connectionStatusRef.current);
+            reject(new Error('WebSocket 연결 시간 초과'));
+          }
         }, 5000);
 
-        const checkConnection = setInterval(() => {
-          if (wsConnected) {
+        // Poll every 100ms to check connection status
+        // Use ref to avoid stale closure values
+        const pollInterval = setInterval(() => {
+          const currentStatus = connectionStatusRef.current;
+          const allConnected = Object.values(currentStatus).every((s) => s === 'connected');
+
+          if (allConnected && !resolved) {
+            resolved = true;
             clearTimeout(timeout);
-            clearInterval(checkConnection);
+            clearInterval(pollInterval);
+            console.log('[WebSocket] ✅ All channels connected:', currentStatus);
             resolve();
           }
         }, 100);
