@@ -23,7 +23,8 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-empty': ['error', { allowEmptyCatch: true }],
       'react-refresh/only-export-components': 'off',
-      '@typescript-eslint/ban-ts-comment': ['error', { 'ts-expect-error': true, 'ts-ignore': false }],
+      // Allow @ts-expect-error with justification; disallow @ts-ignore
+      '@typescript-eslint/ban-ts-comment': ['error', { 'ts-expect-error': false, 'ts-ignore': true }],
       'react-hooks/exhaustive-deps': 'warn',
     },
   },
