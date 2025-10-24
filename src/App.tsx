@@ -772,9 +772,15 @@ function App() {
       <SessionSummaryModal
         isOpen={showSummary}
         onClose={() => setShowSummary(false)}
-        onSubmitFeedback={(rating, note) => {
-          console.log('Session feedback:', { rating, note });
-          setShowSummary(false);
+        onSubmitFeedback={async (rating, note) => {
+          try {
+            // TODO: 백엔드에 피드백 전송
+            // await sessionAPI.submitFeedback(sessionId, { rating, note });
+            console.log('📝 세션 피드백:', { rating, note, sessionId });
+            // 실제 구현 시: await sessionAPI.submitFeedback(sessionId, { rating, note });
+          } catch (err) {
+            throw err instanceof Error ? err : new Error('피드백 제출에 실패했습니다.');
+          }
         }}
         durationLabel={sessionStartAt ? (() => {
           const ms = Date.now() - sessionStartAt;
