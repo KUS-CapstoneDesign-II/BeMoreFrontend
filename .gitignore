@@ -30,3 +30,6 @@ dist-ssr
 
 # Coverage reports
 coverage/
+
+# claude
+.claude/
