@@ -186,9 +186,20 @@ function App() {
         }
 
         let resolved = false;
-        const timeout = setTimeout(() => {
+         
+        let timeout: NodeJS.Timeout | undefined = undefined;
+         
+        let pollInterval: NodeJS.Timer | undefined = undefined;
+
+        const cleanup = () => {
+          if (timeout) clearTimeout(timeout);
+          if (pollInterval) clearInterval(pollInterval);
+        };
+
+        timeout = setTimeout(() => {
           if (!resolved) {
             resolved = true;
+            cleanup();
             console.error('❌ WebSocket connection timeout after 5s');
             console.error('   Current status:', connectionStatusRef.current);
             reject(new Error('WebSocket 연결 시간 초과'));
@@ -198,7 +209,13 @@ function App() {
         // Poll every 100ms to check connection status
         // Use ref to avoid stale closure values
         let pollCount = 0;
-        const pollInterval = setInterval(() => {
+        pollInterval = setInterval(() => {
+          // Skip if already resolved
+          if (resolved) {
+            cleanup();
+            return;
+          }
+
           const currentStatus = connectionStatusRef.current;
           const allConnected = Object.values(currentStatus).every((s) => s === 'connected');
 
@@ -209,8 +226,7 @@ function App() {
 
           if (allConnected && !resolved) {
             resolved = true;
-            clearTimeout(timeout);
-            clearInterval(pollInterval);
+            cleanup();
             console.log('[WebSocket] ✅ All channels connected:', currentStatus);
             resolve();
           }
