@@ -97,7 +97,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         newChannels.session.onMessage(onSessionMessage);
       }
 
-      console.log('✅ WebSocket 3채널 연결 완료');
+      console.log('[WebSocket] ✅ useWebSocket: Channel initialization started, waiting for connections...');
     },
     [onLandmarksMessage, onVoiceMessage, onSessionMessage, onStatusChange]
   );

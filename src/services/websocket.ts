@@ -117,14 +117,14 @@ export class ReconnectingWebSocket {
       return;
     }
 
-    console.log(`🔌 ${this.name} connecting to ${this.url}...`);
+    console.log(`[WebSocket] ${this.name} connecting to ${this.url}...`);
     this.onStatusChange?.('connecting');
 
     try {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        console.log(`✅ ${this.name} connected`);
+        console.log(`[WebSocket] ✅ ${this.name} connected (readyState: OPEN)`);
         this.retryCount = 0;
         this.retryDelay = 1000; // 재연결 성공 시 리셋
         this.onStatusChange?.('connected');
@@ -139,12 +139,12 @@ export class ReconnectingWebSocket {
           this.messageHandlers.forEach((handler) => handler(message));
           this.lastActivityAt = Date.now();
         } catch (error) {
-          console.error(`❌ ${this.name} message parse error:`, error);
+          console.error(`[WebSocket] ❌ ${this.name} message parse error:`, error);
         }
       };
 
       this.ws.onclose = () => {
-        console.log(`🔌 ${this.name} disconnected`);
+        console.log(`[WebSocket] 🔌 ${this.name} disconnected`);
         this.onStatusChange?.('disconnected');
         this.stopHeartbeat();
         this.unregisterVisibilityListener();
@@ -154,12 +154,13 @@ export class ReconnectingWebSocket {
         }
       };
 
-      this.ws.onerror = () => {
+      this.ws.onerror = (event) => {
         // Error handled via onclose/reconnect
+        console.error(`[WebSocket] ❌ ${this.name} error:`, event);
         this.onStatusChange?.('error');
       };
     } catch (error) {
-      console.error(`❌ ${this.name} connection failed:`, error);
+      console.error(`[WebSocket] ❌ ${this.name} connection failed:`, error);
       this.onStatusChange?.('error');
       this.reconnect();
     }
@@ -170,19 +171,19 @@ export class ReconnectingWebSocket {
    */
   private reconnect(): void {
     if (this.retryCount >= this.maxRetries) {
-      console.error(`🚨 ${this.name} max retries reached (${this.maxRetries})`);
+      console.error(`[WebSocket] 🚨 ${this.name} max retries reached (${this.maxRetries})`);
       this.onStatusChange?.('error');
       return;
     }
 
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      console.log(`🌐 Offline. ${this.name} will reconnect when back online.`);
+      console.log(`[WebSocket] 🌐 Offline. ${this.name} will reconnect when back online.`);
       this.registerOnlineListener();
       return;
     }
 
     this.retryCount++;
-    console.log(`🔄 ${this.name} reconnecting... (${this.retryCount}/${this.maxRetries})`);
+    console.log(`[WebSocket] 🔄 ${this.name} reconnecting... (${this.retryCount}/${this.maxRetries})`);
 
     setTimeout(() => {
       this.connect();
@@ -273,7 +274,7 @@ export class WebSocketManager {
     wsUrls: { landmarks: string; voice: string; session: string },
     onStatusChange?: (channel: keyof WebSocketChannels, status: ConnectionStatus) => void
   ): WebSocketChannels {
-    console.log('🔌 Initializing WebSocket channels...');
+    console.log('[WebSocket] Initializing 3 channels (landmarks, voice, session)...');
 
     this.channels = {
       landmarks: new ReconnectingWebSocket(
@@ -297,7 +298,12 @@ export class WebSocketManager {
     };
 
     // 모든 채널 연결
-    Object.values(this.channels).forEach((ws) => ws.connect());
+    console.log('[WebSocket] Connecting landmarks...');
+    this.channels.landmarks.connect();
+    console.log('[WebSocket] Connecting voice...');
+    this.channels.voice.connect();
+    console.log('[WebSocket] Connecting session...');
+    this.channels.session.connect();
 
     return this.channels;
   }
@@ -309,7 +315,7 @@ export class WebSocketManager {
     if (this.channels) {
       Object.values(this.channels).forEach((ws) => ws.close());
       this.channels = null;
-      console.log('🔌 All WebSocket channels closed');
+      console.log('[WebSocket] All 3 channels closed');
     }
   }
 
