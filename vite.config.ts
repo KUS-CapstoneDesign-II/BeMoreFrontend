@@ -1,31 +1,10 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { visualizer } from 'rollup-plugin-visualizer'
-import { configDefaults } from 'vitest/config'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    visualizer({
-      filename: 'dist/stats.html',
-      template: 'treemap',
-      gzipSize: true,
-      brotliSize: true,
-    })
-  ],
-  test: {
-    environment: 'jsdom',
-    setupFiles: ['./vitest.setup.ts'],
-    coverage: {
-      reporter: ['text', 'html', 'lcov'],
-      provider: 'v8',
-      reportsDirectory: './coverage',
-      exclude: [...configDefaults.coverage.exclude!, 'src/**/__tests__/helpers/**']
-    },
-    globals: true,
-    include: ['src/**/*.{test,spec}.{ts,tsx}']
-  },
+  plugins: [react()],
+  // vitest config lives in separate vitest.config.ts during dev/CI; not used in Vercel build
   server: {
     port: 5173,
     proxy: {

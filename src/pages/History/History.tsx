@@ -17,8 +17,8 @@ export default function HistoryPage() {
       try {
         setLoading(true);
         // Placeholder: replace with real endpoint when backend ready
-        const stats = await sessionAPI.getStats();
-        const recent: RecentSessionSummary[] = (stats.recentSessions || []).map((s: any) => ({
+        const stats: any = await sessionAPI.getStats();
+        const recent: RecentSessionSummary[] = (stats?.recentSessions || stats?.recent || []).map((s: any) => ({
           id: s.id,
           startedAt: s.startedAt,
           durationMs: s.durationMs,

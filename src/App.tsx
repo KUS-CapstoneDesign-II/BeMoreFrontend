@@ -112,6 +112,19 @@ function App() {
       if (message.type === 'status_update') {
         // 세션 상태 업데이트 처리
       }
+      // AI streaming events (example schema)
+      if (message.type === 'ai_stream_begin') {
+        window.dispatchEvent(new CustomEvent('ai:begin'));
+      }
+      if (message.type === 'ai_stream_chunk') {
+        window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: message.data?.text || '' } }));
+      }
+      if (message.type === 'ai_stream_complete') {
+        window.dispatchEvent(new CustomEvent('ai:complete'));
+      }
+      if (message.type === 'ai_stream_error') {
+        window.dispatchEvent(new CustomEvent('ai:fail', { detail: { error: message.data?.error || 'AI stream failed' } }));
+      }
     },
   });
 

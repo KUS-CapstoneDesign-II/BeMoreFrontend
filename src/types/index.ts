@@ -145,7 +145,12 @@ export type WSMessageType =
   | 'stt_received'
   | 'status_update'
   | 'landmarks'
-  | 'error';
+  | 'error'
+  // streaming events (frontend-consumed)
+  | 'ai_stream_begin'
+  | 'ai_stream_chunk'
+  | 'ai_stream_complete'
+  | 'ai_stream_error';
 
 export interface WSMessage<T = any> {
   type: WSMessageType;

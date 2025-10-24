@@ -127,6 +127,30 @@ export function AIChat({ className = '' }: AIChatProps) {
     fail: failAIStream,
   };
 
+  // Hook up window events to support streaming from outside
+  useEffect(() => {
+    const onBegin = () => beginAIStream();
+    const onAppend = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { chunk?: string };
+      if (detail?.chunk) appendAIStream(detail.chunk);
+    };
+    const onComplete = () => completeAIStream();
+    const onFail = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { error?: string };
+      failAIStream(detail?.error || 'AI stream failed');
+    };
+    window.addEventListener('ai:begin', onBegin);
+    window.addEventListener('ai:append', onAppend as EventListener);
+    window.addEventListener('ai:complete', onComplete);
+    window.addEventListener('ai:fail', onFail as EventListener);
+    return () => {
+      window.removeEventListener('ai:begin', onBegin);
+      window.removeEventListener('ai:append', onAppend as EventListener);
+      window.removeEventListener('ai:complete', onComplete);
+      window.removeEventListener('ai:fail', onFail as EventListener);
+    };
+  }, []);
+
   return (
     <div
       className={`flex flex-col h-full bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}

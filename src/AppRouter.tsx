@@ -2,7 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 const SessionApp = lazy(() => import('./App'));
-const Dashboard = lazy(() => import('./pages/Home/Dashboard'));
+const Dashboard = lazy(() => import('./pages/Home/Dashboard').then(m => ({ default: m.Dashboard })));
 const HistoryPage = lazy(() => import('./pages/History/History'));
 const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage'));
 
