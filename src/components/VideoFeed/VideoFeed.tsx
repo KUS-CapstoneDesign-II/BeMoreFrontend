@@ -25,11 +25,9 @@ export function VideoFeed({
 }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const workerRef = useRef<Worker | null>(null);
-  const useWorkerRef = useRef<boolean>(false);
   const frameCountRef = useRef(0);
 
-  // 랜드마크 그리기 (메인 스레드 또는 Worker 스레드)
+  // 랜드마크 그리기 (메인 스레드에서만 실행 - Worker 제거)
   const drawLandmarks = useCallback((results: Results) => {
     if (!canvasRef.current || !videoRef.current) return;
 
@@ -40,59 +38,45 @@ export function VideoFeed({
     const width = videoRef.current.videoWidth;
     const height = videoRef.current.videoHeight;
 
-    // Lazy init worker with OffscreenCanvas if supported
-    if (!workerRef.current && 'OffscreenCanvas' in window) {
-      try {
-        const worker = new Worker(new URL('../../workers/landmarksWorker.ts', import.meta.url), { type: 'module' } as WorkerOptions);
-        const offscreen = canvas.transferControlToOffscreen();
-        worker.postMessage({ type: 'init', canvas: offscreen }, [offscreen as any]);
-        workerRef.current = worker;
-        useWorkerRef.current = true;
-      } catch {
-        useWorkerRef.current = false;
-      }
-    }
+    // Canvas drawing on main thread
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = width;
+      canvas.height = height;
 
-    if (useWorkerRef.current && workerRef.current) {
-      workerRef.current.postMessage({ type: 'draw', width, height, points });
-      return;
-    }
+      // Apply horizontal flip to match video element
+      ctx.scale(-1, 1);
+      ctx.translate(-width, 0);
 
-    // Fallback to main-thread drawing
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    canvas.width = width;
-    canvas.height = height;
-
-    // Apply horizontal flip to match video element
-    ctx.scale(-1, 1);
-    ctx.translate(-width, 0);
-
-    ctx.clearRect(0, 0, width, height);
-    if (points && points.length) {
-      ctx.fillStyle = '#00FF00';
-      for (let i = 0; i < points.length; i++) {
-        const p = points[i];
-        const x = p.x * width;
-        const y = p.y * height;
+      ctx.clearRect(0, 0, width, height);
+      if (points && points.length) {
+        ctx.fillStyle = '#00FF00';
+        for (let i = 0; i < points.length; i++) {
+          const p = points[i];
+          const x = p.x * width;
+          const y = p.y * height;
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        const faceOval = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(x, y, 1, 0, Math.PI * 2);
-        ctx.fill();
+        for (let i = 0; i < faceOval.length; i++) {
+          const idx = faceOval[i];
+          const p = points[idx];
+          if (!p) continue;
+          const x = p.x * width;
+          const y = p.y * height;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
       }
-      const faceOval = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
-      ctx.strokeStyle = '#00FF00';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let i = 0; i < faceOval.length; i++) {
-        const idx = faceOval[i];
-        const p = points[idx];
-        if (!p) continue;
-        const x = p.x * width;
-        const y = p.y * height;
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      ctx.stroke();
+    } catch (err) {
+      console.warn('Canvas drawing error:', err);
     }
   }, []);
 
@@ -143,10 +127,6 @@ export function VideoFeed({
     }
     return () => {
       stopCamera();
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
     };
   }, [isReady, startCamera, stopCamera, startTrigger]);
 
