@@ -64,21 +64,21 @@ export const apiMonitoring = {
       metrics.shift();
     }
 
-    // 느린 호출 로깅
-    if (duration > SLOW_THRESHOLD) {
+    // 느린 호출 로깅 (개발 환경에서만)
+    if (duration > SLOW_THRESHOLD && import.meta.env.DEV) {
       const durationStr = duration.toFixed(0);
       console.warn(
         `🐢 Slow API: ${requestData.method} ${requestData.endpoint} (${durationStr}ms)`
       );
     }
 
-    // 타임아웃 로깅
-    if (isTimeout) {
+    // 타임아웃 로깅 (개발 환경에서만)
+    if (isTimeout && import.meta.env.DEV) {
       console.warn(`⏱️ API Timeout: ${requestData.method} ${requestData.endpoint}`);
     }
 
-    // 실패 로깅
-    if (!success && !isTimeout) {
+    // 실패 로깅 (개발 환경에서만)
+    if (!success && !isTimeout && import.meta.env.DEV) {
       console.warn(
         `⚠️ API Failed: ${requestData.method} ${requestData.endpoint} (${status})`
       );
