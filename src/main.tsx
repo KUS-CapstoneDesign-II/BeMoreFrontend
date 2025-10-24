@@ -5,6 +5,7 @@ import AppRouter from './AppRouter'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { ConsentProvider } from './contexts/ConsentContext'
 import { SettingsProvider } from './contexts/SettingsContext'
+import { I18nProvider } from './contexts/I18nContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { ErrorBoundary } from './components/Common/ErrorBoundary'
 import { AccessibilityProvider } from './contexts/AccessibilityContext'
@@ -21,13 +22,15 @@ createRoot(document.getElementById('root')!).render(
     <ConsentProvider>
       <SettingsProvider>
         <ThemeProvider>
-          <AccessibilityProvider>
-            <ErrorBoundary>
-              <ToastProvider>
-                <AppRouter />
-              </ToastProvider>
-            </ErrorBoundary>
-          </AccessibilityProvider>
+          <I18nProvider>
+            <AccessibilityProvider>
+              <ErrorBoundary>
+                <ToastProvider>
+                  <AppRouter />
+                </ToastProvider>
+              </ErrorBoundary>
+            </AccessibilityProvider>
+          </I18nProvider>
         </ThemeProvider>
       </SettingsProvider>
     </ConsentProvider>

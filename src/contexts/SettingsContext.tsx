@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { z } from 'zod';
 import { userAPI } from '../services/api';
 import type { ReactNode } from 'react';
 
@@ -30,6 +31,13 @@ const DEFAULT_SETTINGS: SettingsState = {
 
 const STORAGE_KEY = 'bemore_settings_v1';
 
+const SettingsSchema = z.object({
+  fontScale: z.enum(['sm','md','lg','xl']).default('md'),
+  layoutDensity: z.enum(['compact','spacious']).default('spacious'),
+  language: z.enum(['ko','en']).default('ko'),
+  notificationsOptIn: z.boolean().default(false),
+});
+
 const FONT_SCALE_VALUE: Record<FontScale, number> = {
   sm: 0.875,
   md: 1,
@@ -43,7 +51,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SettingsState>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return { ...DEFAULT_SETTINGS, ...(JSON.parse(raw) as SettingsState) };
+      if (raw) {
+        const parsed = SettingsSchema.safeParse(JSON.parse(raw));
+        if (parsed.success) return { ...DEFAULT_SETTINGS, ...parsed.data } as SettingsState;
+      }
     } catch {
       // ignore parse errors
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../../contexts/I18nContext';
 
 export function NetworkStatusBanner() {
   const [online, setOnline] = useState<boolean>(navigator.onLine);
@@ -25,6 +26,7 @@ export function NetworkStatusBanner() {
   }, []);
 
   if (!visible) return null;
+  const { t } = useI18n();
 
   return (
     <div className={`w-full sticky top-0 z-20`}>
@@ -33,7 +35,7 @@ export function NetworkStatusBanner() {
         (online ? 'bg-green-50 text-green-800 border-b border-green-200 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800'
                 : 'bg-amber-50 text-amber-800 border-b border-amber-200 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800')
       }>
-        <span>{online ? '온라인에 연결되었습니다.' : '오프라인 상태입니다. 일부 기능이 제한될 수 있습니다.'}</span>
+        <span>{online ? t('network.online') : t('network.offline')}</span>
         {!online && (
           <button
             className="px-2 py-1 rounded border text-xs bg-white/70 dark:bg-gray-700 text-amber-800 dark:text-amber-200 border-amber-300 dark:border-amber-700 hover:bg-white/90 dark:hover:bg-gray-600"

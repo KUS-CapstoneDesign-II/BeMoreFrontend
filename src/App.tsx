@@ -38,8 +38,23 @@ const VADMonitor = lazy(() => import('./components/VAD').then(module => ({ defau
 
 const ONBOARDING_KEY = 'bemore_onboarding_completed';
 
-const API_URL = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') as string;
-const WS_URL = (import.meta.env.VITE_WS_URL as string) || API_URL.replace(/^http/, 'ws');
+const runtimeEnv = (window as any).__ENV__ || {};
+const API_URL = (
+  (runtimeEnv.API_URL as string) ||
+  (import.meta.env.VITE_API_URL as string) ||
+  (import.meta.env.VITE_API_BASE_URL as string) ||
+  'http://localhost:8000'
+) as string;
+const WS_URL = (() => {
+  let url = (runtimeEnv.WS_URL as string) || (import.meta.env.VITE_WS_URL as string);
+  if (!url) {
+    url = API_URL.replace(/^http/, import.meta.env.PROD ? 'wss' : 'ws');
+  }
+  if (import.meta.env.PROD) {
+    url = url.replace(/^ws:\/\//, 'wss://').replace(/^http:\/\//, 'wss://');
+  }
+  return url;
+})() as string;
 const DEMO_MODE = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
 function App() {
