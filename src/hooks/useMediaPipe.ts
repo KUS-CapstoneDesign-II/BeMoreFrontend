@@ -190,7 +190,6 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
       videoElement.srcObject = stream;
 
       // Dynamically import Camera from @mediapipe/camera_utils (UMD module)
-      // @ts-expect-error - camera_utils is a UMD module with dynamic exports
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { Camera } = await import('@mediapipe/camera_utils') as any;
 
