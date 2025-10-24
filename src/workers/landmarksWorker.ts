@@ -20,6 +20,11 @@ self.onmessage = (e: MessageEvent) => {
     const { width = 0, height = 0, points = [] } = data;
     ctx.canvas.width = width;
     ctx.canvas.height = height;
+
+    // Apply horizontal flip to match video element
+    ctx.scale(-1, 1);
+    ctx.translate(-width, 0);
+
     ctx.clearRect(0, 0, width, height);
 
     if (!points || points.length === 0) return;

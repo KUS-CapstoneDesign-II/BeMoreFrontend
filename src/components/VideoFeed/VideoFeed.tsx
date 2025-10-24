@@ -54,6 +54,11 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
     if (!ctx) return;
     canvas.width = width;
     canvas.height = height;
+
+    // Apply horizontal flip to match video element
+    ctx.scale(-1, 1);
+    ctx.translate(-width, 0);
+
     ctx.clearRect(0, 0, width, height);
     if (points && points.length) {
       ctx.fillStyle = '#00FF00';
@@ -116,7 +121,7 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
         autoPlay
         playsInline
         muted
-        className="w-full h-full object-cover rounded-lg"
+        className="w-full h-full object-cover rounded-lg transform -scale-x-100"
         aria-label="사용자 카메라 영상"
       />
 
