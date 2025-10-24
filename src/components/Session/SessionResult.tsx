@@ -25,7 +25,9 @@ export function SessionResult({ sessionId }: Props) {
         const data = await sessionAPI.getSummary(sessionId);
         if (mounted) setSummary(data);
       } catch (e) {
-        if (mounted) setError(e instanceof Error ? e.message : 'Failed to load summary');
+        // 요약 데이터 실패 시 기본값으로 계속 진행 (백엔드 API 준비 중)
+        console.warn('⚠️ Summary API failed, using default values:', e instanceof Error ? e.message : 'Unknown error');
+        if (mounted) setSummary({});
       } finally {
         if (mounted) setLoading(false);
       }
@@ -57,8 +59,13 @@ export function SessionResult({ sessionId }: Props) {
           }
           setAutoMarkers(mks);
         }
-      } catch {
-        // ignore
+      } catch (e) {
+        // 리포트 데이터 실패 시 무시하고 진행 (백엔드 API 준비 중)
+        console.warn('⚠️ Report API failed, using empty timeline:', e instanceof Error ? e.message : 'Unknown error');
+        if (mounted) {
+          setTimeline([]);
+          setAutoMarkers([]);
+        }
       }
     })();
     return () => { mounted = false; };
