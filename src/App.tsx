@@ -134,6 +134,11 @@ function App() {
 
   // 세션 시작
   const handleStartSession = async () => {
+    // 이미 진행 중인 경우 중복 실행 방지
+    if (isLoading || sessionId) {
+      return;
+    }
+
     // Onboarding guard
     const completed = localStorage.getItem(ONBOARDING_KEY) === 'true';
     if (!completed) {
