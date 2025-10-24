@@ -103,6 +103,22 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
   }
 
   const config = emotionConfig[emotion];
+  if (!config) {
+    return (
+      <div
+        className={`p-4 rounded-lg border-2 bg-gray-50 border-gray-200 ${className}`}
+        role="status"
+        aria-live="polite"
+        aria-label="감정 분석 오류"
+      >
+        <div className="text-center">
+          <div className="text-4xl mb-2" aria-hidden="true">⚠️</div>
+          <div className="text-sm text-gray-500 font-medium">알 수 없는 감정</div>
+        </div>
+      </div>
+    );
+  }
+
   const confidencePercent = confidence !== undefined ? Math.round(confidence * 100) : null;
   const ariaLabel = `현재 감정: ${config.label}${confidencePercent !== null ? `, 신뢰도 ${confidencePercent}퍼센트` : ''}`;
 
