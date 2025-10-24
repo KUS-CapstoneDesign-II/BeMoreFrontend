@@ -19,6 +19,13 @@ export function SessionResult({ sessionId }: Props) {
   const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
 
   useEffect(() => {
+    // sessionId가 없으면 API 호출 하지 않음
+    if (!sessionId) {
+      setSummary({});
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
     (async () => {
       try {
@@ -36,6 +43,13 @@ export function SessionResult({ sessionId }: Props) {
   }, [sessionId]);
 
   useEffect(() => {
+    // sessionId가 없으면 API 호출 하지 않음
+    if (!sessionId) {
+      setTimeline([]);
+      setAutoMarkers([]);
+      return;
+    }
+
     let mounted = true;
     (async () => {
       try {
