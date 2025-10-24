@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useMediaPipe } from '../../hooks/useMediaPipe';
 import type { Results } from '@mediapipe/face_mesh';
 
@@ -20,30 +20,8 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
   const workerRef = useRef<Worker | null>(null);
   const useWorkerRef = useRef<boolean>(false);
 
-  const { isReady, isProcessing, cameraState, error, landmarks, startCamera, stopCamera, retryCamera } = useMediaPipe({
-    videoElement: videoRef.current,
-    onResults: (results) => {
-      onLandmarks?.(results);
-      drawLandmarks(results);
-    },
-  });
-
-  // 카메라 시작: 준비되었거나 startTrigger가 변경될 때 시도
-  useEffect(() => {
-    if (isReady) {
-      startCamera();
-    }
-    return () => {
-      stopCamera();
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
-      }
-    };
-  }, [isReady, startCamera, stopCamera, startTrigger]);
-
-  // 랜드마크 그리기
-  const drawLandmarks = (results: Results) => {
+  // 랜드마크 그리기 (메인 스레드 또는 Worker 스레드)
+  const drawLandmarks = useCallback((results: Results) => {
     if (!canvasRef.current || !videoRef.current) return;
 
     const canvas = canvasRef.current;
@@ -102,7 +80,33 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
       ctx.closePath();
       ctx.stroke();
     }
-  };
+  }, []);
+
+  // Memoize onResults callback to prevent infinite initialization loops
+  // This callback must be stable across renders to avoid triggering useMediaPipe's useEffect
+  const handleResults = useCallback((results: Results) => {
+    onLandmarks?.(results);
+    drawLandmarks(results);
+  }, [onLandmarks, drawLandmarks]);
+
+  const { isReady, isProcessing, cameraState, error, landmarks, startCamera, stopCamera, retryCamera } = useMediaPipe({
+    videoElement: videoRef.current,
+    onResults: handleResults,
+  });
+
+  // 카메라 시작: 준비되었거나 startTrigger가 변경될 때 시도
+  useEffect(() => {
+    if (isReady) {
+      startCamera();
+    }
+    return () => {
+      stopCamera();
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, [isReady, startCamera, stopCamera, startTrigger]);
 
   return (
     <div className={`relative ${className}`} role="region" aria-label="실시간 영상 분석">
