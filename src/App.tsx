@@ -317,19 +317,9 @@ function App() {
     try {
       const raw = localStorage.getItem('bemore_last_session');
       if (raw) {
-        const last = JSON.parse(raw) as { sessionId: string; started: number };
-        const elapsedMs = Date.now() - last.started;
-        const MAX_RESUME_TIME = 30 * 60 * 1000; // 30분 이상 된 세션은 자동 폐기
-
-        if (last.sessionId && elapsedMs < MAX_RESUME_TIME) {
-          // 30분 이내의 세션만 재개 옵션 제시
-          setResumeSessionStartedAt(last.started);
-          setShowResumePrompt(true);
-        } else if (last.sessionId && elapsedMs >= MAX_RESUME_TIME) {
-          // 30분 이상 경과한 세션은 자동으로 폐기
-          console.log('⏱️ 세션 자동 폐기: 30분 이상 경과');
-          localStorage.removeItem('bemore_last_session');
-        }
+        // 이전 세션이 있으면 자동으로 폐기 (재개 프롬프트 없음)
+        console.log('🗑️ 이전 세션 자동 폐기');
+        localStorage.removeItem('bemore_last_session');
       }
     } catch (error) {
       console.error('세션 복구 중 오류:', error);
