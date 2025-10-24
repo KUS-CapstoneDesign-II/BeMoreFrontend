@@ -197,9 +197,15 @@ function App() {
 
         // Poll every 100ms to check connection status
         // Use ref to avoid stale closure values
+        let pollCount = 0;
         const pollInterval = setInterval(() => {
           const currentStatus = connectionStatusRef.current;
           const allConnected = Object.values(currentStatus).every((s) => s === 'connected');
+
+          // Log every 10 polls (approx every 1 second)
+          if (++pollCount % 10 === 0) {
+            console.log(`[WebSocket] Poll #${pollCount} - Status:`, currentStatus);
+          }
 
           if (allConnected && !resolved) {
             resolved = true;
