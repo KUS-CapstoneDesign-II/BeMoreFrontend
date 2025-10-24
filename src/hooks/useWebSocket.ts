@@ -23,6 +23,7 @@ interface UseWebSocketReturn {
   sendToLandmarks: (message: WSMessage) => void;
   sendToVoice: (message: WSMessage) => void;
   sendToSession: (message: WSMessage) => void;
+  landmarksWs: WebSocket | null;
 }
 
 /**
@@ -166,5 +167,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     sendToLandmarks,
     sendToVoice,
     sendToSession,
+    // Step 2: VideoFeed에 landmarks WebSocket을 전달
+    landmarksWs: channels?.landmarks?.getRawWebSocket() ?? null,
   };
 }

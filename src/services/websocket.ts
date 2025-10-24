@@ -243,6 +243,14 @@ export class ReconnectingWebSocket {
   getReadyState(): number | null {
     return this.ws?.readyState ?? null;
   }
+
+  /**
+   * 원본 WebSocket 인스턴스 가져오기
+   * (직접 send를 호출해야 할 때 사용)
+   */
+  getRawWebSocket(): WebSocket | null {
+    return this.ws;
+  }
 }
 
 // =====================================

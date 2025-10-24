@@ -91,7 +91,7 @@ function App() {
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
 
   // WebSocket 연결
-  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, sendToLandmarks } = useWebSocket({
+  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, sendToLandmarks, landmarksWs } = useWebSocket({
     onVoiceMessage: (message) => {
       console.log('🎤 Voice message:', message);
       if (message.type === 'stt_received') {
@@ -512,6 +512,7 @@ function App() {
                 <VideoFeed
                   className="w-full h-full"
                   startTrigger={sessionId}
+                  landmarksWebSocket={landmarksWs}
                   onLandmarks={(results) => {
                     try {
                       const payload = (results as any)?.multiFaceLandmarks?.[0] || (results as any)?.multiFaceLandmarks;

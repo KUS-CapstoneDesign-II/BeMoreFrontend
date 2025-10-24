@@ -7,18 +7,27 @@ interface VideoFeedProps {
   className?: string;
   /** When this value changes, the component will attempt to (re)start the camera */
   startTrigger?: string | number | null;
+  /** WebSocket for sending landmarks data */
+  landmarksWebSocket?: WebSocket | null;
 }
 
 /**
  * VideoFeed 컴포넌트
  *
  * 카메라 스트림을 표시하고 MediaPipe로 얼굴 랜드마크를 감지합니다.
+ * 감지된 랜드마크는 WebSocket을 통해 백엔드로 전송됩니다 (3프레임마다 1회).
  */
-export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: VideoFeedProps) {
+export function VideoFeed({
+  onLandmarks,
+  className = '',
+  startTrigger = null,
+  landmarksWebSocket = null
+}: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const workerRef = useRef<Worker | null>(null);
   const useWorkerRef = useRef<boolean>(false);
+  const frameCountRef = useRef(0);
 
   // 랜드마크 그리기 (메인 스레드 또는 Worker 스레드)
   const drawLandmarks = useCallback((results: Results) => {
@@ -87,12 +96,37 @@ export function VideoFeed({ onLandmarks, className = '', startTrigger = null }: 
     }
   }, []);
 
+  // Step 3: MediaPipe에서 받은 랜드마크를 백엔드로 전송 (3프레임마다 1회)
+  const sendLandmarks = useCallback((landmarks: unknown) => {
+    if (!landmarksWebSocket || landmarksWebSocket.readyState !== WebSocket.OPEN) {
+      return;
+    }
+
+    try {
+      const message = {
+        type: 'landmarks',
+        data: landmarks,
+        timestamp: Date.now(),
+      };
+      landmarksWebSocket.send(JSON.stringify(message));
+      console.log('📤 랜드마크 데이터 전송: 468개 포인트');
+    } catch (error) {
+      console.error('❌ 랜드마크 전송 실패:', error);
+    }
+  }, [landmarksWebSocket]);
+
   // Memoize onResults callback to prevent infinite initialization loops
   // This callback must be stable across renders to avoid triggering useMediaPipe's useEffect
   const handleResults = useCallback((results: Results) => {
     onLandmarks?.(results);
     drawLandmarks(results);
-  }, [onLandmarks, drawLandmarks]);
+
+    // Step 3: 3프레임마다 1회 랜드마크 전송 (throttle)
+    frameCountRef.current += 1;
+    if (frameCountRef.current % 3 === 0 && results.multiFaceLandmarks?.length) {
+      sendLandmarks(results.multiFaceLandmarks[0]);
+    }
+  }, [onLandmarks, drawLandmarks, sendLandmarks]);
 
   const { isReady, isProcessing, cameraState, error, landmarks, startCamera, stopCamera, retryCamera } = useMediaPipe({
     videoElement: videoRef.current,
