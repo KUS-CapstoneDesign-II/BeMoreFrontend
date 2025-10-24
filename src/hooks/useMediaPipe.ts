@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 // Use dynamic import inside effect to avoid SSR/bundle shape issues
 import type { Results } from '@mediapipe/face_mesh';
-import { Camera } from '@mediapipe/camera_utils';
+// Camera is a UMD module that exports to global scope; we'll import it dynamically
+import type { Camera } from '@mediapipe/camera_utils';
 
 interface UseMediaPipeOptions {
   videoElement: HTMLVideoElement | null;
@@ -65,7 +66,8 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
     minTrackingConfidence = 0.7,
   } = options;
 
-  const faceMeshRef = useRef<any | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const faceMeshRef = useRef<any>(null);
   const cameraRef = useRef<Camera | null>(null);
 
   const [isReady, setIsReady] = useState(false);
@@ -186,6 +188,11 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
       setCameraState('connecting');
       setIsProcessing(true);
       videoElement.srcObject = stream;
+
+      // Dynamically import Camera from @mediapipe/camera_utils (UMD module)
+      // @ts-expect-error - camera_utils is a UMD module with dynamic exports
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { Camera } = await import('@mediapipe/camera_utils') as any;
 
       // Camera 유틸리티로 비디오 프레임 처리
       const camera = new Camera(videoElement, {
