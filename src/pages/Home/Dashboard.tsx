@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { dashboardAPI } from '../../services/api';
 import { LoadingState, ErrorState, EmptyState } from '../../components/Common/States';
 
 export function Dashboard() {
+  const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,18 @@ export function Dashboard() {
 
   return (
     <div className="space-y-4">
+      {/* Call-to-Action Banner */}
+      <div className="bg-gradient-to-r from-teal-500 to-cyan-500 dark:from-teal-600 dark:to-cyan-600 rounded-xl shadow-lg p-6 text-white">
+        <h2 className="text-2xl font-bold mb-2">심리 상담 세션 시작하기</h2>
+        <p className="text-sm opacity-90 mb-4">AI 심리 상담사와 함께 당신의 감정을 나누어 보세요</p>
+        <button
+          onClick={() => navigate('/session')}
+          className="px-6 py-2 bg-white text-teal-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
+        >
+          세션 시작 →
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow p-4">
           <div className="text-xs text-gray-500">오늘 평균 VAD</div>
