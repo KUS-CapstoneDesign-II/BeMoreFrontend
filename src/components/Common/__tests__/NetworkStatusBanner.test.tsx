@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { NetworkStatusBanner } from '../NetworkStatusBanner';
-import { SettingsProvider } from '../../../../contexts/SettingsContext';
-import { I18nProvider } from '../../../../contexts/I18nContext';
+import { SettingsProvider } from '../../../..//contexts/SettingsContext';
+import { I18nProvider } from '../../../..//contexts/I18nContext';
 
 describe('NetworkStatusBanner', () => {
   it('shows offline message when offline', () => {
