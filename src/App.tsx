@@ -773,12 +773,15 @@ function App() {
         isOpen={showSummary}
         onClose={() => setShowSummary(false)}
         onSubmitFeedback={async (rating, note) => {
+          if (!sessionId) {
+            throw new Error('세션 ID가 없습니다.');
+          }
           try {
-            // TODO: 백엔드에 피드백 전송
-            // await sessionAPI.submitFeedback(sessionId, { rating, note });
-            console.log('📝 세션 피드백:', { rating, note, sessionId });
-            // 실제 구현 시: await sessionAPI.submitFeedback(sessionId, { rating, note });
+            console.log('📝 세션 피드백 제출 시작:', { rating, note, sessionId });
+            const result = await sessionAPI.submitFeedback(sessionId, { rating, note });
+            console.log('✅ 피드백 제출 성공:', result);
           } catch (err) {
+            console.error('❌ 피드백 제출 실패:', err);
             throw err instanceof Error ? err : new Error('피드백 제출에 실패했습니다.');
           }
         }}

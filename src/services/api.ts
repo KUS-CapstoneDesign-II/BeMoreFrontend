@@ -238,6 +238,19 @@ export const sessionAPI = {
     });
     return response.data as Blob;
   },
+
+  /**
+   * 세션 피드백 제출
+   */
+  submitFeedback: async (sessionId: string, feedback: { rating: number; note?: string }): Promise<{ feedbackId: string; sessionId: string; rating: number; submittedAt: string }> => {
+    const response = await api.post<ApiResponse<{ feedbackId: string; sessionId: string; rating: number; submittedAt: string }>>(`/api/session/${sessionId}/feedback`, feedback);
+
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to submit feedback');
+    }
+
+    return response.data.data;
+  },
 };
 
 // =====================================
