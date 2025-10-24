@@ -187,13 +187,13 @@ function App() {
 
         let resolved = false;
          
-        let timeout: NodeJS.Timeout | undefined = undefined;
+        let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
          
-        let pollInterval: NodeJS.Timer | undefined = undefined;
+        let pollInterval: ReturnType<typeof setInterval> | undefined = undefined;
 
         const cleanup = () => {
-          if (timeout) clearTimeout(timeout);
-          if (pollInterval) clearInterval(pollInterval);
+          if (timeout !== undefined) clearTimeout(timeout);
+          if (pollInterval !== undefined) clearInterval(pollInterval);
         };
 
         timeout = setTimeout(() => {
