@@ -147,13 +147,10 @@ function App() {
     try {
       // 1. 세션 시작 API 호출
       const response = await (markAndMeasure('StartSessionAPI', () => {}), sessionAPI.start('frontend_user_001', 'ai_counselor_001'));
-      setSessionId(response.sessionId);
-      setSessionStatus('active');
       const started = Date.now();
-      setSessionStartAt(started);
       localStorage.setItem('bemore_last_session', JSON.stringify({ sessionId: response.sessionId, started }));
 
-      // 2. WebSocket 연결
+      // 2. WebSocket 연결 (완료될 때까지 기다림)
       const wsUrls = {
         landmarks: `${WS_URL}/ws/landmarks/${response.sessionId}`,
         voice: `${WS_URL}/ws/voice/${response.sessionId}`,
@@ -161,6 +158,26 @@ function App() {
       };
       console.log('[WebSocket] 연결 시도:', wsUrls);
       connectWS(wsUrls);
+
+      // 3. WebSocket 연결 완료를 기다림 (최대 5초)
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('WebSocket 연결 시간 초과'));
+        }, 5000);
+
+        const checkConnection = setInterval(() => {
+          if (wsConnected) {
+            clearTimeout(timeout);
+            clearInterval(checkConnection);
+            resolve();
+          }
+        }, 100);
+      });
+
+      // 4. 상태 업데이트 (WebSocket 연결 확인 후)
+      setSessionId(response.sessionId);
+      setSessionStatus('active');
+      setSessionStartAt(started);
 
       console.log('✅ 세션 시작:', response.sessionId);
       funnelEvent('session_started');
