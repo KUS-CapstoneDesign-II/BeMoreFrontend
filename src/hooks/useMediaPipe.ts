@@ -71,15 +71,18 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
   const cameraRef = useRef<Camera | null>(null);
   const initializingRef = useRef(false);
 
+  // Store options in refs to avoid dependency changes triggering re-initialization
+  const optionsRef = useRef({ maxNumFaces, minDetectionConfidence, minTrackingConfidence });
+
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [cameraState, setCameraState] = useState<CameraState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [landmarks, setLandmarks] = useState<Results | null>(null);
 
-  // MediaPipe Face Mesh 초기화
+  // MediaPipe Face Mesh 초기화 (한 번만 실행)
   useEffect(() => {
-    // 이미 초기화 중이면 중복 초기화 방지
+    // 이미 초기화 중이거나 완료되었으면 중복 초기화 방지
     if (initializingRef.current || faceMeshRef.current) {
       return;
     }
@@ -88,16 +91,6 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
       initializingRef.current = true;
       try {
         setError(null);
-
-        // 기존 인스턴스 정리
-        if (faceMeshRef.current) {
-          try {
-            faceMeshRef.current.close();
-          } catch {
-            // ignore close errors
-          }
-          faceMeshRef.current = null;
-        }
 
         // Resolve FaceMesh constructor with robust fallbacks (ESM -> UMD global)
         const resolveFaceMeshCtor = async (): Promise<unknown> => {
@@ -147,13 +140,13 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
 
         // FaceMesh 설정
         faceMesh.setOptions({
-          maxNumFaces,
+          maxNumFaces: optionsRef.current.maxNumFaces,
           refineLandmarks: true, // 홍채 및 입술 랜드마크 포함 (478개)
-          minDetectionConfidence,
-          minTrackingConfidence,
+          minDetectionConfidence: optionsRef.current.minDetectionConfidence,
+          minTrackingConfidence: optionsRef.current.minTrackingConfidence,
         });
 
-        // 결과 핸들러 등록
+        // 결과 핸들러 등록 (onResults는 초기화 후 변경되지 않도록 유지)
         faceMesh.onResults((results: Results) => {
           setLandmarks(results);
           onResults?.(results);
@@ -184,7 +177,20 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         faceMeshRef.current = null;
       }
     };
-  }, [maxNumFaces, minDetectionConfidence, minTrackingConfidence, onResults]);
+  }, []);
+
+  // 옵션 변경 감지 (FaceMesh가 이미 초기화된 후 옵션 업데이트)
+  useEffect(() => {
+    optionsRef.current = { maxNumFaces, minDetectionConfidence, minTrackingConfidence };
+    if (faceMeshRef.current) {
+      faceMeshRef.current.setOptions({
+        maxNumFaces,
+        refineLandmarks: true,
+        minDetectionConfidence,
+        minTrackingConfidence,
+      });
+    }
+  }, [maxNumFaces, minDetectionConfidence, minTrackingConfidence]);
 
   // 카메라 시작
   const startCamera = useCallback(async () => {
