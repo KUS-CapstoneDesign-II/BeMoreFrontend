@@ -69,6 +69,7 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const faceMeshRef = useRef<any>(null);
   const cameraRef = useRef<Camera | null>(null);
+  const initializingRef = useRef(false);
 
   const [isReady, setIsReady] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -78,10 +79,25 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
 
   // MediaPipe Face Mesh 초기화
   useEffect(() => {
+    // 이미 초기화 중이면 중복 초기화 방지
+    if (initializingRef.current || faceMeshRef.current) {
+      return;
+    }
 
     const initFaceMesh = async () => {
+      initializingRef.current = true;
       try {
         setError(null);
+
+        // 기존 인스턴스 정리
+        if (faceMeshRef.current) {
+          try {
+            faceMeshRef.current.close();
+          } catch {
+            // ignore close errors
+          }
+          faceMeshRef.current = null;
+        }
 
         // Resolve FaceMesh constructor with robust fallbacks (ESM -> UMD global)
         const resolveFaceMeshCtor = async (): Promise<unknown> => {
@@ -150,6 +166,9 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         const errorMessage = err instanceof Error ? err.message : 'MediaPipe 초기화 실패';
         setError(errorMessage);
         console.error('❌ MediaPipe 초기화 오류:', err);
+        faceMeshRef.current = null;
+      } finally {
+        initializingRef.current = false;
       }
     };
 
@@ -157,7 +176,11 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
 
     return () => {
       if (faceMeshRef.current) {
-        faceMeshRef.current.close();
+        try {
+          faceMeshRef.current.close();
+        } catch {
+          // ignore close errors
+        }
         faceMeshRef.current = null;
       }
     };
@@ -261,7 +284,11 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
   const stopCamera = useCallback(() => {
     // 카메라 스트림 중지
     if (cameraRef.current) {
-      cameraRef.current.stop();
+      try {
+        cameraRef.current.stop();
+      } catch (err) {
+        console.warn('경고: 카메라 중지 중 오류:', err);
+      }
       cameraRef.current = null;
     }
 

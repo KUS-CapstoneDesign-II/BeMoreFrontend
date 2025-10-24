@@ -136,7 +136,10 @@ export function VideoFeed({
   // 카메라 시작: 준비되었거나 startTrigger가 변경될 때 시도
   useEffect(() => {
     if (isReady) {
-      startCamera();
+      // startTrigger가 변경될 때마다 이전 카메라 중지 후 재시작
+      startCamera().catch(err => {
+        console.error('카메라 시작 실패:', err);
+      });
     }
     return () => {
       stopCamera();
