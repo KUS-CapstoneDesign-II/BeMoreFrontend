@@ -189,12 +189,31 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
       setIsProcessing(true);
       videoElement.srcObject = stream;
 
-      // Dynamically import Camera from @mediapipe/camera_utils (UMD module)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { Camera } = await import('@mediapipe/camera_utils') as any;
+      // Load Camera from CDN (same approach as FaceMesh)
+      await new Promise<void>((resolve, reject) => {
+        const scriptId = 'mp-camera-utils-umd-script';
+        if (document.getElementById(scriptId)) {
+          resolve();
+          return;
+        }
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.async = true;
+        script.src = 'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js';
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load MediaPipe Camera Utils UMD script'));
+        document.head.appendChild(script);
+      });
+
+      // Access Camera from global window object (set by UMD script)
+      const CameraCtor = (window as unknown as { Camera?: unknown }).Camera;
+      if (typeof CameraCtor !== 'function') {
+        throw new Error('Camera constructor unavailable from global scope');
+      }
 
       // Camera 유틸리티로 비디오 프레임 처리
-      const camera = new Camera(videoElement, {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const camera = new (CameraCtor as any)(videoElement, {
         onFrame: async () => {
           if (faceMeshRef.current) {
             await faceMeshRef.current.send({ image: videoElement });
