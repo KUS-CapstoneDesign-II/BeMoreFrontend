@@ -1,0 +1,33 @@
+image:
+  repository: bemore-frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: bemore.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+env:
+  API_URL: "https://backend.example.com"
+  WS_URL: "wss://backend.example.com"
+

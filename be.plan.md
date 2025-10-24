@@ -111,5 +111,5 @@ Content-Security-Policy:
 - [x] Run axe and fix a11y issues
 - [x] Configure stage/prod envs and branch mapping
 - [x] Add Dockerfile+NGINX with runtime env injection
-- [ ] Provide Helm chart and deployment docs
+- [x] Provide Helm chart and deployment docs
 

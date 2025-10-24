@@ -110,6 +110,60 @@ docker run -d -p 8080:80 \
 
 ---
 
+## ⛵️ On‑Prem 배포 (Helm on Kubernetes)
+
+### 1. 사전 준비
+- 컨테이너 레지스트리에 프론트엔드 이미지를 푸시해 둡니다. 예: `ghcr.io/your-org/bemore-frontend:latest`
+
+`helm/bemore-frontend/values.yaml`의 `image` 값을 실제 이미지로 교체:
+
+```yaml
+image:
+  repository: ghcr.io/your-org/bemore-frontend
+  tag: latest
+  pullPolicy: IfNotPresent
+```
+
+런타임 백엔드 엔드포인트:
+
+```yaml
+env:
+  API_URL: "https://backend.example.com"
+  WS_URL: "wss://backend.example.com"
+```
+
+Ingress 호스트 설정:
+
+```yaml
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: bemore.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+```
+
+### 2. 설치/업그레이드
+
+```bash
+helm upgrade --install bemore-frontend ./helm/bemore-frontend \
+  --namespace bemore --create-namespace \
+  -f ./helm/bemore-frontend/values.yaml
+```
+
+설치 후 확인:
+
+```bash
+kubectl -n bemore get deploy,svc,ingress
+```
+
+NGINX Ingress 사용 시 HTTPS 설정(TLS)은 클러스터 환경에 맞게 `ingress.tls`를 구성하세요.
+
+---
+
 ## 🐛 트러블슈팅
 
 ### WebSocket 연결 실패

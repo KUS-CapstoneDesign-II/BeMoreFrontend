@@ -1,0 +1,7 @@
+apiVersion: v2
+name: bemore-frontend
+description: BeMore Frontend Helm chart (NGINX static site with runtime env injection)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
