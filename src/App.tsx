@@ -130,6 +130,9 @@ function App() {
         window.dispatchEvent(new CustomEvent('ai:fail', { detail: { error: d?.error ?? 'AI stream failed' } }));
       }
     },
+    onStatusChange: (channel, status) => {
+      console.log(`[App] ${channel} status changed to: ${status}`);
+    },
   });
 
   // Ref to track current connection status (avoids closure issues in Promise polling)
