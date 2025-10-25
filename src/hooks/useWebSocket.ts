@@ -126,7 +126,22 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       managerRef.current = new WebSocketManager();
 
       const handleStatusChange = (channel: string, status: ConnectionStatus) => {
+        if (import.meta.env.DEV) {
+          console.log(`[WebSocket] Status change: ${channel} = ${status}`);
+        }
         setConnectionStatus((prev) => ({ ...prev, [channel]: status }));
+
+        // Landmarks WebSocket이 connected 상태가 되면 즉시 설정
+        if (channel === 'landmarks' && status === 'connected') {
+          const rawWs = newChannels.landmarks?.getRawWebSocket();
+          if (rawWs?.readyState === WebSocket.OPEN) {
+            setLandmarksWs(rawWs);
+            if (import.meta.env.DEV) {
+              console.log('[WebSocket] 📡 Landmarks WebSocket 설정됨 (via statusChange callback)');
+            }
+          }
+        }
+
         onStatusChange?.(channel, status);
       };
 
