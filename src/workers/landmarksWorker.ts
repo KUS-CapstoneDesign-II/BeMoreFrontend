@@ -30,7 +30,7 @@ self.onmessage = (e: MessageEvent) => {
     if (!points || points.length === 0) return;
 
     // draw points
-    ctx.fillStyle = '#dc143c';
+    ctx.fillStyle = '#00FF00';
     for (let i = 0; i < points.length; i++) {
       const p = points[i];
       const x = p.x * width;
@@ -42,7 +42,7 @@ self.onmessage = (e: MessageEvent) => {
 
     // optional face oval polyline (indices subset)
     const faceOval = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
-    ctx.strokeStyle = '#dc143c';
+    ctx.strokeStyle = '#00FF00';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let i = 0; i < faceOval.length; i++) {
