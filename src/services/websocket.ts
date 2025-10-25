@@ -41,6 +41,11 @@ export class ReconnectingWebSocket {
     this.maxRetries = options.maxRetries || 5;
     this.maxRetryDelay = options.maxRetryDelay || 30000; // 30초
     this.onStatusChange = onStatusChange;
+
+    if (import.meta.env.DEV) {
+      console.log(`[ReconnectingWebSocket Constructor] ${this.name}: onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
+      console.log(`[ReconnectingWebSocket Constructor] ${this.name}: this.onStatusChange = ${this.onStatusChange ? 'SET ✅' : 'NOT SET ❌'}`);
+    }
   }
 
   // =============================
@@ -125,9 +130,20 @@ export class ReconnectingWebSocket {
 
       this.ws.onopen = () => {
         console.log(`[WebSocket] ✅ ${this.name} connected (readyState: OPEN)`);
+        console.log(`[WebSocket onopen] ${this.name}: About to call this.onStatusChange...`);
+        console.log(`[WebSocket onopen] ${this.name}: this.onStatusChange = ${this.onStatusChange ? 'EXISTS ✅' : 'UNDEFINED ❌'}`);
+
         this.retryCount = 0;
         this.retryDelay = 1000; // 재연결 성공 시 리셋
-        this.onStatusChange?.('connected');
+
+        if (this.onStatusChange) {
+          console.log(`[WebSocket onopen] ${this.name}: CALLING onStatusChange('connected')...`);
+          this.onStatusChange('connected');
+          console.log(`[WebSocket onopen] ${this.name}: CALLED onStatusChange successfully ✅`);
+        } else {
+          console.error(`[WebSocket onopen] ${this.name}: FAILED - this.onStatusChange is undefined ❌`);
+        }
+
         this.lastActivityAt = Date.now();
         this.startHeartbeat();
         this.registerVisibilityListener();
@@ -289,6 +305,7 @@ export class WebSocketManager {
     onStatusChange?: (channel: keyof WebSocketChannels, status: ConnectionStatus) => void
   ): WebSocketChannels {
     console.log('[WebSocket] Initializing 3 channels (landmarks, voice, session)...');
+    console.log(`[WebSocketManager.connect] onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
 
     if (import.meta.env.DEV && !onStatusChange) {
       console.warn('[WebSocket] ⚠️ onStatusChange callback is undefined!');
@@ -301,7 +318,8 @@ export class WebSocketManager {
         {},
         (status) => {
           if (import.meta.env.DEV) {
-            console.log('[WebSocket] Landmarks status callback:', status);
+            console.log('[WebSocket] Landmarks status callback WRAPPER called with status:', status);
+            console.log(`[WebSocket] Landmarks: onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
           }
           onStatusChange?.('landmarks', status);
         }
