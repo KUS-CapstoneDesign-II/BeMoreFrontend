@@ -92,42 +92,34 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
         // Landmarks WebSocket이 connected 상태가 되면 즉시 설정 시도
         if (channel === 'landmarks' && status === 'connected') {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] Trying to set landmarksWs immediately...');
-          }
+          console.log('[useWebSocket.callback] 🎯 Landmarks CONNECTED callback triggered');
+          console.log('[useWebSocket.callback] newChannels:', !!newChannels);
+          console.log('[useWebSocket.callback] newChannels.landmarks:', !!newChannels?.landmarks);
 
           // newChannels 직접 사용 (closure에서 참조 가능)
           const rawWs = newChannels?.landmarks?.getRawWebSocket?.();
 
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] rawWs:', !!rawWs, 'readyState:', rawWs?.readyState);
-          }
+          console.log('[useWebSocket.callback] rawWs:', !!rawWs, 'readyState:', rawWs?.readyState, 'expected:', WebSocket.OPEN);
 
           if (rawWs?.readyState === WebSocket.OPEN) {
+            console.log('[useWebSocket.callback] ✅ Setting landmarksWs with OPEN WebSocket');
             setLandmarksWs(rawWs);
-            if (import.meta.env.DEV) {
-              console.log('[WebSocket] 📡 Landmarks WebSocket 설정됨 (immediate)');
-            }
+            console.log('[useWebSocket.callback] 📡 Landmarks WebSocket 설정됨 (immediate)');
           } else {
             // 폴링으로 다시 시도
-            if (import.meta.env.DEV) {
-              console.log('[WebSocket] ⚠️ rawWs not OPEN yet, will retry via polling');
-            }
+            console.log('[useWebSocket.callback] ⚠️ rawWs not OPEN (readyState=' + rawWs?.readyState + '), will retry via polling');
             let retries = 0;
             const pollInterval = setInterval(() => {
               retries++;
               const retryWs = newChannels?.landmarks?.getRawWebSocket?.();
               if (retryWs?.readyState === WebSocket.OPEN) {
+                console.log('[useWebSocket.polling] ✅ Setting landmarksWs via polling (attempt ' + retries + ')');
                 setLandmarksWs(retryWs);
-                if (import.meta.env.DEV) {
-                  console.log('[WebSocket] 📡 Landmarks WebSocket 설정됨 (polling, attempt ' + retries + ')');
-                }
+                console.log('[useWebSocket.polling] 📡 Landmarks WebSocket 설정됨 (polling)');
                 clearInterval(pollInterval);
               } else if (retries > 100) {
+                console.error('[useWebSocket.polling] ❌ Failed to set landmarksWs after 100 retries');
                 clearInterval(pollInterval);
-                if (import.meta.env.DEV) {
-                  console.error('[WebSocket] ❌ Failed to set landmarksWs after 100 retries');
-                }
               }
             }, 50);
           }
