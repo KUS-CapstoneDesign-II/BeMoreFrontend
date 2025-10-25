@@ -97,7 +97,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         newChannels.session.onMessage(onSessionMessage);
       }
 
-      console.log('[WebSocket] ✅ useWebSocket: Channel initialization started, waiting for connections...');
+      console.log('[WebSocket] ✅ useWebSocket: Channel initialization started');
+      console.log('[WebSocket] 🔌 Landmarks URL:', wsUrls.landmarks);
+      console.log('[WebSocket] 🔌 Voice URL:', wsUrls.voice);
+      console.log('[WebSocket] 🔌 Session URL:', wsUrls.session);
     },
     [onLandmarksMessage, onVoiceMessage, onSessionMessage, onStatusChange]
   );

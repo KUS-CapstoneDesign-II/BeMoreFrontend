@@ -250,6 +250,20 @@ export class ReconnectingWebSocket {
    * (직접 send를 호출해야 할 때 사용)
    */
   getRawWebSocket(): WebSocket | null {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      return this.ws;
+    }
+    if (import.meta.env.DEV) {
+      const readyStateMap: Record<number, string> = {
+        0: 'CONNECTING',
+        1: 'OPEN',
+        2: 'CLOSING',
+        3: 'CLOSED',
+      };
+      const status = this.ws?.readyState ?? 'null';
+      const statusName = typeof status === 'number' ? readyStateMap[status] : 'null';
+      console.warn(`[WebSocket] ${this.name} getRawWebSocket() - status: ${statusName} (${status})`);
+    }
     return this.ws;
   }
 }

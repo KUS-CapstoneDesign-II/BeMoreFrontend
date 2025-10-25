@@ -82,7 +82,17 @@ export function VideoFeed({
 
   // Step 3: MediaPipe에서 받은 랜드마크를 백엔드로 전송 (3프레임마다 1회)
   const sendLandmarks = useCallback((landmarks: unknown) => {
-    if (!landmarksWebSocket || landmarksWebSocket.readyState !== WebSocket.OPEN) {
+    if (!landmarksWebSocket) {
+      if (frameCountRef.current % 30 === 0) {
+        console.warn('⚠️ landmarksWebSocket is null');
+      }
+      return;
+    }
+
+    if (landmarksWebSocket.readyState !== WebSocket.OPEN) {
+      if (frameCountRef.current % 30 === 0) {
+        console.warn(`⚠️ Landmarks WebSocket 상태: ${landmarksWebSocket.readyState} (OPEN=${WebSocket.OPEN}, CONNECTING=${WebSocket.CONNECTING})`);
+      }
       return;
     }
 
@@ -93,7 +103,12 @@ export function VideoFeed({
         timestamp: Date.now(),
       };
       landmarksWebSocket.send(JSON.stringify(message));
-      console.log('📤 랜드마크 데이터 전송: 468개 포인트');
+
+      // 매 30프레임마다만 로그 출력 (과도한 콘솔 스팸 방지)
+      if (frameCountRef.current % 30 === 0) {
+        const landmarksArray = Array.isArray(landmarks) ? landmarks : [];
+        console.log(`📤 Landmarks 전송 (${landmarksArray.length}개 포인트, 프레임: ${frameCountRef.current})`);
+      }
     } catch (error) {
       console.error('❌ 랜드마크 전송 실패:', error);
     }
