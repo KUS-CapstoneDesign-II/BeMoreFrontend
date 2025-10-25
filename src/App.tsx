@@ -105,8 +105,40 @@ function App() {
     onLandmarksMessage: (message) => {
       console.log('👤 Landmarks message:', message);
       if (message.type === 'emotion_update') {
-        const d = message.data as { emotion?: EmotionType };
-        setCurrentEmotion(d?.emotion as EmotionType);
+        // 🎯 ENHANCED LOGGING: Verify emotion_update data format
+        const d = message.data as { emotion?: string };
+        const emotionValue = d?.emotion;
+
+        // Frontend supports: happy, sad, angry, anxious, neutral, surprised, disgusted, fearful
+        // Backend currently maps: neutral, happy, sad, angry, anxious, excited
+        // NOTE: 'excited' vs 'surprised' mismatch - Backend uses 'excited', Frontend uses 'surprised'
+        const validEmotions = ['neutral', 'happy', 'sad', 'angry', 'anxious', 'surprised', 'disgusted', 'fearful', 'excited'];
+        const isValidEmotion = validEmotions.includes(emotionValue ?? '');
+
+        console.log('🎯 [CRITICAL] emotion_update details:', {
+          type: message.type,
+          emotionValue: emotionValue,
+          emotionType: typeof emotionValue,
+          isValidEmotionEnum: isValidEmotion,
+          validEmotions: validEmotions,
+          messageDataKeys: Object.keys(d),
+          fullData: d
+        });
+
+        if (emotionValue) {
+          // Handle 'excited' from Backend by converting to 'surprised' for Frontend
+          let mappedEmotion = emotionValue;
+          if (emotionValue === 'excited') {
+            console.warn('⚠️ Backend sent "excited" but Frontend uses "surprised" - converting');
+            mappedEmotion = 'surprised';
+          }
+
+          console.log(`✅ Setting currentEmotion to: "${mappedEmotion}" (original: "${emotionValue}", type: ${typeof emotionValue})`);
+          setCurrentEmotion(mappedEmotion as EmotionType);
+          console.log('✅ currentEmotion state updated');
+        } else {
+          console.warn('⚠️ emotion_update received but emotion field is missing/empty:', d);
+        }
       }
     },
     onSessionMessage: (message) => {
@@ -539,11 +571,36 @@ function App() {
 
   // 🔍 DIAGNOSTIC: Monitor when landmarksWs changes
   useEffect(() => {
-    console.log('[App.tsx] 📡 landmarksWs changed! New value:', !!landmarksWs, 'readyState:', landmarksWs?.readyState);
+    console.log('[App.tsx] 🔴 CRITICAL: landmarksWs state changed!');
+    console.log('[App.tsx]   ├─ landmarksWs exists:', !!landmarksWs);
+    console.log('[App.tsx]   ├─ readyState:', landmarksWs?.readyState);
+    console.log('[App.tsx]   ├─ OPEN constant:', WebSocket.OPEN);
+    console.log('[App.tsx]   ├─ Is OPEN?:', landmarksWs?.readyState === WebSocket.OPEN);
+    console.log('[App.tsx]   └─ URL:', landmarksWs?.url);
+
     if (landmarksWs?.readyState === WebSocket.OPEN) {
-      console.log('[App.tsx] ✅ landmarksWs is OPEN and ready!');
+      console.log('[App.tsx] ✅✅✅ landmarksWs is OPEN and ready! - WILL SEND LANDMARKS!');
+    } else {
+      console.log('[App.tsx] ⛔⛔⛔ landmarksWs NOT READY - landmarks WILL NOT SEND');
     }
   }, [landmarksWs]);
+
+  // 🎯 DIAGNOSTIC: Monitor when currentEmotion state changes
+  useEffect(() => {
+    console.log('[App.tsx] 🎯 [CRITICAL] currentEmotion state changed!');
+    console.log('[App.tsx]   ├─ currentEmotion value:', currentEmotion);
+    console.log('[App.tsx]   ├─ currentEmotion type:', typeof currentEmotion);
+    const validEmotions = ['neutral', 'happy', 'sad', 'angry', 'anxious', 'surprised', 'disgusted', 'fearful'];
+    console.log('[App.tsx]   ├─ isValidEmotion:', validEmotions.includes(currentEmotion ?? ''));
+    console.log('[App.tsx]   └─ validEmotions list:', validEmotions);
+
+    if (currentEmotion) {
+      console.log(`[App.tsx] ✅ currentEmotion successfully updated to: "${currentEmotion}"`);
+      console.log(`[App.tsx] ✅ EmotionCard will now display with emotion="${currentEmotion}"`);
+    } else {
+      console.log('[App.tsx] ⚠️ currentEmotion is null - EmotionCard will show "감정 분석 중..."');
+    }
+  }, [currentEmotion]);
 
   return (
     <div id="main" className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">

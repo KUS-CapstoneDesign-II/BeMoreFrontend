@@ -128,10 +128,15 @@ export function VideoFeed({
       landmarksLength: Array.isArray(landmarks) ? landmarks.length : 0,
     };
 
+    // CRITICAL DEBUG: 매 프레임마다 로깅 (Backend 진단)
+    if (frameCountRef.current === 120 || frameCountRef.current === 150 || frameCountRef.current % 60 === 0) {
+      console.log('[VideoFeed] 🔴 sendLandmarks ENTRY - Frame', frameCountRef.current, debugTrace);
+    }
+
     // Only send landmarks during an active session
     if (!isSessionActiveNow) {
-      if (frameCountRef.current % 30 === 0) {
-        console.log('[VideoFeed] ⚠️  Early return: isSessionActive = false', debugTrace);
+      if (frameCountRef.current === 120 || frameCountRef.current % 60 === 0) {
+        console.log('[VideoFeed] ⛔ BLOCKED: isSessionActive = false (frame', frameCountRef.current + ')');
       }
       return;
     }
@@ -140,11 +145,11 @@ export function VideoFeed({
     const ws = landmarksWsRef.current;
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      if (frameCountRef.current % 30 === 0) {
-        console.log('[VideoFeed] ⚠️  Early return: WebSocket not OPEN', {
+      if (frameCountRef.current === 120 || frameCountRef.current % 60 === 0) {
+        console.log('[VideoFeed] ⛔ BLOCKED: WebSocket not ready (frame', frameCountRef.current + ')', {
           wsExists: !!ws,
           wsReadyState: ws?.readyState,
-          WebSocket_OPEN: WebSocket.OPEN,
+          expectedReadyState: WebSocket.OPEN,
         });
       }
       return;
@@ -182,12 +187,18 @@ export function VideoFeed({
         });
       }
 
+      // ✅ SEND: 실제 전송
       ws.send(JSON.stringify(message));
 
       // 매 30프레임마다만 로그 출력 (과도한 콘솔 스팸 방지)
       if (frameCountRef.current % 30 === 0) {
         const landmarksArray = Array.isArray(landmarks) ? landmarks : [];
-        console.log(`[VideoFeed] 📤 Landmarks 전송 (${landmarksArray.length}개 포인트, 프레임: ${frameCountRef.current})`);
+        console.log(`[VideoFeed] 📤 Landmarks 전송 SUCCESS (${landmarksArray.length}개 포인트, 프레임: ${frameCountRef.current})`);
+      }
+
+      // CRITICAL: 프레임 120, 150에서는 항상 로그
+      if (frameCountRef.current === 120 || frameCountRef.current === 150) {
+        console.log(`[VideoFeed] ✅ LANDMARK SENT at frame ${frameCountRef.current}`);
       }
     } catch (error) {
       console.error('[VideoFeed] ❌ 랜드마크 전송 실패:', error);
