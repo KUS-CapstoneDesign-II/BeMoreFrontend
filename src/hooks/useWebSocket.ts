@@ -58,12 +58,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   } = options;
 
   const managerRef = useRef<WebSocketManager | null>(null);
+  const landmarksWsRef = useRef<WebSocket | null>(null);
   const [channels, setChannels] = useState<WebSocketChannels | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<Record<string, ConnectionStatus>>({
     landmarks: 'disconnected',
     voice: 'disconnected',
     session: 'disconnected',
   });
+  // Trigger re-render when landmarksWs changes (for VideoFeed to receive updates)
   const [landmarksWs, setLandmarksWs] = useState<WebSocket | null>(null);
 
   // 전체 연결 상태 계산
@@ -104,8 +106,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             console.log('[useWebSocket.callback] rawWs object:', rawWs);
             console.log('[useWebSocket.callback] rawWs.readyState before setLandmarksWs:', rawWs.readyState);
             try {
+              // Set both ref (immediate) and state (for re-render)
+              landmarksWsRef.current = rawWs;
               setLandmarksWs(rawWs);
               console.log('[useWebSocket.callback] 📡 Landmarks WebSocket 설정됨 (immediate) - SUCCESS');
+              console.log('[useWebSocket.callback] ✅ BOTH ref and state updated with WebSocket');
             } catch (err) {
               console.error('[useWebSocket.callback] ❌ ERROR setting landmarksWs:', err);
             }
@@ -118,8 +123,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
               const retryWs = newChannels?.landmarks?.getRawWebSocket?.();
               if (retryWs?.readyState === WebSocket.OPEN) {
                 console.log('[useWebSocket.polling] ✅ Setting landmarksWs via polling (attempt ' + retries + ')');
+                // Set both ref (immediate) and state (for re-render)
+                landmarksWsRef.current = retryWs;
                 setLandmarksWs(retryWs);
                 console.log('[useWebSocket.polling] 📡 Landmarks WebSocket 설정됨 (polling)');
+                console.log('[useWebSocket.polling] ✅ BOTH ref and state updated with WebSocket');
                 clearInterval(pollInterval);
               } else if (retries > 100) {
                 console.error('[useWebSocket.polling] ❌ Failed to set landmarksWs after 100 retries');
@@ -159,6 +167,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       managerRef.current.disconnectAll();
       managerRef.current = null;
       setChannels(null);
+      landmarksWsRef.current = null;
+      setLandmarksWs(null);
       setConnectionStatus({
         landmarks: 'disconnected',
         voice: 'disconnected',
