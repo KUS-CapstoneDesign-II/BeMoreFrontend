@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
 import type { EmotionType } from '../../types';
 
 interface EmotionCardProps {
   emotion: EmotionType | null;
   confidence?: number;
   className?: string;
+  lastUpdatedAt?: number | null;  // ← 추가
+  updateCount?: number;            // ← 추가
 }
 
 const emotionConfig: Record<EmotionType, {
@@ -85,7 +88,30 @@ const emotionConfig: Record<EmotionType, {
  *
  * 현재 감지된 감정을 카드 형태로 표시합니다.
  */
-export function EmotionCard({ emotion, confidence, className = '' }: EmotionCardProps) {
+export function EmotionCard({
+  emotion,
+  confidence,
+  className = '',
+  lastUpdatedAt,
+  updateCount = 0
+}: EmotionCardProps) {
+  // 마지막 업데이트 이후 경과 시간 계산
+  const [elapsedTime, setElapsedTime] = useState(0);
+
+  useEffect(() => {
+    if (!lastUpdatedAt) return;
+
+    const updateElapsed = () => {
+      const now = Date.now();
+      const diff = Math.floor((now - lastUpdatedAt) / 1000);
+      setElapsedTime(diff);
+    };
+
+    updateElapsed();
+    const interval = setInterval(updateElapsed, 1000);
+    return () => clearInterval(interval);
+  }, [lastUpdatedAt]);
+
   if (!emotion) {
     return (
       <div
@@ -95,8 +121,13 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
         aria-label="감정 분석 중"
       >
         <div className="text-center">
-          <div className="text-4xl mb-2" aria-hidden="true">❓</div>
+          <div className="text-4xl mb-2 animate-pulse" aria-hidden="true">❓</div>
           <div className="text-sm text-gray-500 font-medium">감정 분석 중...</div>
+          {updateCount > 0 && (
+            <div className="text-xs text-gray-400 mt-2">
+              분석 완료: {updateCount}회 ({elapsedTime}초 경과)
+            </div>
+          )}
         </div>
       </div>
     );
@@ -152,9 +183,17 @@ export function EmotionCard({ emotion, confidence, className = '' }: EmotionCard
           {config.message}
         </p>
 
+        {/* ✨ 새 코드: 업데이트 정보 */}
+        {lastUpdatedAt && (
+          <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-200">
+            <span>마지막 업데이트: {elapsedTime}초 전</span>
+            {updateCount > 0 && <span> • 총 {updateCount}회</span>}
+          </div>
+        )}
+
         {/* 신뢰도 바 */}
         {confidencePercent !== null && (
-          <div className="space-y-1">
+          <div className="space-y-1 mt-3">
             <div className="flex justify-between text-xs text-gray-500">
               <span>신뢰도</span>
               <span className="font-semibold">{confidencePercent}%</span>

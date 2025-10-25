@@ -87,6 +87,11 @@ function App() {
 
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
+
+  // 🎯 감정 업데이트 추적
+  const [emotionUpdatedAt, setEmotionUpdatedAt] = useState<number | null>(null);
+  const [emotionUpdateCount, setEmotionUpdateCount] = useState(0);
+
   const [sttText, setSttText] = useState(DEMO_MODE ? '안녕하세요! BeMore 심리 상담 시스템입니다.' : '');
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
 
@@ -134,6 +139,19 @@ function App() {
           }
 
           console.log(`✅ Setting currentEmotion to: "${mappedEmotion}" (original: "${emotionValue}", type: ${typeof emotionValue})`);
+
+          // ✨ 새 코드: 업데이트 시간 기록
+          const now = Date.now();
+          setEmotionUpdatedAt(now);
+          setEmotionUpdateCount(prev => prev + 1);
+
+          console.log(`✅ Emotion updated:`, {
+            emotion: mappedEmotion,
+            updateCount: emotionUpdateCount + 1,
+            timestamp: new Date(now).toLocaleTimeString(),
+            timeSinceLastUpdate: emotionUpdatedAt ? `${now - emotionUpdatedAt}ms` : 'first'
+          });
+
           setCurrentEmotion(mappedEmotion as EmotionType);
           console.log('✅ currentEmotion state updated');
         } else {
@@ -770,8 +788,20 @@ function App() {
             {sidebarTab === 'analyze' && (
               <>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-3 sm:p-4 animate-slide-in-left">
-                  <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">현재 감정</h2>
-                  <EmotionCard emotion={currentEmotion} confidence={0.85} />
+                  <div className="flex items-center justify-between mb-2 sm:mb-3">
+                    <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200">현재 감정</h2>
+                    {emotionUpdateCount > 0 && (
+                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-2 py-1 rounded-full">
+                        ✨ 실시간 업데이트 ({emotionUpdateCount}회)
+                      </span>
+                    )}
+                  </div>
+                  <EmotionCard
+                    emotion={currentEmotion}
+                    confidence={0.85}
+                    lastUpdatedAt={emotionUpdatedAt}
+                    updateCount={emotionUpdateCount}
+                  />
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">음성 분석</h2>
