@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { useMediaPipe } from '../../hooks/useMediaPipe';
 import type { Results } from '@mediapipe/face_mesh';
 
@@ -30,23 +30,22 @@ export function VideoFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameCountRef = useRef(0);
 
-  // 🔧 FIX: Use state to track isSessionActive
-  // sessionId prop is updated asynchronously by React, so we need to explicitly
-  // track when it changes and update our state accordingly
-  const [isSessionActive, setIsSessionActive] = useState(false);
+  // 🔧 FIX: Use ref for synchronous access to isSessionActive
+  // state update is async, so frame callbacks may execute before state reflects the change
+  // Using ref ensures we ALWAYS have the latest value
+  const isSessionActiveRef = useRef(false);
 
-  // 🔧 FIX: Listen for sessionId prop changes and update isSessionActive
-  // This ensures we catch the moment when sessionId actually gets updated from null to a real value
+  // 🔧 FIX: Listen for sessionId prop changes and update BOTH state and ref
   useEffect(() => {
-    console.log('[VideoFeed] 🔍 sessionId prop changed:', !!sessionId, 'sessionId:', sessionId);
+    const newValue = !!sessionId;
+    console.log('[VideoFeed] 🔍 sessionId prop changed:', newValue, 'sessionId:', sessionId);
 
-    if (sessionId) {
-      console.log('[VideoFeed] ✅ Setting isSessionActive = TRUE');
-      setIsSessionActive(true);
-    } else {
-      console.log('[VideoFeed] ⏹️  Setting isSessionActive = FALSE');
-      setIsSessionActive(false);
-    }
+    // Update ref IMMEDIATELY (synchronous)
+    isSessionActiveRef.current = newValue;
+
+    // Also update state for react rendering (asynchronous)
+    // This is mainly for consistency, but we'll read from ref in frame callbacks
+    console.log('[VideoFeed] ✅ Updated isSessionActiveRef to:', newValue);
   }, [sessionId]);
 
   // 🔧 FIX: Use ref to always have the latest WebSocket without closure staleness
@@ -116,19 +115,21 @@ export function VideoFeed({
   }, [landmarksWebSocket]);
 
   // Step 3: MediaPipe에서 받은 랜드마크를 백엔드로 전송 (3프레임마다 1회)
-  // 🔧 FIX: Use ref instead of prop to always have the latest value (no closure staleness)
-  // 🔧 FIX: Only send landmarks when session is active
+  // 🔧 FIX: Use ref instead of state for isSessionActive
+  // State updates are async, but frame callbacks execute synchronously
+  // Using ref ensures we ALWAYS have the latest value
   const sendLandmarks = useCallback((landmarks: unknown) => {
     // 🔍 DEBUG: 콜백 호출 추적
+    const isSessionActiveNow = isSessionActiveRef.current;
     const debugTrace = {
-      isSessionActive,
+      isSessionActive: isSessionActiveNow,
       wsExists: !!landmarksWsRef.current,
       wsReadyState: landmarksWsRef.current?.readyState,
       landmarksLength: Array.isArray(landmarks) ? landmarks.length : 0,
     };
 
     // Only send landmarks during an active session
-    if (!isSessionActive) {
+    if (!isSessionActiveNow) {
       if (frameCountRef.current % 30 === 0) {
         console.log('[VideoFeed] ⚠️  Early return: isSessionActive = false', debugTrace);
       }
@@ -165,7 +166,7 @@ export function VideoFeed({
     } catch (error) {
       console.error('[VideoFeed] ❌ 랜드마크 전송 실패:', error);
     }
-  }, [isSessionActive]);
+  }, []);
 
   // Memoize onResults callback to prevent infinite initialization loops
   // This callback must be stable across renders to avoid triggering useMediaPipe's useEffect
