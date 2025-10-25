@@ -69,12 +69,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   // 전체 연결 상태 계산
   const isConnected = Object.values(connectionStatus).every((status) => status === 'connected');
 
-  // Landmarks WebSocket을 channels 변경 시 업데이트
+  // Landmarks WebSocket을 connectionStatus 변경 시 업데이트
+  // (channels는 초기 설정 후 변경되지 않으므로 connectionStatus를 감시)
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      console.log('[useEffect] Landmarks effect triggered, channels:', !!channels);
-    }
-
     if (!channels) {
       if (import.meta.env.DEV) {
         console.log('[useEffect] ❌ channels is null, returning');
@@ -83,18 +80,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     }
 
     if (import.meta.env.DEV) {
-      console.log('[useEffect] channels.landmarks:', !!channels.landmarks);
+      console.log('[useEffect] Landmarks connectionStatus changed:', connectionStatus.landmarks);
     }
 
     const trySetLandmarks = () => {
-      if (import.meta.env.DEV) {
-        console.log('[polling] Attempting to get landmarks WebSocket...');
-      }
-
       const rawWs = channels.landmarks?.getRawWebSocket();
 
-      if (import.meta.env.DEV) {
-        console.log('[polling] rawWs:', !!rawWs, 'readyState:', rawWs?.readyState);
+      if (import.meta.env.DEV && rawWs) {
+        console.log('[polling] readyState:', rawWs.readyState, 'OPEN=', WebSocket.OPEN);
       }
 
       if (rawWs?.readyState === WebSocket.OPEN) {
@@ -102,32 +95,25 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         if (import.meta.env.DEV) {
           console.log('[WebSocket] 📡 Landmarks WebSocket 업데이트 - READY');
         }
-      } else if (import.meta.env.DEV) {
-        if (rawWs) {
-          console.log('[WebSocket] ⏳ Landmarks WebSocket not ready yet:', rawWs.readyState);
-        } else {
-          console.log('[WebSocket] ⚠️ rawWs is null from getRawWebSocket()');
-        }
+        return true;
       }
+      return false;
     };
 
-    // 즉시 시도
-    trySetLandmarks();
-
-    // 연결 상태가 변경될 때마다 다시 시도
-    const interval = setInterval(trySetLandmarks, 100);
-
-    if (import.meta.env.DEV) {
-      console.log('[useEffect] ✅ Polling interval started for landmarks WebSocket');
+    // 즉시 한 번 시도
+    if (trySetLandmarks()) {
+      return;
     }
 
-    return () => {
-      clearInterval(interval);
-      if (import.meta.env.DEV) {
-        console.log('[useEffect] Polling interval cleared');
+    // 아직 준비되지 않았으면 계속 폴링
+    const interval = setInterval(() => {
+      if (trySetLandmarks()) {
+        clearInterval(interval);
       }
-    };
-  }, [channels]);
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [channels, connectionStatus.landmarks]);
 
   // WebSocket 연결
   const connect = useCallback(
