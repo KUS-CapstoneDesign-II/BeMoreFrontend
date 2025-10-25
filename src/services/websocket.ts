@@ -290,24 +290,43 @@ export class WebSocketManager {
   ): WebSocketChannels {
     console.log('[WebSocket] Initializing 3 channels (landmarks, voice, session)...');
 
+    if (import.meta.env.DEV && !onStatusChange) {
+      console.warn('[WebSocket] ⚠️ onStatusChange callback is undefined!');
+    }
+
     this.channels = {
       landmarks: new ReconnectingWebSocket(
         wsUrls.landmarks,
         'Landmarks',
         {},
-        (status) => onStatusChange?.('landmarks', status)
+        (status) => {
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] Landmarks status callback:', status);
+          }
+          onStatusChange?.('landmarks', status);
+        }
       ),
       voice: new ReconnectingWebSocket(
         wsUrls.voice,
         'Voice',
         {},
-        (status) => onStatusChange?.('voice', status)
+        (status) => {
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] Voice status callback:', status);
+          }
+          onStatusChange?.('voice', status);
+        }
       ),
       session: new ReconnectingWebSocket(
         wsUrls.session,
         'Session',
         {},
-        (status) => onStatusChange?.('session', status)
+        (status) => {
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] Session status callback:', status);
+          }
+          onStatusChange?.('session', status);
+        }
       ),
     };
 
