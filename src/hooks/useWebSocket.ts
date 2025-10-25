@@ -71,17 +71,43 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
   // Landmarks WebSocket을 channels 변경 시 업데이트
   useEffect(() => {
-    if (!channels) return;
+    if (import.meta.env.DEV) {
+      console.log('[useEffect] Landmarks effect triggered, channels:', !!channels);
+    }
+
+    if (!channels) {
+      if (import.meta.env.DEV) {
+        console.log('[useEffect] ❌ channels is null, returning');
+      }
+      return;
+    }
+
+    if (import.meta.env.DEV) {
+      console.log('[useEffect] channels.landmarks:', !!channels.landmarks);
+    }
 
     const trySetLandmarks = () => {
+      if (import.meta.env.DEV) {
+        console.log('[polling] Attempting to get landmarks WebSocket...');
+      }
+
       const rawWs = channels.landmarks?.getRawWebSocket();
+
+      if (import.meta.env.DEV) {
+        console.log('[polling] rawWs:', !!rawWs, 'readyState:', rawWs?.readyState);
+      }
+
       if (rawWs?.readyState === WebSocket.OPEN) {
         setLandmarksWs(rawWs);
         if (import.meta.env.DEV) {
           console.log('[WebSocket] 📡 Landmarks WebSocket 업데이트 - READY');
         }
-      } else if (import.meta.env.DEV && rawWs) {
-        console.log('[WebSocket] ⏳ Landmarks WebSocket not ready yet:', rawWs.readyState);
+      } else if (import.meta.env.DEV) {
+        if (rawWs) {
+          console.log('[WebSocket] ⏳ Landmarks WebSocket not ready yet:', rawWs.readyState);
+        } else {
+          console.log('[WebSocket] ⚠️ rawWs is null from getRawWebSocket()');
+        }
       }
     };
 
@@ -91,7 +117,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     // 연결 상태가 변경될 때마다 다시 시도
     const interval = setInterval(trySetLandmarks, 100);
 
-    return () => clearInterval(interval);
+    if (import.meta.env.DEV) {
+      console.log('[useEffect] ✅ Polling interval started for landmarks WebSocket');
+    }
+
+    return () => {
+      clearInterval(interval);
+      if (import.meta.env.DEV) {
+        console.log('[useEffect] Polling interval cleared');
+      }
+    };
   }, [channels]);
 
   // WebSocket 연결
