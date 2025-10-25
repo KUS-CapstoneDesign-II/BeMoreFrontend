@@ -143,23 +143,27 @@ function App() {
 
   // 세션 시작
   const handleStartSession = async () => {
-    console.log('\n\n=== 🎯 [CRITICAL] handleStartSession() CALLED ===');
-    console.log('isLoading:', isLoading, 'sessionId:', sessionId);
+    // Super early log - if this doesn't appear, the function isn't being called
+    console.log('\n\n🔴🔴🔴 [CRITICAL] handleStartSession() CALLED - ENTRY POINT 🔴🔴🔴');
+    console.log('[CRITICAL] Function parameters - isLoading:', isLoading, 'sessionId:', sessionId);
 
     // 이미 진행 중인 경우 중복 실행 방지
     if (isLoading || sessionId) {
       console.error('⛔ [CRITICAL] Already loading or session exists, returning early');
+      console.error('   isLoading:', isLoading, 'sessionId:', sessionId);
       return;
     }
 
     // Onboarding guard
     const completed = localStorage.getItem(ONBOARDING_KEY) === 'true';
+    console.log('[CRITICAL] Onboarding check - localStorage key:', ONBOARDING_KEY, 'completed:', completed);
     if (!completed) {
       console.log('⚠️ [CRITICAL] Onboarding not completed, showing onboarding');
       setShowOnboarding(true);
       funnelEvent('onboarding_required');
       return;
     }
+    console.log('✅ [CRITICAL] Onboarding check PASSED');
     setIsLoading(true);
     setError(null);
     console.log('✅ [CRITICAL] setIsLoading(true), now starting session...');
@@ -190,8 +194,9 @@ function App() {
       // 3. WebSocket 연결 완료를 기다림 (최대 5초)
       // Use a promise that resolves when WebSocket is connected
       // Using connectionStatusRef to avoid closure stale value issues
+      console.log('⏳ [CRITICAL] Step 3: Now waiting for WebSocket connection...');
       await new Promise<void>((resolve, reject) => {
-        console.log('[WebSocket] Starting connection wait - current state:', connectionStatusRef.current);
+        console.log('[WebSocket] ⏳ Starting connection wait - current state:', connectionStatusRef.current);
 
         // If already connected, resolve immediately
         const currentStatus = connectionStatusRef.current;
