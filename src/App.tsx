@@ -177,7 +177,16 @@ function App() {
       const started = Date.now();
       localStorage.setItem('bemore_last_session', JSON.stringify({ sessionId: response.sessionId, started }));
 
-      console.log('\n📍 [CRITICAL] Step 2: About to call connectWS()...');
+      // 🔧 FIX: Set sessionId BEFORE calling connectWS()
+      // This ensures isSessionActive = !!sessionId is true when WebSocket connects
+      // and frame callbacks execute (prevents race condition)
+      console.log('\n📍 [CRITICAL] Step 2: Setting session state BEFORE WebSocket connection...');
+      setSessionId(response.sessionId);
+      setSessionStatus('active');
+      setSessionStartAt(started);
+      console.log('✅ [CRITICAL] Session state updated - isSessionActive is now TRUE');
+
+      console.log('📍 [CRITICAL] Step 2b: About to call connectWS()...');
       console.log('WS_URL:', WS_URL);
 
       // 2. WebSocket 연결 (완료될 때까지 기다림)
@@ -255,12 +264,8 @@ function App() {
         }, 100);
       });
 
-      // 4. 상태 업데이트 (WebSocket 연결 확인 후)
-      console.log('📍 [CRITICAL] Step 3: All WebSockets connected, updating session state...');
-      setSessionId(response.sessionId);
-      setSessionStatus('active');
-      setSessionStartAt(started);
-
+      // 4. WebSocket 연결 확인 완료
+      console.log('📍 [CRITICAL] Step 3: All WebSockets connected');
       console.log('✅ [CRITICAL] 세션 시작 완료:', response.sessionId);
       console.log('=== 🎯 [CRITICAL] handleStartSession() COMPLETED SUCCESSFULLY ===\n');
       funnelEvent('session_started');
