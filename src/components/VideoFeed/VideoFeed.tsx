@@ -9,6 +9,8 @@ interface VideoFeedProps {
   startTrigger?: string | number | null;
   /** WebSocket for sending landmarks data */
   landmarksWebSocket?: WebSocket | null;
+  /** Whether a session is currently active */
+  isSessionActive?: boolean;
 }
 
 /**
@@ -21,7 +23,8 @@ export function VideoFeed({
   onLandmarks,
   className = '',
   startTrigger = null,
-  landmarksWebSocket = null
+  landmarksWebSocket = null,
+  isSessionActive = false
 }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -95,21 +98,17 @@ export function VideoFeed({
 
   // Step 3: MediaPipe에서 받은 랜드마크를 백엔드로 전송 (3프레임마다 1회)
   // 🔧 FIX: Use ref instead of prop to always have the latest value (no closure staleness)
+  // 🔧 FIX: Only send landmarks when session is active
   const sendLandmarks = useCallback((landmarks: unknown) => {
-    // Use ref for guaranteed current value, not prop from stale closure
-    const ws = landmarksWsRef.current;
-
-    if (!ws) {
-      if (frameCountRef.current % 30 === 0) {
-        console.warn('[VideoFeed] ⚠️ landmarksWebSocket is null (from ref)');
-      }
+    // Only send landmarks during an active session
+    if (!isSessionActive) {
       return;
     }
 
-    if (ws.readyState !== WebSocket.OPEN) {
-      if (frameCountRef.current % 30 === 0) {
-        console.warn(`[VideoFeed] ⚠️ Landmarks WebSocket 상태: ${ws.readyState} (OPEN=${WebSocket.OPEN}, CONNECTING=${WebSocket.CONNECTING})`);
-      }
+    // Use ref for guaranteed current value, not prop from stale closure
+    const ws = landmarksWsRef.current;
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
       return;
     }
 
@@ -129,7 +128,7 @@ export function VideoFeed({
     } catch (error) {
       console.error('[VideoFeed] ❌ 랜드마크 전송 실패:', error);
     }
-  }, []);
+  }, [isSessionActive]);
 
   // Memoize onResults callback to prevent infinite initialization loops
   // This callback must be stable across renders to avoid triggering useMediaPipe's useEffect
