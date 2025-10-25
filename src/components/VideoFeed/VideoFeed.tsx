@@ -27,6 +27,10 @@ export function VideoFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameCountRef = useRef(0);
 
+  // 🔧 FIX: Use ref to always have the latest WebSocket without closure staleness
+  // When landmarksWebSocket prop changes, update this ref immediately
+  const landmarksWsRef = useRef<WebSocket | null>(null);
+
   // 랜드마크 그리기 (메인 스레드에서만 실행 - Worker 제거)
   const drawLandmarks = useCallback((results: Results) => {
     if (!canvasRef.current || !videoRef.current) return;
@@ -80,18 +84,31 @@ export function VideoFeed({
     }
   }, []);
 
+  // 🔧 FIX: Sync the prop to ref whenever it changes (immediate, no closure staleness)
+  useEffect(() => {
+    console.log('[VideoFeed] 🔄 landmarksWebSocket prop changed, updating ref:', !!landmarksWebSocket, 'readyState:', landmarksWebSocket?.readyState);
+    landmarksWsRef.current = landmarksWebSocket;
+    if (landmarksWebSocket?.readyState === WebSocket.OPEN) {
+      console.log('[VideoFeed] ✅ WebSocket is OPEN, ref updated and ready for frame callbacks');
+    }
+  }, [landmarksWebSocket]);
+
   // Step 3: MediaPipe에서 받은 랜드마크를 백엔드로 전송 (3프레임마다 1회)
+  // 🔧 FIX: Use ref instead of prop to always have the latest value (no closure staleness)
   const sendLandmarks = useCallback((landmarks: unknown) => {
-    if (!landmarksWebSocket) {
+    // Use ref for guaranteed current value, not prop from stale closure
+    const ws = landmarksWsRef.current;
+
+    if (!ws) {
       if (frameCountRef.current % 30 === 0) {
-        console.warn('⚠️ landmarksWebSocket is null');
+        console.warn('[VideoFeed] ⚠️ landmarksWebSocket is null (from ref)');
       }
       return;
     }
 
-    if (landmarksWebSocket.readyState !== WebSocket.OPEN) {
+    if (ws.readyState !== WebSocket.OPEN) {
       if (frameCountRef.current % 30 === 0) {
-        console.warn(`⚠️ Landmarks WebSocket 상태: ${landmarksWebSocket.readyState} (OPEN=${WebSocket.OPEN}, CONNECTING=${WebSocket.CONNECTING})`);
+        console.warn(`[VideoFeed] ⚠️ Landmarks WebSocket 상태: ${ws.readyState} (OPEN=${WebSocket.OPEN}, CONNECTING=${WebSocket.CONNECTING})`);
       }
       return;
     }
@@ -102,17 +119,17 @@ export function VideoFeed({
         data: landmarks,
         timestamp: Date.now(),
       };
-      landmarksWebSocket.send(JSON.stringify(message));
+      ws.send(JSON.stringify(message));
 
       // 매 30프레임마다만 로그 출력 (과도한 콘솔 스팸 방지)
       if (frameCountRef.current % 30 === 0) {
         const landmarksArray = Array.isArray(landmarks) ? landmarks : [];
-        console.log(`📤 Landmarks 전송 (${landmarksArray.length}개 포인트, 프레임: ${frameCountRef.current})`);
+        console.log(`[VideoFeed] 📤 Landmarks 전송 (${landmarksArray.length}개 포인트, 프레임: ${frameCountRef.current})`);
       }
     } catch (error) {
-      console.error('❌ 랜드마크 전송 실패:', error);
+      console.error('[VideoFeed] ❌ 랜드마크 전송 실패:', error);
     }
-  }, [landmarksWebSocket]);
+  }, []);
 
   // Memoize onResults callback to prevent infinite initialization loops
   // This callback must be stable across renders to avoid triggering useMediaPipe's useEffect
