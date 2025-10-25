@@ -45,6 +45,11 @@ export class ReconnectingWebSocket {
     if (import.meta.env.DEV) {
       console.log(`[ReconnectingWebSocket Constructor] ${this.name}: onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
       console.log(`[ReconnectingWebSocket Constructor] ${this.name}: this.onStatusChange = ${this.onStatusChange ? 'SET ✅' : 'NOT SET ❌'}`);
+
+      // Log the callback function itself to verify it's the wrapper
+      if (onStatusChange) {
+        console.log(`[ReconnectingWebSocket Constructor] ${this.name}: Callback toString:`, onStatusChange.toString().substring(0, 100));
+      }
     }
   }
 
@@ -138,6 +143,13 @@ export class ReconnectingWebSocket {
 
         if (this.onStatusChange) {
           console.log(`[WebSocket onopen] ${this.name}: CALLING onStatusChange('connected')...`);
+
+          // CRITICAL: Log the callback function name to verify it's the wrapper
+          const cbName = this.onStatusChange.name || 'anonymous';
+          const cbStart = this.onStatusChange.toString().substring(0, 80);
+          console.log(`[WebSocket onopen] ${this.name}: Callback name = "${cbName}"`);
+          console.log(`[WebSocket onopen] ${this.name}: Callback start = "${cbStart}"`);
+
           this.onStatusChange('connected');
           console.log(`[WebSocket onopen] ${this.name}: CALLED onStatusChange successfully ✅`);
         } else {
@@ -311,40 +323,52 @@ export class WebSocketManager {
       console.warn('[WebSocket] ⚠️ onStatusChange callback is undefined!');
     }
 
+    if (import.meta.env.DEV) {
+      console.log('[WebSocketManager.connect] Creating wrapper callbacks...');
+    }
+
+    const landmarksCallback = (status: ConnectionStatus) => {
+      if (import.meta.env.DEV) {
+        console.log('[WebSocket] 🟢 Landmarks status callback WRAPPER called with status:', status);
+        console.log(`[WebSocket] 🟢 Landmarks: onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
+      }
+      onStatusChange?.('landmarks', status);
+    };
+
     this.channels = {
       landmarks: new ReconnectingWebSocket(
         wsUrls.landmarks,
         'Landmarks',
         {},
-        (status) => {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] Landmarks status callback WRAPPER called with status:', status);
-            console.log(`[WebSocket] Landmarks: onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
-          }
-          onStatusChange?.('landmarks', status);
-        }
+        landmarksCallback
       ),
       voice: new ReconnectingWebSocket(
         wsUrls.voice,
         'Voice',
         {},
-        (status) => {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] Voice status callback:', status);
-          }
-          onStatusChange?.('voice', status);
-        }
+        (() => {
+          const voiceCallback = (status: ConnectionStatus) => {
+            if (import.meta.env.DEV) {
+              console.log('[WebSocket] 🔵 Voice status callback WRAPPER called with status:', status);
+            }
+            onStatusChange?.('voice', status);
+          };
+          return voiceCallback;
+        })()
       ),
       session: new ReconnectingWebSocket(
         wsUrls.session,
         'Session',
         {},
-        (status) => {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] Session status callback:', status);
-          }
-          onStatusChange?.('session', status);
-        }
+        (() => {
+          const sessionCallback = (status: ConnectionStatus) => {
+            if (import.meta.env.DEV) {
+              console.log('[WebSocket] 🟡 Session status callback WRAPPER called with status:', status);
+            }
+            onStatusChange?.('session', status);
+          };
+          return sessionCallback;
+        })()
       ),
     };
 
