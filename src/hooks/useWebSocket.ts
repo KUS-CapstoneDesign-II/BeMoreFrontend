@@ -69,51 +69,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   // 전체 연결 상태 계산
   const isConnected = Object.values(connectionStatus).every((status) => status === 'connected');
 
-  // Landmarks WebSocket을 connectionStatus 변경 시 업데이트
-  // (channels는 초기 설정 후 변경되지 않으므로 connectionStatus를 감시)
-  useEffect(() => {
-    if (!channels) {
-      if (import.meta.env.DEV) {
-        console.log('[useEffect] ❌ channels is null, returning');
-      }
-      return;
-    }
-
-    if (import.meta.env.DEV) {
-      console.log('[useEffect] Landmarks connectionStatus changed:', connectionStatus.landmarks);
-    }
-
-    const trySetLandmarks = () => {
-      const rawWs = channels.landmarks?.getRawWebSocket();
-
-      if (import.meta.env.DEV && rawWs) {
-        console.log('[polling] readyState:', rawWs.readyState, 'OPEN=', WebSocket.OPEN);
-      }
-
-      if (rawWs?.readyState === WebSocket.OPEN) {
-        setLandmarksWs(rawWs);
-        if (import.meta.env.DEV) {
-          console.log('[WebSocket] 📡 Landmarks WebSocket 업데이트 - READY');
-        }
-        return true;
-      }
-      return false;
-    };
-
-    // 즉시 한 번 시도
-    if (trySetLandmarks()) {
-      return;
-    }
-
-    // 아직 준비되지 않았으면 계속 폴링
-    const interval = setInterval(() => {
-      if (trySetLandmarks()) {
-        clearInterval(interval);
-      }
-    }, 50);
-
-    return () => clearInterval(interval);
-  }, [channels, connectionStatus.landmarks]);
 
   // WebSocket 연결
   const connect = useCallback(
@@ -133,12 +88,42 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
         // Landmarks WebSocket이 connected 상태가 되면 즉시 설정
         if (channel === 'landmarks' && status === 'connected') {
-          const rawWs = newChannels.landmarks?.getRawWebSocket();
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] Trying to set landmarksWs...');
+          }
+
+          // newChannels를 직접 사용
+          const rawWs = newChannels.landmarks?.getRawWebSocket?.();
+
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] rawWs:', !!rawWs, 'readyState:', rawWs?.readyState);
+          }
+
           if (rawWs?.readyState === WebSocket.OPEN) {
             setLandmarksWs(rawWs);
             if (import.meta.env.DEV) {
               console.log('[WebSocket] 📡 Landmarks WebSocket 설정됨 (via statusChange callback)');
             }
+          } else if (import.meta.env.DEV) {
+            console.log('[WebSocket] ⚠️ rawWs not OPEN yet, will retry via polling');
+            // 폴링으로 다시 시도
+            let retries = 0;
+            const pollInterval = setInterval(() => {
+              retries++;
+              const retryWs = newChannels.landmarks?.getRawWebSocket?.();
+              if (retryWs?.readyState === WebSocket.OPEN) {
+                setLandmarksWs(retryWs);
+                if (import.meta.env.DEV) {
+                  console.log('[WebSocket] 📡 Landmarks WebSocket 설정됨 (via polling, attempt ' + retries + ')');
+                }
+                clearInterval(pollInterval);
+              } else if (retries > 100) {
+                clearInterval(pollInterval);
+                if (import.meta.env.DEV) {
+                  console.error('[WebSocket] ❌ Failed to get landmarksWs after 100 retries');
+                }
+              }
+            }, 50);
           }
         }
 
