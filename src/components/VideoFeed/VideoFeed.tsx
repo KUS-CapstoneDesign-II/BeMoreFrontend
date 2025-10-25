@@ -151,11 +151,37 @@ export function VideoFeed({
     }
 
     try {
+      // DEBUG: 전송 데이터 구조 확인
+      if (frameCountRef.current === 150) {
+        console.log('[VideoFeed] 🔍 Landmark 전송 데이터 상세 분석:', {
+          landmarksType: typeof landmarks,
+          isArray: Array.isArray(landmarks),
+          length: Array.isArray(landmarks) ? landmarks.length : 'N/A',
+          firstElement: Array.isArray(landmarks) && landmarks.length > 0 ? landmarks[0] : null,
+          firstElementType: Array.isArray(landmarks) && landmarks.length > 0 ? typeof landmarks[0] : 'N/A',
+          firstElementHasX: Array.isArray(landmarks) && landmarks.length > 0 ? 'x' in landmarks[0] : false,
+          firstElementHasY: Array.isArray(landmarks) && landmarks.length > 0 ? 'y' in landmarks[0] : false,
+        });
+      }
+
       const message = {
         type: 'landmarks',
         data: landmarks,
         timestamp: Date.now(),
       };
+
+      // DEBUG: 메시지 구조 확인
+      if (frameCountRef.current === 150) {
+        console.log('[VideoFeed] 📦 Message 구조 (전송 직전):', {
+          messageType: typeof message,
+          messageKeys: Object.keys(message),
+          dataType: typeof message.data,
+          dataIsArray: Array.isArray(message.data),
+          dataLength: Array.isArray(message.data) ? message.data.length : 'N/A',
+          stringifyLength: JSON.stringify(message).length,
+        });
+      }
+
       ws.send(JSON.stringify(message));
 
       // 매 30프레임마다만 로그 출력 (과도한 콘솔 스팸 방지)
