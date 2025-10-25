@@ -325,51 +325,44 @@ export class WebSocketManager {
 
     if (import.meta.env.DEV) {
       console.log('[WebSocketManager.connect] Creating wrapper callbacks...');
+      console.log(`[WebSocketManager.connect] onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
+      if (onStatusChange) {
+        console.log('[WebSocketManager.connect] onStatusChange.toString():', onStatusChange.toString().substring(0, 150));
+      }
     }
 
-    const landmarksCallback = (status: ConnectionStatus) => {
-      if (import.meta.env.DEV) {
-        console.log('[WebSocket] 🟢 Landmarks status callback WRAPPER called with status:', status);
-        console.log(`[WebSocket] 🟢 Landmarks: onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
-      }
-      onStatusChange?.('landmarks', status);
-    };
+    // CRITICAL FIX: Explicitly capture onStatusChange to ensure it's not undefined in closure
+    const landmarksCallback = onStatusChange
+      ? (status: ConnectionStatus) => {
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] 🟢 Landmarks status callback WRAPPER called with status:', status);
+          }
+          onStatusChange('landmarks', status);
+        }
+      : undefined;
+
+    const voiceCallback = onStatusChange
+      ? (status: ConnectionStatus) => {
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] 🔵 Voice status callback WRAPPER called with status:', status);
+          }
+          onStatusChange('voice', status);
+        }
+      : undefined;
+
+    const sessionCallback = onStatusChange
+      ? (status: ConnectionStatus) => {
+          if (import.meta.env.DEV) {
+            console.log('[WebSocket] 🟡 Session status callback WRAPPER called with status:', status);
+          }
+          onStatusChange('session', status);
+        }
+      : undefined;
 
     this.channels = {
-      landmarks: new ReconnectingWebSocket(
-        wsUrls.landmarks,
-        'Landmarks',
-        {},
-        landmarksCallback
-      ),
-      voice: new ReconnectingWebSocket(
-        wsUrls.voice,
-        'Voice',
-        {},
-        (() => {
-          const voiceCallback = (status: ConnectionStatus) => {
-            if (import.meta.env.DEV) {
-              console.log('[WebSocket] 🔵 Voice status callback WRAPPER called with status:', status);
-            }
-            onStatusChange?.('voice', status);
-          };
-          return voiceCallback;
-        })()
-      ),
-      session: new ReconnectingWebSocket(
-        wsUrls.session,
-        'Session',
-        {},
-        (() => {
-          const sessionCallback = (status: ConnectionStatus) => {
-            if (import.meta.env.DEV) {
-              console.log('[WebSocket] 🟡 Session status callback WRAPPER called with status:', status);
-            }
-            onStatusChange?.('session', status);
-          };
-          return sessionCallback;
-        })()
-      ),
+      landmarks: new ReconnectingWebSocket(wsUrls.landmarks, 'Landmarks', {}, landmarksCallback),
+      voice: new ReconnectingWebSocket(wsUrls.voice, 'Voice', {}, voiceCallback),
+      session: new ReconnectingWebSocket(wsUrls.session, 'Session', {}, sessionCallback),
     };
 
     // 모든 채널 연결
