@@ -143,26 +143,38 @@ function App() {
 
   // 세션 시작
   const handleStartSession = async () => {
+    console.log('\n\n=== 🎯 [CRITICAL] handleStartSession() CALLED ===');
+    console.log('isLoading:', isLoading, 'sessionId:', sessionId);
+
     // 이미 진행 중인 경우 중복 실행 방지
     if (isLoading || sessionId) {
+      console.error('⛔ [CRITICAL] Already loading or session exists, returning early');
       return;
     }
 
     // Onboarding guard
     const completed = localStorage.getItem(ONBOARDING_KEY) === 'true';
     if (!completed) {
+      console.log('⚠️ [CRITICAL] Onboarding not completed, showing onboarding');
       setShowOnboarding(true);
       funnelEvent('onboarding_required');
       return;
     }
     setIsLoading(true);
     setError(null);
+    console.log('✅ [CRITICAL] setIsLoading(true), now starting session...');
 
     try {
+      console.log('\n📍 [CRITICAL] Step 1: Calling sessionAPI.start()...');
       // 1. 세션 시작 API 호출
       const response = await (markAndMeasure('StartSessionAPI', () => {}), sessionAPI.start('frontend_user_001', 'ai_counselor_001'));
+      console.log('✅ [CRITICAL] sessionAPI.start() returned:', response.sessionId);
+
       const started = Date.now();
       localStorage.setItem('bemore_last_session', JSON.stringify({ sessionId: response.sessionId, started }));
+
+      console.log('\n📍 [CRITICAL] Step 2: About to call connectWS()...');
+      console.log('WS_URL:', WS_URL);
 
       // 2. WebSocket 연결 (완료될 때까지 기다림)
       const wsUrls = {
@@ -170,8 +182,10 @@ function App() {
         voice: `${WS_URL}/ws/voice/${response.sessionId}`,
         session: `${WS_URL}/ws/session/${response.sessionId}`,
       };
-      console.log('[WebSocket] 연결 시도:', wsUrls);
+      console.log('✅ [CRITICAL] wsUrls prepared:', wsUrls);
+      console.log('🚀 [CRITICAL] Calling connectWS() NOW...');
       connectWS(wsUrls);
+      console.log('✅ [CRITICAL] connectWS() returned');
 
       // 3. WebSocket 연결 완료를 기다림 (최대 5초)
       // Use a promise that resolves when WebSocket is connected
@@ -237,17 +251,24 @@ function App() {
       });
 
       // 4. 상태 업데이트 (WebSocket 연결 확인 후)
+      console.log('📍 [CRITICAL] Step 3: All WebSockets connected, updating session state...');
       setSessionId(response.sessionId);
       setSessionStatus('active');
       setSessionStartAt(started);
 
-      console.log('✅ 세션 시작:', response.sessionId);
+      console.log('✅ [CRITICAL] 세션 시작 완료:', response.sessionId);
+      console.log('=== 🎯 [CRITICAL] handleStartSession() COMPLETED SUCCESSFULLY ===\n');
       funnelEvent('session_started');
     } catch (err) {
-      console.error('❌ 세션 시작 실패:', err);
+      console.error('\n❌ [CRITICAL] ERROR in handleStartSession():');
+      console.error('Error object:', err);
+      console.error('Error message:', err instanceof Error ? err.message : JSON.stringify(err));
+      console.error('Stack:', err instanceof Error ? err.stack : 'no stack');
       setError(err instanceof Error ? err.message : '세션 시작 실패');
       funnelEvent('session_start_failed');
+      console.log('=== 🎯 [CRITICAL] handleStartSession() FAILED ===\n');
     } finally {
+      console.log('📍 [CRITICAL] Finally block: setIsLoading(false)');
       setIsLoading(false);
     }
   };
