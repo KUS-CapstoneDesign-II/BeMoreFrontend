@@ -84,8 +84,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       console.log('[useWebSocket.connect] WebSocketManager created');
 
       // 먼저 connect 호출하여 channels를 받음
-      let newChannelsRef: WebSocketChannels | null = null;
-
       const newChannels = managerRef.current.connect(wsUrls, (channel: string, status: ConnectionStatus) => {
         if (import.meta.env.DEV) {
           console.log(`[WebSocket] Status change: ${channel} = ${status}`);
@@ -98,8 +96,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             console.log('[WebSocket] Trying to set landmarksWs immediately...');
           }
 
-          // 최신 newChannels 참조 사용
-          const rawWs = newChannelsRef?.landmarks?.getRawWebSocket?.();
+          // newChannels 직접 사용 (closure에서 참조 가능)
+          const rawWs = newChannels?.landmarks?.getRawWebSocket?.();
 
           if (import.meta.env.DEV) {
             console.log('[WebSocket] rawWs:', !!rawWs, 'readyState:', rawWs?.readyState);
@@ -118,7 +116,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             let retries = 0;
             const pollInterval = setInterval(() => {
               retries++;
-              const retryWs = newChannelsRef?.landmarks?.getRawWebSocket?.();
+              const retryWs = newChannels?.landmarks?.getRawWebSocket?.();
               if (retryWs?.readyState === WebSocket.OPEN) {
                 setLandmarksWs(retryWs);
                 if (import.meta.env.DEV) {
@@ -138,7 +136,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         onStatusChange?.(channel, status);
       });
 
-      newChannelsRef = newChannels;
       setChannels(newChannels);
 
       // 메시지 핸들러 등록
