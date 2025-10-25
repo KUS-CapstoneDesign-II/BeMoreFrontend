@@ -64,9 +64,23 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     voice: 'disconnected',
     session: 'disconnected',
   });
+  const [landmarksWs, setLandmarksWs] = useState<WebSocket | null>(null);
 
   // 전체 연결 상태 계산
   const isConnected = Object.values(connectionStatus).every((status) => status === 'connected');
+
+  // Landmarks WebSocket을 connectionStatus 변경 시마다 업데이트
+  useEffect(() => {
+    if (channels?.landmarks) {
+      const rawWs = channels.landmarks.getRawWebSocket();
+      if (rawWs?.readyState === WebSocket.OPEN) {
+        setLandmarksWs(rawWs);
+        if (import.meta.env.DEV) {
+          console.log('[WebSocket] 📡 Landmarks WebSocket 업데이트 - READY');
+        }
+      }
+    }
+  }, [channels, connectionStatus]);
 
   // WebSocket 연결
   const connect = useCallback(
@@ -170,7 +184,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     sendToLandmarks,
     sendToVoice,
     sendToSession,
-    // Step 2: VideoFeed에 landmarks WebSocket을 전달
-    landmarksWs: channels?.landmarks?.getRawWebSocket() ?? null,
+    // Landmarks WebSocket이 OPEN 상태일 때만 반환
+    landmarksWs,
   };
 }
