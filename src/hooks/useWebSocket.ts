@@ -85,9 +85,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
       // 먼저 connect 호출하여 channels를 받음
       const newChannels = managerRef.current.connect(wsUrls, (channel: string, status: ConnectionStatus) => {
-        if (import.meta.env.DEV) {
-          console.log(`[WebSocket] Status change: ${channel} = ${status}`);
-        }
+        console.log(`[useWebSocket.callback] Status change: ${channel} = ${status}`);
         setConnectionStatus((prev) => ({ ...prev, [channel]: status }));
 
         // Landmarks WebSocket이 connected 상태가 되면 즉시 설정 시도
