@@ -101,8 +101,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
           if (rawWs?.readyState === WebSocket.OPEN) {
             console.log('[useWebSocket.callback] ✅ Setting landmarksWs with OPEN WebSocket');
-            setLandmarksWs(rawWs);
-            console.log('[useWebSocket.callback] 📡 Landmarks WebSocket 설정됨 (immediate)');
+            console.log('[useWebSocket.callback] rawWs object:', rawWs);
+            console.log('[useWebSocket.callback] rawWs.readyState before setLandmarksWs:', rawWs.readyState);
+            try {
+              setLandmarksWs(rawWs);
+              console.log('[useWebSocket.callback] 📡 Landmarks WebSocket 설정됨 (immediate) - SUCCESS');
+            } catch (err) {
+              console.error('[useWebSocket.callback] ❌ ERROR setting landmarksWs:', err);
+            }
           } else {
             // 폴링으로 다시 시도
             console.log('[useWebSocket.callback] ⚠️ rawWs not OPEN (readyState=' + rawWs?.readyState + '), will retry via polling');
