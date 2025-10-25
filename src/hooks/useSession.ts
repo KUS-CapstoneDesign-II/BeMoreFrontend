@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { sessionAPI } from '../services/api';
 import type { SessionStatus, SessionStartResponse } from '../types';
 
@@ -12,7 +12,6 @@ export interface UseSessionReturn {
   pauseSession: () => Promise<void>;
   resumeSession: () => Promise<void>;
   endSession: () => Promise<void>;
-  landmarksWebSocket: WebSocket | undefined;
 }
 
 export function useSession(): UseSessionReturn {
@@ -21,13 +20,6 @@ export function useSession(): UseSessionReturn {
   const [wsUrls, setWsUrls] = useState<SessionStartResponse['wsUrls'] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-
-  // WebSocket 참조 - synchronous access
-  const websocketsRef = useRef<{
-    landmarks?: WebSocket;
-    voice?: WebSocket;
-    session?: WebSocket;
-  }>({});
 
   /**
    * 세션 시작
@@ -43,37 +35,6 @@ export function useSession(): UseSessionReturn {
       setSessionId(response.sessionId);
       setWsUrls(response.wsUrls);
       setStatus('active');
-
-      // WebSocket 연결 생성
-      if (response.wsUrls?.landmarks) {
-        console.log('[useSession] 🔌 Creating landmarks WebSocket:', response.wsUrls.landmarks);
-        const landmarksWs = new WebSocket(response.wsUrls.landmarks);
-
-        landmarksWs.onopen = () => {
-          console.log('[useSession] ✅ Landmarks WebSocket 연결됨 (OPEN)', {
-            url: response.wsUrls.landmarks,
-            readyState: landmarksWs.readyState,
-            expected: WebSocket.OPEN,
-          });
-          websocketsRef.current.landmarks = landmarksWs;
-        };
-
-        landmarksWs.onclose = () => {
-          console.log('[useSession] ❌ Landmarks WebSocket 종료됨 (CLOSED)');
-          websocketsRef.current.landmarks = undefined;
-        };
-
-        landmarksWs.onerror = (error) => {
-          console.error('[useSession] ❌ Landmarks WebSocket 에러:', error);
-        };
-
-        landmarksWs.onmessage = (event) => {
-          console.log('[useSession] 📨 Landmarks WebSocket 메시지:', event.data);
-        };
-
-        // 연결 대기를 위해 약간의 시간 필요
-        websocketsRef.current.landmarks = landmarksWs;
-      }
 
       console.log('✅ Session started:', response.sessionId);
     } catch (err) {
@@ -155,13 +116,6 @@ export function useSession(): UseSessionReturn {
 
     try {
       console.log('🛑 Ending session:', sessionId);
-
-      // WebSocket 종료
-      if (websocketsRef.current.landmarks?.readyState === WebSocket.OPEN) {
-        websocketsRef.current.landmarks.close();
-        console.log('[useSession] ✅ Landmarks WebSocket 종료 요청');
-      }
-
       await sessionAPI.end(sessionId);
       setStatus('ended');
       console.log('✅ Session ended');
@@ -185,6 +139,5 @@ export function useSession(): UseSessionReturn {
     pauseSession,
     resumeSession,
     endSession,
-    landmarksWebSocket: websocketsRef.current.landmarks,
   };
 }
