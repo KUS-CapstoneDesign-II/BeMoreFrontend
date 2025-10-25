@@ -114,6 +114,8 @@ export class ReconnectingWebSocket {
    * WebSocket 연결
    */
   connect(): void {
+    console.log(`\n[ReconnectingWebSocket.connect] ${this.name} - START`);
+
     if (this.ws?.readyState === WebSocket.OPEN) {
       console.log(`✅ ${this.name} already connected`);
       return;
@@ -128,32 +130,34 @@ export class ReconnectingWebSocket {
     }
 
     console.log(`[WebSocket] ${this.name} connecting to ${this.url}...`);
+    console.log(`[WebSocket] ${this.name} - About to call onStatusChange('connecting')...`);
     this.onStatusChange?.('connecting');
+    console.log(`[WebSocket] ${this.name} - CALLED onStatusChange('connecting') ✅`);
 
     try {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        console.log(`[WebSocket] ✅ ${this.name} connected (readyState: OPEN)`);
-        console.log(`[WebSocket onopen] ${this.name}: About to call this.onStatusChange...`);
-        console.log(`[WebSocket onopen] ${this.name}: this.onStatusChange = ${this.onStatusChange ? 'EXISTS ✅' : 'UNDEFINED ❌'}`);
+        console.log(`\n[WebSocket.onopen] 🟢 ${this.name} CONNECTED (readyState: OPEN)`);
+        console.log(`[WebSocket.onopen] ${this.name}: About to call this.onStatusChange...`);
+        console.log(`[WebSocket.onopen] ${this.name}: this.onStatusChange = ${this.onStatusChange ? 'EXISTS ✅' : 'UNDEFINED ❌'}`);
 
         this.retryCount = 0;
         this.retryDelay = 1000; // 재연결 성공 시 리셋
 
         if (this.onStatusChange) {
-          console.log(`[WebSocket onopen] ${this.name}: CALLING onStatusChange('connected')...`);
+          console.log(`[WebSocket.onopen] ${this.name}: CALLING onStatusChange('connected')...`);
 
           // CRITICAL: Log the callback function name to verify it's the wrapper
           const cbName = this.onStatusChange.name || 'anonymous';
           const cbStart = this.onStatusChange.toString().substring(0, 80);
-          console.log(`[WebSocket onopen] ${this.name}: Callback name = "${cbName}"`);
-          console.log(`[WebSocket onopen] ${this.name}: Callback start = "${cbStart}"`);
+          console.log(`[WebSocket.onopen] ${this.name}: Callback name = "${cbName}"`);
+          console.log(`[WebSocket.onopen] ${this.name}: Callback start = "${cbStart}"`);
 
           this.onStatusChange('connected');
-          console.log(`[WebSocket onopen] ${this.name}: CALLED onStatusChange successfully ✅`);
+          console.log(`[WebSocket.onopen] ${this.name}: CALLED onStatusChange('connected') successfully ✅`);
         } else {
-          console.error(`[WebSocket onopen] ${this.name}: FAILED - this.onStatusChange is undefined ❌`);
+          console.error(`[WebSocket.onopen] ${this.name}: FAILED - this.onStatusChange is undefined ❌`);
         }
 
         this.lastActivityAt = Date.now();
@@ -316,6 +320,7 @@ export class WebSocketManager {
     wsUrls: { landmarks: string; voice: string; session: string },
     onStatusChange?: (channel: keyof WebSocketChannels, status: ConnectionStatus) => void
   ): WebSocketChannels {
+    console.log('\n========== 🚀 WebSocketManager.connect() CALLED ==========');
     console.log('[WebSocket] Initializing 3 channels (landmarks, voice, session)...');
     console.log(`[WebSocketManager.connect] onStatusChange is ${onStatusChange ? 'DEFINED ✅' : 'UNDEFINED ❌'}`);
 
@@ -334,27 +339,21 @@ export class WebSocketManager {
     // CRITICAL FIX: Explicitly capture onStatusChange to ensure it's not undefined in closure
     const landmarksCallback = onStatusChange
       ? (status: ConnectionStatus) => {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] 🟢 Landmarks status callback WRAPPER called with status:', status);
-          }
+          console.log('[WebSocket] 🟢 Landmarks status callback WRAPPER called with status:', status);
           onStatusChange('landmarks', status);
         }
       : undefined;
 
     const voiceCallback = onStatusChange
       ? (status: ConnectionStatus) => {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] 🔵 Voice status callback WRAPPER called with status:', status);
-          }
+          console.log('[WebSocket] 🔵 Voice status callback WRAPPER called with status:', status);
           onStatusChange('voice', status);
         }
       : undefined;
 
     const sessionCallback = onStatusChange
       ? (status: ConnectionStatus) => {
-          if (import.meta.env.DEV) {
-            console.log('[WebSocket] 🟡 Session status callback WRAPPER called with status:', status);
-          }
+          console.log('[WebSocket] 🟡 Session status callback WRAPPER called with status:', status);
           onStatusChange('session', status);
         }
       : undefined;
@@ -372,6 +371,9 @@ export class WebSocketManager {
     this.channels.voice.connect();
     console.log('[WebSocket] Connecting session...');
     this.channels.session.connect();
+
+    console.log('✅ WebSocketManager.connect() COMPLETED - All 3 channels initiated');
+    console.log('========== 🚀 END WebSocketManager.connect() ==========\n');
 
     return this.channels;
   }
