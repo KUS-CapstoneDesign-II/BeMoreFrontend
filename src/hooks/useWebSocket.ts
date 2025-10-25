@@ -69,9 +69,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   // 전체 연결 상태 계산
   const isConnected = Object.values(connectionStatus).every((status) => status === 'connected');
 
-  // Landmarks WebSocket을 connectionStatus 변경 시마다 업데이트
+  // Landmarks WebSocket을 channels 변경 시 업데이트
   useEffect(() => {
-    if (channels?.landmarks) {
+    if (channels?.landmarks && connectionStatus.landmarks === 'connected') {
       const rawWs = channels.landmarks.getRawWebSocket();
       if (rawWs?.readyState === WebSocket.OPEN) {
         setLandmarksWs(rawWs);
@@ -80,7 +80,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         }
       }
     }
-  }, [channels, connectionStatus]);
+  }, [channels?.landmarks, connectionStatus.landmarks]);
 
   // WebSocket 연결
   const connect = useCallback(
