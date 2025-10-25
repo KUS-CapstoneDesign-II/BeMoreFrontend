@@ -7,10 +7,10 @@ interface VideoFeedProps {
   className?: string;
   /** When this value changes, the component will attempt to (re)start the camera */
   startTrigger?: string | number | null;
+  /** Current session ID - used to determine if session is active */
+  sessionId?: string | null;
   /** WebSocket for sending landmarks data */
   landmarksWebSocket?: WebSocket | null;
-  /** Whether a session is currently active */
-  isSessionActive?: boolean;
 }
 
 /**
@@ -23,12 +23,16 @@ export function VideoFeed({
   onLandmarks,
   className = '',
   startTrigger = null,
-  landmarksWebSocket = null,
-  isSessionActive = false
+  sessionId = null,
+  landmarksWebSocket = null
 }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameCountRef = useRef(0);
+
+  // 🔧 FIX: Calculate isSessionActive from sessionId
+  // This ensures the value is always synchronized with the latest sessionId prop
+  const isSessionActive = !!sessionId;
 
   // 🔧 FIX: Use ref to always have the latest WebSocket without closure staleness
   // When landmarksWebSocket prop changes, update this ref immediately

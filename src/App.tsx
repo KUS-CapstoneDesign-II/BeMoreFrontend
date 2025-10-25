@@ -668,8 +668,8 @@ function App() {
                 <VideoFeed
                   className="w-full h-full"
                   startTrigger={sessionId}
+                  sessionId={sessionId}
                   landmarksWebSocket={landmarksWs}
-                  isSessionActive={!!sessionId}
                   onLandmarks={() => {
                     // Landmarks are sent directly via WebSocket in VideoFeed component
                     // when landmarksWebSocket is available and OPEN
