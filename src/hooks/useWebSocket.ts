@@ -73,12 +73,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   // WebSocket 연결
   const connect = useCallback(
     (wsUrls: { landmarks: string; voice: string; session: string }) => {
+      console.log('[useWebSocket.connect] CALLED! wsUrls:', wsUrls);
+
       if (managerRef.current) {
         console.warn('⚠️ WebSocket already connected. Disconnecting first...');
         managerRef.current.disconnectAll();
       }
 
       managerRef.current = new WebSocketManager();
+      console.log('[useWebSocket.connect] WebSocketManager created');
 
       // 먼저 connect 호출하여 channels를 받음
       let newChannelsRef: WebSocketChannels | null = null;
