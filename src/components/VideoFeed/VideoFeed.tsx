@@ -100,8 +100,19 @@ export function VideoFeed({
   // 🔧 FIX: Use ref instead of prop to always have the latest value (no closure staleness)
   // 🔧 FIX: Only send landmarks when session is active
   const sendLandmarks = useCallback((landmarks: unknown) => {
+    // 🔍 DEBUG: 콜백 호출 추적
+    const debugTrace = {
+      isSessionActive,
+      wsExists: !!landmarksWsRef.current,
+      wsReadyState: landmarksWsRef.current?.readyState,
+      landmarksLength: Array.isArray(landmarks) ? landmarks.length : 0,
+    };
+
     // Only send landmarks during an active session
     if (!isSessionActive) {
+      if (frameCountRef.current % 30 === 0) {
+        console.log('[VideoFeed] ⚠️  Early return: isSessionActive = false', debugTrace);
+      }
       return;
     }
 
@@ -109,6 +120,13 @@ export function VideoFeed({
     const ws = landmarksWsRef.current;
 
     if (!ws || ws.readyState !== WebSocket.OPEN) {
+      if (frameCountRef.current % 30 === 0) {
+        console.log('[VideoFeed] ⚠️  Early return: WebSocket not OPEN', {
+          wsExists: !!ws,
+          wsReadyState: ws?.readyState,
+          WebSocket_OPEN: WebSocket.OPEN,
+        });
+      }
       return;
     }
 
@@ -138,6 +156,17 @@ export function VideoFeed({
 
     // Step 3: 3프레임마다 1회 랜드마크 전송 (throttle)
     frameCountRef.current += 1;
+
+    // 🔍 DEBUG: 프레임 카운트와 결과 추적
+    if (frameCountRef.current % 30 === 0) {
+      console.log('[VideoFeed] 🎬 handleResults called', {
+        frame: frameCountRef.current,
+        hasMultiFaceLandmarks: !!results.multiFaceLandmarks,
+        landmarkCount: results.multiFaceLandmarks?.length || 0,
+        willSendLandmarks: frameCountRef.current % 3 === 0 && results.multiFaceLandmarks?.length,
+      });
+    }
+
     if (frameCountRef.current % 3 === 0 && results.multiFaceLandmarks?.length) {
       sendLandmarks(results.multiFaceLandmarks[0]);
     }

@@ -470,14 +470,22 @@ function App() {
     summary: '정상적인 발화 패턴입니다. 적절한 침묵과 발화 비율을 유지하고 있습니다.'
   };
 
-  // 컴포넌트 언마운트 시 세션 종료
+  // 🔍 FIX: Only cleanup on unmount, not when sessionId changes
+  // The issue was that cleanup was running every time sessionId changed,
+  // causing premature WebSocket disconnection
+  // Use a ref to track if we should cleanup
+  const hasMountedRef = useRef(false);
+
   useEffect(() => {
+    // Mark that component has mounted
+    hasMountedRef.current = true;
+
+    // Cleanup only on unmount
     return () => {
-      if (sessionId) {
-        disconnectWS();
-      }
+      console.log('[App.tsx] 🧹 Component unmount cleanup - disconnecting WebSocket');
+      disconnectWS();
     };
-  }, [sessionId, disconnectWS]);
+  }, []); // Empty dependency array - only run on mount/unmount
 
   // Idle timeout: show modal after inactivity; countdown to auto-end
   useIdleTimeout({
