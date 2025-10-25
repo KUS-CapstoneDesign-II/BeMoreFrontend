@@ -71,16 +71,28 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
   // Landmarks WebSocket을 channels 변경 시 업데이트
   useEffect(() => {
-    if (channels?.landmarks && connectionStatus.landmarks === 'connected') {
-      const rawWs = channels.landmarks.getRawWebSocket();
+    if (!channels) return;
+
+    const trySetLandmarks = () => {
+      const rawWs = channels.landmarks?.getRawWebSocket();
       if (rawWs?.readyState === WebSocket.OPEN) {
         setLandmarksWs(rawWs);
         if (import.meta.env.DEV) {
           console.log('[WebSocket] 📡 Landmarks WebSocket 업데이트 - READY');
         }
+      } else if (import.meta.env.DEV && rawWs) {
+        console.log('[WebSocket] ⏳ Landmarks WebSocket not ready yet:', rawWs.readyState);
       }
-    }
-  }, [channels?.landmarks, connectionStatus.landmarks]);
+    };
+
+    // 즉시 시도
+    trySetLandmarks();
+
+    // 연결 상태가 변경될 때마다 다시 시도
+    const interval = setInterval(trySetLandmarks, 100);
+
+    return () => clearInterval(interval);
+  }, [channels]);
 
   // WebSocket 연결
   const connect = useCallback(
