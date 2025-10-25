@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useMediaPipe } from '../../hooks/useMediaPipe';
 import type { Results } from '@mediapipe/face_mesh';
 
@@ -30,9 +30,24 @@ export function VideoFeed({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameCountRef = useRef(0);
 
-  // 🔧 FIX: Calculate isSessionActive from sessionId
-  // This ensures the value is always synchronized with the latest sessionId prop
-  const isSessionActive = !!sessionId;
+  // 🔧 FIX: Use state to track isSessionActive
+  // sessionId prop is updated asynchronously by React, so we need to explicitly
+  // track when it changes and update our state accordingly
+  const [isSessionActive, setIsSessionActive] = useState(false);
+
+  // 🔧 FIX: Listen for sessionId prop changes and update isSessionActive
+  // This ensures we catch the moment when sessionId actually gets updated from null to a real value
+  useEffect(() => {
+    console.log('[VideoFeed] 🔍 sessionId prop changed:', !!sessionId, 'sessionId:', sessionId);
+
+    if (sessionId) {
+      console.log('[VideoFeed] ✅ Setting isSessionActive = TRUE');
+      setIsSessionActive(true);
+    } else {
+      console.log('[VideoFeed] ⏹️  Setting isSessionActive = FALSE');
+      setIsSessionActive(false);
+    }
+  }, [sessionId]);
 
   // 🔧 FIX: Use ref to always have the latest WebSocket without closure staleness
   // When landmarksWebSocket prop changes, update this ref immediately
