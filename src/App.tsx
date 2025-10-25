@@ -519,6 +519,14 @@ function App() {
     }
   }, [consent, openDialog]);
 
+  // 🔍 DIAGNOSTIC: Monitor when landmarksWs changes
+  useEffect(() => {
+    console.log('[App.tsx] 📡 landmarksWs changed! New value:', !!landmarksWs, 'readyState:', landmarksWs?.readyState);
+    if (landmarksWs?.readyState === WebSocket.OPEN) {
+      console.log('[App.tsx] ✅ landmarksWs is OPEN and ready!');
+    }
+  }, [landmarksWs]);
+
   return (
     <div id="main" className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* 랜딩 */}

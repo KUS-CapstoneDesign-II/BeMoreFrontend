@@ -108,7 +108,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             try {
               // Set both ref (immediate) and state (for re-render)
               landmarksWsRef.current = rawWs;
+              console.log('[useWebSocket.callback] 🔴 BEFORE setLandmarksWs - checking setter function');
+              console.log('[useWebSocket.callback] typeof setLandmarksWs:', typeof setLandmarksWs);
               setLandmarksWs(rawWs);
+              console.log('[useWebSocket.callback] 🟢 AFTER setLandmarksWs - state update called');
               console.log('[useWebSocket.callback] 📡 Landmarks WebSocket 설정됨 (immediate) - SUCCESS');
               console.log('[useWebSocket.callback] ✅ BOTH ref and state updated with WebSocket');
             } catch (err) {
