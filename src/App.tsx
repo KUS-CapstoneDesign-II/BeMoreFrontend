@@ -142,14 +142,17 @@ function App() {
 
           // ✨ 새 코드: 업데이트 시간 기록
           const now = Date.now();
+          const newCount = emotionUpdateCount + 1;
+
           setEmotionUpdatedAt(now);
-          setEmotionUpdateCount(prev => prev + 1);
+          setEmotionUpdateCount(newCount);
 
           console.log(`✅ Emotion updated:`, {
             emotion: mappedEmotion,
-            updateCount: emotionUpdateCount + 1,
+            updateCount: newCount,  // ← 로컬 변수 사용으로 정확한 값 표시
             timestamp: new Date(now).toLocaleTimeString(),
-            timeSinceLastUpdate: emotionUpdatedAt ? `${now - emotionUpdatedAt}ms` : 'first'
+            timeSinceLastUpdate: emotionUpdatedAt ? `${now - emotionUpdatedAt}ms` : 'first',
+            wasNeutralBefore: currentEmotion === 'neutral'
           });
 
           setCurrentEmotion(mappedEmotion as EmotionType);
@@ -216,6 +219,13 @@ function App() {
     console.log('✅ [CRITICAL] Onboarding check PASSED');
     setIsLoading(true);
     setError(null);
+
+    // 🎯 감정 상태 초기화 (새 세션 시작)
+    setCurrentEmotion(null);
+    setEmotionUpdatedAt(null);
+    setEmotionUpdateCount(0);
+    console.log('✅ [CRITICAL] Reset emotion state for new session');
+
     console.log('✅ [CRITICAL] setIsLoading(true), now starting session...');
 
     try {
