@@ -1,7 +1,7 @@
 import { useState, useEffect, lazy, Suspense, useRef } from 'react';
 import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
-import { EmotionCard } from './components/Emotion';
+import { EmotionCard, EmotionTimeline } from './components/Emotion';
 import { SessionControls } from './components/Session';
 import { Onboarding } from './components/Onboarding';
 // import { Landing } from './components/Landing/Landing';
@@ -92,6 +92,15 @@ function App() {
   const [emotionUpdatedAt, setEmotionUpdatedAt] = useState<number | null>(null);
   const [emotionUpdateCount, setEmotionUpdateCount] = useState(0);
 
+  // 🎨 감정 타임라인
+  interface EmotionEntry {
+    emotion: EmotionType;
+    timestamp: number;
+    frameCount: number;
+    sttSnippet?: string;
+  }
+  const [emotionTimeline, setEmotionTimeline] = useState<EmotionEntry[]>([]);
+
   const [sttText, setSttText] = useState(DEMO_MODE ? '안녕하세요! BeMore 심리 상담 시스템입니다.' : '');
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
 
@@ -157,6 +166,18 @@ function App() {
 
           setCurrentEmotion(mappedEmotion as EmotionType);
           console.log('✅ currentEmotion state updated');
+
+          // 🎨 타임라인에 추가
+          const frameCount = (message.data as { frameCount?: number }).frameCount || 0;
+          const sttSnippet = (message.data as { sttSnippet?: string }).sttSnippet;
+
+          setEmotionTimeline(prev => [...prev, {
+            emotion: mappedEmotion as EmotionType,
+            timestamp: now,
+            frameCount,
+            sttSnippet
+          }]);
+          console.log('✅ Added to emotion timeline');
         } else {
           console.warn('⚠️ emotion_update received but emotion field is missing/empty:', d);
         }
@@ -224,6 +245,7 @@ function App() {
     setCurrentEmotion(null);
     setEmotionUpdatedAt(null);
     setEmotionUpdateCount(0);
+    setEmotionTimeline([]); // 🎨 타임라인 초기화
     console.log('✅ [CRITICAL] Reset emotion state for new session');
 
     console.log('✅ [CRITICAL] setIsLoading(true), now starting session...');
@@ -812,6 +834,14 @@ function App() {
                     lastUpdatedAt={emotionUpdatedAt}
                     updateCount={emotionUpdateCount}
                   />
+
+                  {/* 🎨 감정 타임라인 */}
+                  {emotionTimeline.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-3">감정 타임라인</h3>
+                      <EmotionTimeline emotions={emotionTimeline} />
+                    </div>
+                  )}
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.1s'}}>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">음성 분석</h2>
