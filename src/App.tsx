@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, useRef } from 'react';
+import { useState, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
 import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard, EmotionTimeline } from './components/Emotion';
@@ -88,6 +88,9 @@ function App() {
   // 🎬 세션 종료 후 결과 로딩 중 상태
   const [isWaitingForSessionEnd, setIsWaitingForSessionEnd] = useState(false);
 
+  // 🎬 사용자가 요약 모달을 수동으로 닫았는지 추적 (재오픈 방지)
+  const [userClosedSummary, setUserClosedSummary] = useState(false);
+
   // 🔴 DEBUG: isWaitingForSessionEnd 상태 변경 모니터링
   useEffect(() => {
     console.log('🔴 [STATE] isWaitingForSessionEnd 변경:', { isWaitingForSessionEnd });
@@ -97,6 +100,16 @@ function App() {
   useEffect(() => {
     console.log('🔴 [STATE] showSummary 변경:', { showSummary });
   }, [showSummary]);
+
+  // 🎬 SessionResult onLoadingChange 콜백 메모이제이션 (상단에서 정의하여 조건부 사용 방지)
+  const handleSessionResultLoading = useCallback((isLoading: boolean) => {
+    // 로딩이 완료되면 대기 상태 해제 및 요약 모달 표시
+    // 단, 사용자가 수동으로 닫지 않은 경우에만
+    if (!isLoading && !userClosedSummary) {
+      setIsWaitingForSessionEnd(false);
+      setShowSummary(true);
+    }
+  }, [userClosedSummary]);
 
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
@@ -260,6 +273,7 @@ function App() {
     setEmotionUpdateCount(0);
     setEmotionTimeline([]); // 🎨 타임라인 초기화
     console.log('✅ [CRITICAL] Reset emotion state for new session');
+    setUserClosedSummary(false); // Reset flag for new session
 
     console.log('✅ [CRITICAL] setIsLoading(true), now starting session...');
 
@@ -923,13 +937,7 @@ function App() {
               <div className="animate-slide-in-left" style={{animationDelay: '0.05s'}}>
                 <SessionResult
                   sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''}
-                  onLoadingChange={(isLoading) => {
-                    // 로딩이 완료되면 대기 상태 해제 및 요약 모달 표시
-                    if (!isLoading) {
-                      setIsWaitingForSessionEnd(false);
-                      setShowSummary(true);
-                    }
-                  }}
+                  onLoadingChange={handleSessionResultLoading}
                 />
               </div>
             )}
@@ -988,7 +996,8 @@ function App() {
         onClose={() => {
           console.log('🎬 [App.tsx] SessionSummaryModal onClose 콜백 실행:', { showSummary });
           setShowSummary(false);
-          console.log('🎬 [App.tsx] setShowSummary(false) 완료');
+          setUserClosedSummary(true);
+          console.log('🎬 [App.tsx] setShowSummary(false) + setUserClosedSummary(true) 완료');
         }}
         onSubmitFeedback={async (rating, note) => {
           if (!sessionId) {
