@@ -411,12 +411,18 @@ function App() {
     }
 
     try {
-      console.log('🔴 [DEBUG] sessionAPI.end() 호출');
-      await sessionAPI.end(sessionId);
+      console.log('🔴 [DEBUG] sessionAPI.end() 호출 시작');
+
+      // 타임아웃을 설정하여 API가 무한정 기다리지 않도록 (5초)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('sessionAPI.end() 타임아웃')), 5000)
+      );
+
+      await Promise.race([sessionAPI.end(sessionId), timeoutPromise]);
       console.log('✅ [DEBUG] sessionAPI.end() 성공');
     } catch (err) {
       // 백엔드 end 엔드포인트 실패 시 로그만 기록하고 계속 진행
-      console.warn('⚠️ 세션 end API 실패:', err instanceof Error ? err.message : 'Unknown error');
+      console.warn('⚠️ 세션 end API 실패 또는 타임아웃:', err instanceof Error ? err.message : 'Unknown error');
     }
 
     // end API 성공/실패와 관계없이 항상 진행
@@ -433,8 +439,9 @@ function App() {
     funnelEvent('session_ended');
 
     // 🎬 결과 로딩 중 상태 표시 (로딩이 끝난 후 setShowSummary는 onLoadingChange에서 호출)
-    console.log('🔴 [DEBUG] setIsWaitingForSessionEnd(true) 호출');
+    console.log('🔴 [DEBUG] setIsWaitingForSessionEnd(true) 호출 - 로딩 모달 표시 시작');
     setIsWaitingForSessionEnd(true);
+    console.log('🔴 [DEBUG] ✅ setIsWaitingForSessionEnd(true)가 실행됨');
 
     console.log('🔴 [DEBUG] setSidebarTab("result") 호출');
     setSidebarTab('result');
@@ -443,7 +450,7 @@ function App() {
     console.log('🔴 [DEBUG] setSessionId(null) 호출');
     setSessionId(null);
 
-    console.log('🔴 [DEBUG] handleEndSession 완료');
+    console.log('🔴 [DEBUG] ✅✅✅ handleEndSession 완료 - 로딩 모달이 이제 표시되어야 함');
   };
 
   // 온보딩 완료 처리
