@@ -36,3 +36,4 @@ coverage/
 
 # 민감한 정보를 포함하는 문서 (로컬 개발용만)
 FRONTEND_SUPABASE_ACTION_PROMPT.md
+TEAM_PROMPT_FOR_FRONTEND.md

@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard, EmotionTimeline } from './components/Emotion';
@@ -58,6 +59,9 @@ const WS_URL = (() => {
 const DEMO_MODE = import.meta.env.VITE_ENABLE_DEMO_MODE === 'true';
 
 function App() {
+  // Router
+  const navigate = useNavigate();
+
   // Theme hook
   const { toggleTheme } = useTheme();
   const { consent, openDialog, isDialogOpen } = useConsent();
@@ -734,9 +738,22 @@ function App() {
       <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-10 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">BeMore</h1>
-              <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">AI 심리 상담 시스템</p>
+            <div className="flex items-center gap-3">
+              {/* 홈 버튼 - 세션 중일 때만 표시 */}
+              {sessionId && (
+                <button
+                  onClick={() => navigate('/')}
+                  className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-colors"
+                  aria-label="홈으로 돌아가기"
+                  title="홈으로 돌아가기"
+                >
+                  ← 홈
+                </button>
+              )}
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">BeMore</h1>
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">AI 심리 상담 시스템</p>
+              </div>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
               {/* Language and Theme */}
