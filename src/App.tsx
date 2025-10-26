@@ -88,6 +88,11 @@ function App() {
   // 🎬 세션 종료 후 결과 로딩 중 상태
   const [isWaitingForSessionEnd, setIsWaitingForSessionEnd] = useState(false);
 
+  // 🔴 DEBUG: isWaitingForSessionEnd 상태 변경 모니터링
+  useEffect(() => {
+    console.log('🔴 [STATE] isWaitingForSessionEnd 변경:', { isWaitingForSessionEnd });
+  }, [isWaitingForSessionEnd]);
+
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
 
@@ -398,28 +403,47 @@ function App() {
 
   // 세션 종료
   const handleEndSession = async () => {
-    if (!sessionId) return;
+    console.log('🔴 [DEBUG] handleEndSession 시작', { sessionId, currentStatus: sessionStatus });
+
+    if (!sessionId) {
+      console.log('❌ [DEBUG] sessionId 없음, 함수 종료');
+      return;
+    }
 
     try {
+      console.log('🔴 [DEBUG] sessionAPI.end() 호출');
       await sessionAPI.end(sessionId);
+      console.log('✅ [DEBUG] sessionAPI.end() 성공');
     } catch (err) {
       // 백엔드 end 엔드포인트 실패 시 로그만 기록하고 계속 진행
       console.warn('⚠️ 세션 end API 실패:', err instanceof Error ? err.message : 'Unknown error');
     }
 
     // end API 성공/실패와 관계없이 항상 진행
+    console.log('🔴 [DEBUG] setSessionStatus("ended") 호출');
     setSessionStatus('ended');
+
+    console.log('🔴 [DEBUG] disconnectWS() 호출');
     disconnectWS();
+
+    console.log('🔴 [DEBUG] setSessionStartAt(null) 호출');
     setSessionStartAt(null);
+
     console.log('⏹️ 세션 종료');
     funnelEvent('session_ended');
 
     // 🎬 결과 로딩 중 상태 표시 (로딩이 끝난 후 setShowSummary는 onLoadingChange에서 호출)
+    console.log('🔴 [DEBUG] setIsWaitingForSessionEnd(true) 호출');
     setIsWaitingForSessionEnd(true);
+
+    console.log('🔴 [DEBUG] setSidebarTab("result") 호출');
     setSidebarTab('result');
 
     // sessionId를 마지막에 null로 설정 (SessionResult가 API 호출하도록)
+    console.log('🔴 [DEBUG] setSessionId(null) 호출');
     setSessionId(null);
+
+    console.log('🔴 [DEBUG] handleEndSession 완료');
   };
 
   // 온보딩 완료 처리
@@ -947,42 +971,6 @@ function App() {
           </div>
         </div>
       </footer>
-      {/* 🎬 세션 종료 후 결과 로딩 모달 */}
-      {isWaitingForSessionEnd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="결과 대기 중">
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-soft-lg p-8 max-w-md mx-auto">
-            <div className="flex flex-col items-center">
-              {/* 스피너 */}
-              <div className="mb-4">
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 border-4 border-primary-200 dark:border-primary-900 rounded-full" />
-                  <div className="absolute inset-0 border-4 border-transparent border-t-primary-500 dark:border-t-primary-400 rounded-full animate-spin" />
-                </div>
-              </div>
-
-              {/* 텍스트 */}
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">결과 분석 중...</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                세션 데이터를 분석하고 있습니다.<br />
-                잠시만 기다려주세요. 🎯
-              </p>
-
-              {/* 진행 상황 표시 */}
-              <div className="mt-6 space-y-2 text-xs text-gray-500 dark:text-gray-400">
-                <div className="flex items-center">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
-                  감정 분석 완료
-                </div>
-                <div className="flex items-center">
-                  <span className="inline-block w-2 h-2 bg-primary-500 rounded-full mr-2 animate-pulse" />
-                  종합 분석 중...
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <ConsentDialog isOpen={isDialogOpen} onClose={() => { /* handled by context */ }} />
       <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
@@ -1021,6 +1009,46 @@ function App() {
       <ResumePromptModal isOpen={showResumePrompt} onResume={resumeLastSession} onDiscard={discardLastSession} sessionStartedAt={resumeSessionStartedAt} />
       <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
       <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+
+      {/* 🎬 세션 종료 후 결과 로딩 모달 - 끝에 배치하여 다른 요소의 영향을 받지 않도록 */}
+      {(() => {
+        console.log('🔴 [RENDER] 로딩 모달 조건 확인:', { isWaitingForSessionEnd, shouldRender: isWaitingForSessionEnd });
+        return isWaitingForSessionEnd;
+      })() && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="결과 대기 중">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-soft-lg p-8 max-w-md mx-auto">
+            <div className="flex flex-col items-center">
+              {/* 스피너 */}
+              <div className="mb-4">
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 border-4 border-primary-200 dark:border-primary-900 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-transparent border-t-primary-500 dark:border-t-primary-400 rounded-full animate-spin" />
+                </div>
+              </div>
+
+              {/* 텍스트 */}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">결과 분석 중...</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                세션 데이터를 분석하고 있습니다.<br />
+                잠시만 기다려주세요. 🎯
+              </p>
+
+              {/* 진행 상황 표시 */}
+              <div className="mt-6 space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
+                  감정 분석 완료
+                </div>
+                <div className="flex items-center">
+                  <span className="inline-block w-2 h-2 bg-primary-500 rounded-full mr-2 animate-pulse" />
+                  종합 분석 중...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
