@@ -414,9 +414,8 @@ function App() {
     console.log('⏹️ 세션 종료');
     funnelEvent('session_ended');
 
-    // 🎬 결과 로딩 중 상태 표시
+    // 🎬 결과 로딩 중 상태 표시 (로딩이 끝난 후 setShowSummary는 onLoadingChange에서 호출)
     setIsWaitingForSessionEnd(true);
-    setShowSummary(true);
     setSidebarTab('result');
 
     // sessionId를 마지막에 null로 설정 (SessionResult가 API 호출하도록)
@@ -898,9 +897,10 @@ function App() {
                 <SessionResult
                   sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''}
                   onLoadingChange={(isLoading) => {
-                    // 로딩이 완료되면 대기 상태 해제
+                    // 로딩이 완료되면 대기 상태 해제 및 요약 모달 표시
                     if (!isLoading) {
                       setIsWaitingForSessionEnd(false);
+                      setShowSummary(true);
                     }
                   }}
                 />
