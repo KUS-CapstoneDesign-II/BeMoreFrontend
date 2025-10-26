@@ -37,10 +37,13 @@ export function SessionSummaryModal({ isOpen, onClose, onSubmitFeedback, duratio
   };
 
   const handleClose = () => {
+    console.log('🎬 [SessionSummaryModal] handleClose 호출됨');
     setRating(0);
     setNote('');
     setError(null);
+    console.log('🎬 [SessionSummaryModal] onClose 콜백 실행 전');
     onClose();
+    console.log('🎬 [SessionSummaryModal] onClose 콜백 실행 후');
   };
 
   return (

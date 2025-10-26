@@ -93,6 +93,11 @@ function App() {
     console.log('🔴 [STATE] isWaitingForSessionEnd 변경:', { isWaitingForSessionEnd });
   }, [isWaitingForSessionEnd]);
 
+  // 🔴 DEBUG: showSummary 상태 변경 모니터링
+  useEffect(() => {
+    console.log('🔴 [STATE] showSummary 변경:', { showSummary });
+  }, [showSummary]);
+
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
 
@@ -980,7 +985,11 @@ function App() {
       />
       <SessionSummaryModal
         isOpen={showSummary}
-        onClose={() => setShowSummary(false)}
+        onClose={() => {
+          console.log('🎬 [App.tsx] SessionSummaryModal onClose 콜백 실행:', { showSummary });
+          setShowSummary(false);
+          console.log('🎬 [App.tsx] setShowSummary(false) 완료');
+        }}
         onSubmitFeedback={async (rating, note) => {
           if (!sessionId) {
             throw new Error('세션 ID가 없습니다.');
