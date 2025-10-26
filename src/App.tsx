@@ -429,10 +429,13 @@ function App() {
       return;
     }
 
+    // 저장: sessionId를 지역변수에 저장 (나중에 API 호출에 사용)
+    const currentSessionId = sessionId;
+
     // 🎬 1단계: 즉시 UI 상태 업데이트 (로딩 모달 표시)
     console.log('🎬 [세션 종료] Step 1: UI 상태 업데이트 시작');
     setSessionStatus('ended');
-    disconnectWS();
+    // ⭐ 주의: 아직 WebSocket을 닫지 않음! API 호출까지 연결 유지
     setSessionStartAt(null);
     console.log('⏹️ [세션 종료] 세션 상태 업데이트 완료');
     funnelEvent('session_ended');
@@ -446,19 +449,19 @@ function App() {
     console.log('🎬 [세션 종료] Step 3: SessionResult 데이터 로드 트리거');
     setSessionId(null);
 
-    // 🎬 4단계: 백그라운드에서 sessionAPI.end() 호출 (결과와 관계없이 진행)
-    console.log('🎬 [세션 종료] Step 4: 백그라운드에서 API 호출 (5초 타임아웃)');
-    setTimeout(() => {
-      try {
-        sessionAPI.end(sessionId).then(() => {
-          console.log('✅ [백그라운드] sessionAPI.end() 성공');
-        }).catch((err) => {
-          console.warn('⚠️ [백그라운드] sessionAPI.end() 실패:', err instanceof Error ? err.message : 'Unknown');
-        });
-      } catch (err) {
-        console.warn('⚠️ [백그라운드] sessionAPI.end() 예외:', err instanceof Error ? err.message : 'Unknown');
-      }
-    }, 0);
+    // 🎬 4단계: 백그라운드에서 sessionAPI.end() 호출 (40초 타임아웃)
+    // ⭐ 중요: 백엔드의 grace period (30초)가 완료될 때까지 대기!
+    console.log('🎬 [세션 종료] Step 4: API 호출 시작 (백엔드의 30초 grace period 대기)');
+    try {
+      await sessionAPI.end(currentSessionId);
+      console.log('✅ [세션 종료] sessionAPI.end() 성공 - 이제 WebSocket 연결 해제');
+    } catch (err) {
+      console.warn('⚠️ [세션 종료] sessionAPI.end() 실패:', err instanceof Error ? err.message : 'Unknown');
+    } finally {
+      // 🎬 5단계: API 호출 완료 후 WebSocket 닫기
+      console.log('🎬 [세션 종료] Step 5: WebSocket 연결 해제');
+      disconnectWS();
+    }
 
     console.log('🎯 [세션 종료] 완료 - 로딩 모달이 표시 중이어야 함');
   };
