@@ -5,9 +5,10 @@ import { LoadingState, ErrorState } from '../Common/States';
 
 interface Props {
   sessionId: string;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
-export function SessionResult({ sessionId }: Props) {
+export function SessionResult({ sessionId, onLoadingChange }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
@@ -44,6 +45,11 @@ export function SessionResult({ sessionId }: Props) {
     })();
     return () => { mounted = false; };
   }, [sessionId]);
+
+  // 🎬 로딩 상태 변경 알림
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
 
   useEffect(() => {
     // sessionId가 없으면 API 호출 하지 않음

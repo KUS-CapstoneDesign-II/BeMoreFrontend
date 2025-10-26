@@ -85,6 +85,9 @@ function App() {
   const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(60);
   const [sidebarTab, setSidebarTab] = useState<'analyze'|'result'>('analyze');
 
+  // 🎬 세션 종료 후 결과 로딩 중 상태
+  const [isWaitingForSessionEnd, setIsWaitingForSessionEnd] = useState(false);
+
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);
 
@@ -407,12 +410,17 @@ function App() {
     // end API 성공/실패와 관계없이 항상 진행
     setSessionStatus('ended');
     disconnectWS();
-    setSessionId(null);
     setSessionStartAt(null);
     console.log('⏹️ 세션 종료');
     funnelEvent('session_ended');
+
+    // 🎬 결과 로딩 중 상태 표시
+    setIsWaitingForSessionEnd(true);
     setShowSummary(true);
     setSidebarTab('result');
+
+    // sessionId를 마지막에 null로 설정 (SessionResult가 API 호출하도록)
+    setSessionId(null);
   };
 
   // 온보딩 완료 처리
@@ -887,7 +895,15 @@ function App() {
 
             {sidebarTab === 'result' && (
               <div className="animate-slide-in-left" style={{animationDelay: '0.05s'}}>
-                <SessionResult sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''} />
+                <SessionResult
+                  sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''}
+                  onLoadingChange={(isLoading) => {
+                    // 로딩이 완료되면 대기 상태 해제
+                    if (!isLoading) {
+                      setIsWaitingForSessionEnd(false);
+                    }
+                  }}
+                />
               </div>
             )}
           </div>
@@ -931,6 +947,43 @@ function App() {
           </div>
         </div>
       </footer>
+      {/* 🎬 세션 종료 후 결과 로딩 모달 */}
+      {isWaitingForSessionEnd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="결과 대기 중">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-soft-lg p-8 max-w-md mx-auto">
+            <div className="flex flex-col items-center">
+              {/* 스피너 */}
+              <div className="mb-4">
+                <div className="relative w-12 h-12">
+                  <div className="absolute inset-0 border-4 border-primary-200 dark:border-primary-900 rounded-full" />
+                  <div className="absolute inset-0 border-4 border-transparent border-t-primary-500 dark:border-t-primary-400 rounded-full animate-spin" />
+                </div>
+              </div>
+
+              {/* 텍스트 */}
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">결과 분석 중...</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
+                세션 데이터를 분석하고 있습니다.<br />
+                잠시만 기다려주세요. 🎯
+              </p>
+
+              {/* 진행 상황 표시 */}
+              <div className="mt-6 space-y-2 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center">
+                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
+                  감정 분석 완료
+                </div>
+                <div className="flex items-center">
+                  <span className="inline-block w-2 h-2 bg-primary-500 rounded-full mr-2 animate-pulse" />
+                  종합 분석 중...
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConsentDialog isOpen={isDialogOpen} onClose={() => { /* handled by context */ }} />
       <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
       <IdleTimeoutModal
