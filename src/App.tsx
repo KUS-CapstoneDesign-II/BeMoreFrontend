@@ -403,54 +403,45 @@ function App() {
 
   // 세션 종료
   const handleEndSession = async () => {
-    console.log('🔴 [DEBUG] handleEndSession 시작', { sessionId, currentStatus: sessionStatus });
+    console.log('🎯 [세션 종료] 시작', { sessionId });
 
     if (!sessionId) {
-      console.log('❌ [DEBUG] sessionId 없음, 함수 종료');
+      console.log('❌ [세션 종료] sessionId 없음, 함수 종료');
       return;
     }
 
-    try {
-      console.log('🔴 [DEBUG] sessionAPI.end() 호출 시작');
-
-      // 타임아웃을 설정하여 API가 무한정 기다리지 않도록 (5초)
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('sessionAPI.end() 타임아웃')), 5000)
-      );
-
-      await Promise.race([sessionAPI.end(sessionId), timeoutPromise]);
-      console.log('✅ [DEBUG] sessionAPI.end() 성공');
-    } catch (err) {
-      // 백엔드 end 엔드포인트 실패 시 로그만 기록하고 계속 진행
-      console.warn('⚠️ 세션 end API 실패 또는 타임아웃:', err instanceof Error ? err.message : 'Unknown error');
-    }
-
-    // end API 성공/실패와 관계없이 항상 진행
-    console.log('🔴 [DEBUG] setSessionStatus("ended") 호출');
+    // 🎬 1단계: 즉시 UI 상태 업데이트 (로딩 모달 표시)
+    console.log('🎬 [세션 종료] Step 1: UI 상태 업데이트 시작');
     setSessionStatus('ended');
-
-    console.log('🔴 [DEBUG] disconnectWS() 호출');
     disconnectWS();
-
-    console.log('🔴 [DEBUG] setSessionStartAt(null) 호출');
     setSessionStartAt(null);
-
-    console.log('⏹️ 세션 종료');
+    console.log('⏹️ [세션 종료] 세션 상태 업데이트 완료');
     funnelEvent('session_ended');
 
-    // 🎬 결과 로딩 중 상태 표시 (로딩이 끝난 후 setShowSummary는 onLoadingChange에서 호출)
-    console.log('🔴 [DEBUG] setIsWaitingForSessionEnd(true) 호출 - 로딩 모달 표시 시작');
+    // 🎬 2단계: 로딩 모달 표시
+    console.log('🎬 [세션 종료] Step 2: 로딩 모달 표시');
     setIsWaitingForSessionEnd(true);
-    console.log('🔴 [DEBUG] ✅ setIsWaitingForSessionEnd(true)가 실행됨');
-
-    console.log('🔴 [DEBUG] setSidebarTab("result") 호출');
     setSidebarTab('result');
 
-    // sessionId를 마지막에 null로 설정 (SessionResult가 API 호출하도록)
-    console.log('🔴 [DEBUG] setSessionId(null) 호출');
+    // 🎬 3단계: SessionResult 컴포넌트가 데이터를 로드하도록 sessionId를 null로 설정
+    console.log('🎬 [세션 종료] Step 3: SessionResult 데이터 로드 트리거');
     setSessionId(null);
 
-    console.log('🔴 [DEBUG] ✅✅✅ handleEndSession 완료 - 로딩 모달이 이제 표시되어야 함');
+    // 🎬 4단계: 백그라운드에서 sessionAPI.end() 호출 (결과와 관계없이 진행)
+    console.log('🎬 [세션 종료] Step 4: 백그라운드에서 API 호출 (5초 타임아웃)');
+    setTimeout(() => {
+      try {
+        sessionAPI.end(sessionId).then(() => {
+          console.log('✅ [백그라운드] sessionAPI.end() 성공');
+        }).catch((err) => {
+          console.warn('⚠️ [백그라운드] sessionAPI.end() 실패:', err instanceof Error ? err.message : 'Unknown');
+        });
+      } catch (err) {
+        console.warn('⚠️ [백그라운드] sessionAPI.end() 예외:', err instanceof Error ? err.message : 'Unknown');
+      }
+    }, 0);
+
+    console.log('🎯 [세션 종료] 완료 - 로딩 모달이 표시 중이어야 함');
   };
 
   // 온보딩 완료 처리
