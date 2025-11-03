@@ -19,33 +19,46 @@
 
 ## 3 Critical APIs Backend Needs
 
-### 1. `POST /api/session/batch-tick` (NEW)
+### 1. `POST /api/session/batch-tick` (NEW) ✅
 **Purpose**: Receive aggregated emotion analysis results
 
 ```json
-POST /api/session/{sessionId}/batch-tick
+POST /api/session/batch-tick
 Content-Type: application/json
 
 {
+  "sessionId": "sess_20251103_143000_abc123",
   "items": [
     {
       "minuteIndex": 0,
-      "facialScore": 0.45,
-      "vadScore": 0.52,
-      "textScore": 0.48,
-      "combinedScore": 0.48,
-      "keywords": ["confident"],
-      "sentiment": "neutral",
+      "facialScore": 0.85,
+      "vadScore": 0.72,
+      "textScore": 0.60,
+      "combinedScore": 0.747,
+      "keywords": ["confident", "engaged"],
+      "sentiment": "positive",
       "confidence": 0.92,
-      "timestamp": "2025-11-03T10:30:00Z",
+      "timestamp": "2025-11-03T14:30:00Z",
       "durationMs": 60000
     }
   ]
 }
 
-✅ Response 200:
-{ "count": 1, "batchId": "batch-abc123" }
+✅ Response 201:
+{
+  "success": true,
+  "data": {
+    "count": 1,
+    "batchId": "batch-sess_20251103_143000_abc123-001"
+  }
+}
 ```
+
+**Important Notes**:
+- ✅ Endpoint: `/api/session/batch-tick` (not `/tick/batch`)
+- ✅ Body must include `sessionId` + `items` array
+- ✅ Items: 1-100 per request
+- ✅ Response: 201 Created with batchId
 
 **Expected Behavior**:
 - Receives 1-10 items per request
@@ -95,21 +108,32 @@ Frontend uses this to finalize session and trigger result generation.
 **A**: ~1 per minute (10-item batches), not per-second like before. **60x reduction in API load**.
 
 ### Q: What if batch-tick fails?
-**A**: Frontend retries with exponential backoff:
+**A**: Frontend retries with **exponential backoff + jitter**:
 - 1st attempt: immediate
-- 2nd attempt: after 1 second
-- 3rd attempt: after 3 seconds
-- Gives up: after 10 seconds
-Frontend stores items locally during outages.
+- 2nd attempt: after **1 second ± 200ms** jitter
+- 3rd attempt: after **3 seconds ± 600ms** jitter
+- Final attempt: after **10 seconds ± 2000ms** jitter
+Frontend stores items locally during outages and retries later.
 
 ### Q: What response codes should we send?
 **A**:
-- `200 OK` - Success
-- `429 Too Many Requests` - Rate limited (include `Retry-After` header)
-- `500 Internal Server Error` - Server error (Frontend will retry)
+- `201 Created` - Success (with batchId)
+- `429 Too Many Requests` - Rate limited (include `Retry-After: <seconds>` header)
+- `500+ Internal Server Error` - Server error (Frontend will retry)
+- `400, 401, 403, 404` - Client error (Frontend won't retry)
 
 ### Q: Are all APIs required on day 1?
 **A**: Only `batch-tick` is new. The other 2 already exist and work. You just need to add `batch-tick` support.
+
+### Q: What's the retry strategy in detail?
+**A**:
+```
+시도    기본 대기  지터         총 대기        조건
+1차     1초      ±200ms      0.8-1.2초     실패 시
+2차     3초      ±600ms      2.4-3.6초     실패 시
+3차     10초     ±2000ms     8-12초        실패 시
+포기    -        -           -             모두 실패
+```
 
 ---
 

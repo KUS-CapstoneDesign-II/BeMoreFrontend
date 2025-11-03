@@ -322,7 +322,12 @@ export const sessionAPI = {
   /**
    * 배치 타임라인 메트릭 전송 (Phase 9)
    * 여러 분의 메트릭을 한 번에 전송 (네트워크 오류 시 재시도)
-   * 자동 재시도 포함 (exponential backoff)
+   * 자동 재시도 포함 (exponential backoff with jitter: 1s, 3s, 10s)
+   *
+   * Backend API Spec:
+   * - Endpoint: POST /api/session/batch-tick
+   * - Body: { sessionId, items: [...] }
+   * - Retry: exponential backoff (1s, 3s, 10s) + ±20% jitter
    */
   batchTick: async (sessionId: string, timelineCards: any[]): Promise<{ success: boolean; count: number }> => {
     const requestId = `batch_${sessionId}_${Date.now()}`;
@@ -333,11 +338,13 @@ export const sessionAPI = {
       async () => {
         const retryResult = await retryWithBackoff(
           async () => {
-            const response = await api.post<ApiResponse<{ success: boolean; count: number }>>(
-              `/api/session/${sessionId}/tick/batch`,
+            // Backend 스펙: POST /api/session/batch-tick
+            // Body: { sessionId, items }
+            const response = await api.post<ApiResponse<{ success: boolean; count: number; batchId: string }>>(
+              '/api/session/batch-tick',
               {
-                cards: timelineCards,
-                requestId,
+                sessionId,
+                items: timelineCards,
               },
               {
                 headers: {
@@ -354,8 +361,8 @@ export const sessionAPI = {
           },
           {
             maxAttempts: 3,
-            initialDelayMs: 1500,
-            maxDelayMs: 15000,
+            initialDelayMs: 1000,    // 1초
+            maxDelayMs: 10000,       // 10초 (지터 포함)
           }
         );
 
