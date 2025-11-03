@@ -20,6 +20,7 @@ interface UseWebSocketReturn {
   connectionStatus: Record<string, ConnectionStatus>;
   connect: (wsUrls: { landmarks: string; voice: string; session: string }) => void;
   disconnect: () => void;
+  suppressReconnect: () => void;
   sendToLandmarks: (message: WSMessage) => void;
   sendToVoice: (message: WSMessage) => void;
   sendToSession: (message: WSMessage) => void;
@@ -181,6 +182,13 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     }
   }, []);
 
+  // 재연결 억제 (세션 종료 직전에 호출)
+  const suppressReconnect = useCallback(() => {
+    if (managerRef.current) {
+      managerRef.current.suppressReconnectAll();
+    }
+  }, []);
+
   // 메시지 전송 함수들
   const sendToLandmarks = useCallback(
     (message: WSMessage) => {
@@ -228,6 +236,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     connectionStatus,
     connect,
     disconnect,
+    suppressReconnect,
     sendToLandmarks,
     sendToVoice,
     sendToSession,

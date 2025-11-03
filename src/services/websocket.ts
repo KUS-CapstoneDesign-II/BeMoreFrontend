@@ -19,6 +19,7 @@ export class ReconnectingWebSocket {
   private name: string;
   private messageHandlers: Set<WSMessageHandler> = new Set();
   private shouldReconnect = true;
+  private reconnectSuppressed = false;
   private retryCount = 0;
   private retryDelay: number;
   private maxRetries: number;
@@ -116,6 +117,11 @@ export class ReconnectingWebSocket {
   connect(): void {
     console.log(`\n[ReconnectingWebSocket.connect] ${this.name} - START`);
 
+    if (this.reconnectSuppressed) {
+      console.log(`[WebSocket] ${this.name} reconnect suppressed. Skipping connect.`);
+      return;
+    }
+
     if (this.ws?.readyState === WebSocket.OPEN) {
       console.log(`✅ ${this.name} already connected`);
       return;
@@ -202,6 +208,10 @@ export class ReconnectingWebSocket {
    * 재연결 시도
    */
   private reconnect(): void {
+    if (this.reconnectSuppressed) {
+      console.log(`[WebSocket] 🔕 ${this.name} reconnect suppressed. Will not attempt.`);
+      return;
+    }
     if (this.retryCount >= this.maxRetries) {
       console.error(`[WebSocket] 🚨 ${this.name} max retries reached (${this.maxRetries})`);
       this.onStatusChange?.('error');
@@ -255,12 +265,27 @@ export class ReconnectingWebSocket {
    */
   close(): void {
     this.shouldReconnect = false;
+    this.reconnectSuppressed = true;
     this.ws?.close();
     this.ws = null;
     this.messageHandlers.clear();
     console.log(`🔌 ${this.name} closed`);
     this.stopHeartbeat();
     this.unregisterVisibilityListener();
+  }
+
+  /**
+   * 이후 재연결 시도를 억제 (현재 연결은 유지됨)
+   */
+  suppressReconnect(): void {
+    this.reconnectSuppressed = true;
+  }
+
+  /**
+   * 억제 해제 (필요시 테스트용)
+   */
+  clearReconnectSuppression(): void {
+    this.reconnectSuppressed = false;
   }
 
   /**
@@ -394,6 +419,16 @@ export class WebSocketManager {
    */
   disconnectAll(): void {
     this.closeAll();
+  }
+
+  /**
+   * 이후 모든 채널의 재연결을 억제 (현재 연결은 유지됨)
+   */
+  suppressReconnectAll(): void {
+    if (this.channels) {
+      Object.values(this.channels).forEach((ws) => ws.suppressReconnect());
+      console.log('[WebSocket] Reconnect suppressed for all channels');
+    }
   }
 
   /**

@@ -135,7 +135,7 @@ function App() {
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
 
   // WebSocket 연결
-  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, landmarksWs } = useWebSocket({
+  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs } = useWebSocket({
     onVoiceMessage: (message) => {
       console.log('🎤 Voice message:', message);
       if (message.type === 'stt_received') {
@@ -449,6 +449,10 @@ function App() {
     setIsWaitingForSessionEnd(true);
     setSidebarTab('result');
 
+    // ✅ 재연결 억제: grace period 동안 서버가 소켓을 끊어도 자동 재연결 금지
+    // (현재 연결은 유지되고, 서버가 끊더라도 재연결 시도하지 않음)
+    suppressWSReconnect();
+
     // 🎬 3단계: SessionResult 컴포넌트가 데이터를 로드하도록 sessionId를 null로 설정
     console.log('🎬 [세션 종료] Step 3: SessionResult 데이터 로드 트리거');
     setSessionId(null);
@@ -464,6 +468,8 @@ function App() {
     } finally {
       // 🎬 5단계: API 호출 완료 후 WebSocket 닫기
       console.log('🎬 [세션 종료] Step 5: WebSocket 연결 해제');
+      // 우선 재연결 억제하여 자동 재연결 방지
+      suppressWSReconnect();
       disconnectWS();
     }
 
