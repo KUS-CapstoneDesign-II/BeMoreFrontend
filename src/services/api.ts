@@ -251,6 +251,83 @@ export const sessionAPI = {
 
     return response.data.data;
   },
+
+  /**
+   * 1분 단위 타임라인 메트릭 전송 (Phase 9)
+   * 매분마다 누적된 메트릭을 서버에 전송
+   */
+  tick: async (sessionId: string, timelineCard: any): Promise<{ success: boolean; minuteIndex: number }> => {
+    const requestId = `tick_${sessionId}_${timelineCard.minuteIndex}_${Date.now()}`;
+
+    const response = await api.post<ApiResponse<{ success: boolean; minuteIndex: number }>>(
+      `/api/session/${sessionId}/tick`,
+      {
+        ...timelineCard,
+        requestId, // For request tracking and deduplication
+      },
+      {
+        headers: {
+          'X-Request-ID': requestId,
+        },
+      }
+    );
+
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to send timeline metric');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * 배치 타임라인 메트릭 전송 (Phase 9)
+   * 여러 분의 메트릭을 한 번에 전송 (네트워크 오류 시 재시도)
+   */
+  batchTick: async (sessionId: string, timelineCards: any[]): Promise<{ success: boolean; count: number }> => {
+    const requestId = `batch_${sessionId}_${Date.now()}`;
+
+    const response = await api.post<ApiResponse<{ success: boolean; count: number }>>(
+      `/api/session/${sessionId}/tick/batch`,
+      {
+        cards: timelineCards,
+        requestId,
+      },
+      {
+        headers: {
+          'X-Request-ID': requestId,
+        },
+      }
+    );
+
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to send batch timeline metrics');
+    }
+
+    return response.data.data;
+  },
+
+  /**
+   * 장치 점검 (카메라/마이크/네트워크) (Phase 9)
+   */
+  checkDevices: async (): Promise<{
+    camera: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
+    microphone: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
+    network: { latency: number; bandwidth: number };
+  }> => {
+    const response = await api.post<
+      ApiResponse<{
+        camera: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
+        microphone: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
+        network: { latency: number; bandwidth: number };
+      }>
+    >('/api/session/devices/check', {});
+
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error?.message || 'Failed to check devices');
+    }
+
+    return response.data.data;
+  },
 };
 
 // =====================================
