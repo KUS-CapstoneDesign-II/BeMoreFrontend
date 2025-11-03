@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { apiMonitoring } from '../utils/apiMonitoring';
+import { retryWithBackoff, requestDeduplicator } from '../utils/retry';
 import type {
   ApiResponse,
   SessionStartResponse,
@@ -105,19 +106,34 @@ api.interceptors.response.use(
 
 export const sessionAPI = {
   /**
-   * 세션 시작
+   * 세션 시작 (자동 재시도 포함)
    */
   start: async (userId: string, counselorId: string): Promise<SessionStartResponse> => {
-    const response = await api.post<ApiResponse<SessionStartResponse>>('/api/session/start', {
-      userId,
-      counselorId,
-    });
+    const retryResult = await retryWithBackoff(
+      async () => {
+        const response = await api.post<ApiResponse<SessionStartResponse>>('/api/session/start', {
+          userId,
+          counselorId,
+        });
 
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error?.message || 'Failed to start session');
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.error?.message || 'Failed to start session');
+        }
+
+        return response.data.data;
+      },
+      {
+        maxAttempts: 3,
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+      }
+    );
+
+    if (!retryResult.success) {
+      throw retryResult.error || new Error(retryResult.lastError || 'Failed to start session');
     }
 
-    return response.data.data;
+    return retryResult.data!;
   },
 
   /**
@@ -255,78 +271,142 @@ export const sessionAPI = {
   /**
    * 1분 단위 타임라인 메트릭 전송 (Phase 9)
    * 매분마다 누적된 메트릭을 서버에 전송
+   * 자동 재시도 포함 (exponential backoff)
    */
   tick: async (sessionId: string, timelineCard: any): Promise<{ success: boolean; minuteIndex: number }> => {
     const requestId = `tick_${sessionId}_${timelineCard.minuteIndex}_${Date.now()}`;
 
-    const response = await api.post<ApiResponse<{ success: boolean; minuteIndex: number }>>(
-      `/api/session/${sessionId}/tick`,
-      {
-        ...timelineCard,
-        requestId, // For request tracking and deduplication
-      },
-      {
-        headers: {
-          'X-Request-ID': requestId,
-        },
+    // 중복 제거 및 재시도 로직 적용
+    const result = await requestDeduplicator.executeOnce(
+      requestId,
+      async () => {
+        const retryResult = await retryWithBackoff(
+          async () => {
+            const response = await api.post<ApiResponse<{ success: boolean; minuteIndex: number }>>(
+              `/api/session/${sessionId}/tick`,
+              {
+                ...timelineCard,
+                requestId, // For request tracking and deduplication
+              },
+              {
+                headers: {
+                  'X-Request-ID': requestId,
+                },
+              }
+            );
+
+            if (!response.data.success || !response.data.data) {
+              throw new Error(response.data.error?.message || 'Failed to send timeline metric');
+            }
+
+            return response.data.data;
+          },
+          {
+            maxAttempts: 3,
+            initialDelayMs: 1000,
+            maxDelayMs: 10000,
+          }
+        );
+
+        if (!retryResult.success) {
+          throw retryResult.error || new Error(retryResult.lastError || 'Failed to send timeline metric');
+        }
+
+        return retryResult.data!;
       }
     );
 
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error?.message || 'Failed to send timeline metric');
-    }
-
-    return response.data.data;
+    return result;
   },
 
   /**
    * 배치 타임라인 메트릭 전송 (Phase 9)
    * 여러 분의 메트릭을 한 번에 전송 (네트워크 오류 시 재시도)
+   * 자동 재시도 포함 (exponential backoff)
    */
   batchTick: async (sessionId: string, timelineCards: any[]): Promise<{ success: boolean; count: number }> => {
     const requestId = `batch_${sessionId}_${Date.now()}`;
 
-    const response = await api.post<ApiResponse<{ success: boolean; count: number }>>(
-      `/api/session/${sessionId}/tick/batch`,
-      {
-        cards: timelineCards,
-        requestId,
-      },
-      {
-        headers: {
-          'X-Request-ID': requestId,
-        },
+    // 중복 제거 및 재시도 로직 적용
+    const result = await requestDeduplicator.executeOnce(
+      requestId,
+      async () => {
+        const retryResult = await retryWithBackoff(
+          async () => {
+            const response = await api.post<ApiResponse<{ success: boolean; count: number }>>(
+              `/api/session/${sessionId}/tick/batch`,
+              {
+                cards: timelineCards,
+                requestId,
+              },
+              {
+                headers: {
+                  'X-Request-ID': requestId,
+                },
+              }
+            );
+
+            if (!response.data.success || !response.data.data) {
+              throw new Error(response.data.error?.message || 'Failed to send batch timeline metrics');
+            }
+
+            return response.data.data;
+          },
+          {
+            maxAttempts: 3,
+            initialDelayMs: 1500,
+            maxDelayMs: 15000,
+          }
+        );
+
+        if (!retryResult.success) {
+          throw retryResult.error || new Error(retryResult.lastError || 'Failed to send batch timeline metrics');
+        }
+
+        return retryResult.data!;
       }
     );
 
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error?.message || 'Failed to send batch timeline metrics');
-    }
-
-    return response.data.data;
+    return result;
   },
 
   /**
    * 장치 점검 (카메라/마이크/네트워크) (Phase 9)
+   * 자동 재시도 포함 (exponential backoff)
    */
   checkDevices: async (): Promise<{
     camera: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
     microphone: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
     network: { latency: number; bandwidth: number };
   }> => {
-    const response = await api.post<
-      ApiResponse<{
-        camera: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
-        microphone: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
-        network: { latency: number; bandwidth: number };
-      }>
-    >('/api/session/devices/check', {});
+    const retryResult = await retryWithBackoff(
+      async () => {
+        const response = await api.post<
+          ApiResponse<{
+            camera: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
+            microphone: { available: boolean; permission: 'granted' | 'denied' | 'prompt' };
+            network: { latency: number; bandwidth: number };
+          }>
+        >('/api/session/devices/check', {});
 
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error?.message || 'Failed to check devices');
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.error?.message || 'Failed to check devices');
+        }
+
+        return response.data.data;
+      },
+      {
+        maxAttempts: 3,
+        initialDelayMs: 800,
+        maxDelayMs: 5000,
+      }
+    );
+
+    if (!retryResult.success) {
+      throw retryResult.error || new Error(retryResult.lastError || 'Failed to check devices');
     }
 
-    return response.data.data;
+    return retryResult.data!;
   },
 };
 
@@ -393,25 +473,83 @@ export const monitoringAPI = {
 // =====================================
 
 export const dashboardAPI = {
+  /**
+   * 대시보드 요약 조회 (자동 재시도 포함)
+   */
   summary: async (): Promise<any> => {
-    const response = await api.get<ApiResponse>('/api/dashboard/summary');
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error?.message || 'Failed to get dashboard summary');
+    const retryResult = await retryWithBackoff(
+      async () => {
+        const response = await api.get<ApiResponse>('/api/dashboard/summary');
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.error?.message || 'Failed to get dashboard summary');
+        }
+        return response.data.data;
+      },
+      {
+        maxAttempts: 2,
+        initialDelayMs: 1000,
+        maxDelayMs: 5000,
+      }
+    );
+
+    if (!retryResult.success) {
+      throw retryResult.error || new Error(retryResult.lastError || 'Failed to get dashboard summary');
     }
-    return response.data.data;
+
+    return retryResult.data;
   }
 };
 
 export const userAPI = {
+  /**
+   * 사용자 설정 조회 (자동 재시도 포함)
+   */
   getPreferences: async (): Promise<any> => {
-    const response = await api.get<ApiResponse>('/api/user/preferences');
-    if (!response.data.success) throw new Error(response.data.error?.message || 'Failed to get preferences');
-    return response.data.data;
+    const retryResult = await retryWithBackoff(
+      async () => {
+        const response = await api.get<ApiResponse>('/api/user/preferences');
+        if (!response.data.success) {
+          throw new Error(response.data.error?.message || 'Failed to get preferences');
+        }
+        return response.data.data;
+      },
+      {
+        maxAttempts: 2,
+        initialDelayMs: 1000,
+        maxDelayMs: 5000,
+      }
+    );
+
+    if (!retryResult.success) {
+      throw retryResult.error || new Error(retryResult.lastError || 'Failed to get preferences');
+    }
+
+    return retryResult.data;
   },
+  /**
+   * 사용자 설정 저장 (자동 재시도 포함)
+   */
   setPreferences: async (preferences: any): Promise<any> => {
-    const response = await api.put<ApiResponse>('/api/user/preferences', { preferences });
-    if (!response.data.success) throw new Error(response.data.error?.message || 'Failed to set preferences');
-    return response.data.data;
+    const retryResult = await retryWithBackoff(
+      async () => {
+        const response = await api.put<ApiResponse>('/api/user/preferences', { preferences });
+        if (!response.data.success) {
+          throw new Error(response.data.error?.message || 'Failed to set preferences');
+        }
+        return response.data.data;
+      },
+      {
+        maxAttempts: 2,
+        initialDelayMs: 1000,
+        maxDelayMs: 5000,
+      }
+    );
+
+    if (!retryResult.success) {
+      throw retryResult.error || new Error(retryResult.lastError || 'Failed to set preferences');
+    }
+
+    return retryResult.data;
   }
 };
 
