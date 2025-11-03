@@ -39,6 +39,16 @@ export default defineConfig({
     // 압축 최적화 (esbuild 사용 - 더 빠름)
     minify: 'esbuild',
     // Source map 비활성화 (프로덕션)
-    sourcemap: false
-  }
+    sourcemap: false,
+    // 이미지 최적화: 8KB 이하의 이미지는 base64로 인라인
+    assetsInlineLimit: 8192,
+    // CSS 최소화
+    cssMinify: true,
+    // 출력 파일명 최적화
+    assetsDir: 'assets'
+  },
+  // 정적 파일 처리
+  publicDir: 'public',
+  // 이미지 포맷 최적화: 모던 포맷 지원
+  assetsInclude: ['**/*.webp', '**/*.avif']
 })

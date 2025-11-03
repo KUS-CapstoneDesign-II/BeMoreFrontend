@@ -1,6 +1,15 @@
-const VERSION = 'v1.1.1';
+const VERSION = 'v1.2.0';
 const CACHE_NAME = `bemore-${VERSION}`;
 const RUNTIME_CACHE = `bemore-runtime-${VERSION}`;
+const IMAGE_CACHE = `bemore-images-${VERSION}`;
+const ASSETS_CACHE = `bemore-assets-${VERSION}`;
+
+// Cache size limits (in bytes)
+const CACHE_LIMITS = {
+  images: 50 * 1024 * 1024, // 50MB
+  assets: 100 * 1024 * 1024, // 100MB
+  runtime: 20 * 1024 * 1024, // 20MB
+};
 
 // 캐시할 정적 파일 목록
 const STATIC_CACHE_URLS = [
@@ -24,6 +33,31 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
+// Utility: Clean cache when it exceeds size limit
+async function cleanCache(cacheName, maxSize) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  let totalSize = 0;
+
+  for (const request of keys) {
+    const response = await cache.match(request);
+    if (response && response.ok) {
+      const buffer = await response.arrayBuffer();
+      totalSize += buffer.byteLength;
+    }
+  }
+
+  if (totalSize > maxSize) {
+    // Delete oldest entries (FIFO)
+    for (const request of keys) {
+      await cache.delete(request);
+      totalSize = 0; // Reset and let next check determine if we need more cleanup
+      const remaining = await cache.keys();
+      if (remaining.length === 0) break;
+    }
+  }
+}
+
 // 서비스 워커 활성화
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -31,7 +65,10 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
-            return cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE;
+            return cacheName !== CACHE_NAME &&
+                   cacheName !== RUNTIME_CACHE &&
+                   cacheName !== IMAGE_CACHE &&
+                   cacheName !== ASSETS_CACHE;
           })
           .map((cacheName) => {
             console.log('🗑️ Deleting old cache:', cacheName);
@@ -40,10 +77,20 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
+
+  // Clean up oversized caches
+  event.waitUntil(
+    Promise.all([
+      cleanCache(IMAGE_CACHE, CACHE_LIMITS.images),
+      cleanCache(ASSETS_CACHE, CACHE_LIMITS.assets),
+      cleanCache(RUNTIME_CACHE, CACHE_LIMITS.runtime),
+    ])
+  );
+
   self.clients.claim();
 });
 
-// 네트워크 요청 처리: HTML은 Network-first with fallback, JSON은 SWR, 기타는 Cache-first
+// 네트워크 요청 처리: HTML은 Network-first with fallback, JSON은 SWR, 이미지는 Cache-first, 기타는 Cache-first
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -56,7 +103,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API 요청은 캐싱하지 않음
+  // API 요청과 WebSocket은 캐싱하지 않음 (실시간 데이터 필요)
   if (url.pathname.startsWith('/api') || url.pathname.startsWith('/ws')) {
     return;
   }
@@ -66,46 +113,104 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // HTML 문서 처리: Network-first
   if (request.destination === 'document') {
-    // Network-first: 실패 시 캐시된 index.html
     event.respondWith(
-      fetch(request).catch(() => caches.match('/index.html'))
+      fetch(request)
+        .then((response) => {
+          // Update cache with new version
+          if (response && response.status === 200) {
+            const cache = caches.open(CACHE_NAME);
+            cache.then((c) => c.put(request, response.clone()));
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
     );
     return;
   }
 
-  if (request.headers.get('accept')?.includes('application/json')) {
-    // Stale-While-Revalidate for JSON
+  // 이미지 처리: Cache-first with network fallback
+  if (request.headers.get('accept')?.includes('image/')) {
     event.respondWith((async () => {
-      const cache = await caches.open(RUNTIME_CACHE);
+      const cache = await caches.open(IMAGE_CACHE);
       const cached = await cache.match(request);
-      const fetchPromise = fetch(request).then((networkResponse) => {
+      if (cached) return cached;
+
+      try {
+        const networkResponse = await fetch(request);
         if (networkResponse && networkResponse.status === 200) {
           cache.put(request, networkResponse.clone());
         }
         return networkResponse;
-      }).catch(() => cached);
+      } catch (e) {
+        console.warn('❌ Image fetch failed:', request.url);
+        throw e;
+      }
+    })());
+    return;
+  }
+
+  // JSON 처리: Stale-While-Revalidate (prefer cached but update in background)
+  if (request.headers.get('accept')?.includes('application/json')) {
+    event.respondWith((async () => {
+      const cache = await caches.open(RUNTIME_CACHE);
+      const cached = await cache.match(request);
+
+      // Return cached immediately, update in background
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            cache.put(request, networkResponse.clone());
+          }
+          return networkResponse;
+        })
+        .catch(() => cached); // Fall back to cached if network fails
+
       return cached || fetchPromise;
     })());
     return;
   }
 
-  // Default cache-first
+  // 스크립트, 스타일시트 등 에셋: Cache-first with network fallback
+  if (request.destination === 'script' || request.destination === 'style') {
+    event.respondWith((async () => {
+      const cache = await caches.open(ASSETS_CACHE);
+      const cached = await cache.match(request);
+      if (cached) return cached;
+
+      try {
+        const networkResponse = await fetch(request);
+        if (networkResponse && networkResponse.status === 200) {
+          cache.put(request, networkResponse.clone());
+        }
+        return networkResponse;
+      } catch (e) {
+        console.warn('⚠️ Asset fetch failed:', request.url);
+        // Return offline indicator or empty response
+        return new Response('Asset unavailable offline', { status: 503 });
+      }
+    })());
+    return;
+  }
+
+  // 기타 리소스: Cache-first as default
   event.respondWith((async () => {
-    const cachedResponse = await caches.match(request);
+    const cache = await caches.open(ASSETS_CACHE);
+    const cachedResponse = await cache.match(request);
     if (cachedResponse) return cachedResponse;
+
     try {
       const networkResponse = await fetch(request);
       if (networkResponse && networkResponse.status === 200 && request.url.startsWith(self.location.origin)) {
-        const cache = await caches.open(RUNTIME_CACHE);
         cache.put(request, networkResponse.clone());
       }
       return networkResponse;
     } catch (e) {
-      // 네트워크 실패 시 문서 요청이면 index.html로 폴백
-      if (request.destination === 'document') {
-        return caches.match('/index.html');
-      }
+      console.warn('⚠️ Resource fetch failed:', request.url);
+      // Try to match any cached version
+      const fallback = await cache.match(request);
+      if (fallback) return fallback;
       throw e;
     }
   })());
