@@ -3,6 +3,8 @@ import { useSessionStore } from '../../stores/sessionStore';
 import { useTimelineStore } from '../../stores/timelineStore';
 import { sessionAPI } from '../../services/api';
 import { Logger } from '../../config/env';
+import TimelineGrid from './TimelineGrid';
+import SessionHighlights from './SessionHighlights';
 
 interface ReportPageProps {
   sessionId: string;
@@ -131,6 +133,9 @@ export default function ReportPage({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Session Statistics */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Session Highlights */}
+            <SessionHighlights />
+
             {/* Overview Stats */}
             <div className="grid grid-cols-3 gap-4">
               <div className="p-4 bg-white dark:bg-slate-700 rounded-lg border border-green-200 dark:border-green-700">
@@ -222,6 +227,9 @@ export default function ReportPage({
                 {timelineSummary}
               </p>
             </div>
+
+            {/* Timeline Grid */}
+            <TimelineGrid />
 
             {/* Top Keywords */}
             {Object.keys(timelineStats.keywordFrequency).length > 0 && (
