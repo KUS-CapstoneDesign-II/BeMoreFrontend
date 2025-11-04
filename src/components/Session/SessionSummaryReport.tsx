@@ -107,7 +107,6 @@ export function SessionSummaryReport({
     setIsSubmitting(true);
     try {
       // TODO: API 호출 - 피드백 저장
-      console.log('Submitting feedback:', { rating, note });
       addToast(t('common.feedbackSubmitted') || '피드백이 저장되었습니다', 'success');
       setRating(0);
       setNote('');
@@ -122,7 +121,6 @@ export function SessionSummaryReport({
   const handleDownloadPDF = async () => {
     try {
       // TODO: jsPDF 또는 html2canvas 사용하여 PDF 생성
-      console.log('Downloading PDF for session:', sessionData.sessionId);
       if (onDownloadPDF) {
         onDownloadPDF();
       }
@@ -135,7 +133,6 @@ export function SessionSummaryReport({
   // 다음 세션 예약
   const handleScheduleSession = async () => {
     // TODO: 날짜 선택 후 예약
-    console.log('Scheduling next session');
     if (onScheduleNextSession) {
       onScheduleNextSession(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000));
     }

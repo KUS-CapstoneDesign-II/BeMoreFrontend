@@ -189,12 +189,9 @@ export function useVAD(options: UseVADOptions = {}): UseVADReturn {
       setIsListening(true);
       silenceStartTimeRef.current = Date.now();
       analyzeAudio();
-
-      console.log('✅ VAD 시작 완료');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'VAD 시작 실패';
       setError(errorMessage);
-      console.error('❌ VAD 오류:', err);
 
       if (errorMessage.includes('Permission denied')) {
         setError('마이크 권한이 필요합니다. 브라우저 설정에서 마이크 접근을 허용해주세요.');
@@ -228,7 +225,6 @@ export function useVAD(options: UseVADOptions = {}): UseVADReturn {
     lastStateRef.current = false;
 
     setIsListening(false);
-    console.log('✅ VAD 중지 완료');
   }, []);
 
   // 메트릭 초기화

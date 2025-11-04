@@ -102,15 +102,6 @@ function App() {
   // Sends periodic health check pings every 25 minutes
   useKeepAlive(!!sessionId);
 
-  // 🔴 DEBUG: isWaitingForSessionEnd 상태 변경 모니터링
-  useEffect(() => {
-    console.log('🔴 [STATE] isWaitingForSessionEnd 변경:', { isWaitingForSessionEnd });
-  }, [isWaitingForSessionEnd]);
-
-  // 🔴 DEBUG: showSummary 상태 변경 모니터링
-  useEffect(() => {
-    console.log('🔴 [STATE] showSummary 변경:', { showSummary });
-  }, [showSummary]);
 
   // 🎬 SessionResult onLoadingChange 콜백 메모이제이션 (상단에서 정의하여 조건부 사용 방지)
   const handleSessionResultLoading = useCallback((isLoading: boolean) => {
@@ -200,37 +191,20 @@ function App() {
       }
     },
     onLandmarksMessage: (message) => {
-      console.log('👤 Landmarks message:', message);
       if (message.type === 'emotion_update') {
-        // 🎯 ENHANCED LOGGING: Verify emotion_update data format
         const d = message.data as { emotion?: string };
         const emotionValue = d?.emotion;
 
         // Frontend supports: happy, sad, angry, anxious, neutral, surprised, disgusted, fearful
         // Backend currently maps: neutral, happy, sad, angry, anxious, excited
         // NOTE: 'excited' vs 'surprised' mismatch - Backend uses 'excited', Frontend uses 'surprised'
-        const validEmotions = ['neutral', 'happy', 'sad', 'angry', 'anxious', 'surprised', 'disgusted', 'fearful', 'excited'];
-        const isValidEmotion = validEmotions.includes(emotionValue ?? '');
-
-        console.log('🎯 [CRITICAL] emotion_update details:', {
-          type: message.type,
-          emotionValue: emotionValue,
-          emotionType: typeof emotionValue,
-          isValidEmotionEnum: isValidEmotion,
-          validEmotions: validEmotions,
-          messageDataKeys: Object.keys(d),
-          fullData: d
-        });
 
         if (emotionValue) {
           // Handle 'excited' from Backend by converting to 'surprised' for Frontend
           let mappedEmotion = emotionValue;
           if (emotionValue === 'excited') {
-            console.warn('⚠️ Backend sent "excited" but Frontend uses "surprised" - converting');
             mappedEmotion = 'surprised';
           }
-
-          console.log(`✅ Setting currentEmotion to: "${mappedEmotion}" (original: "${emotionValue}", type: ${typeof emotionValue})`);
 
           // ✨ 새 코드: 업데이트 시간 기록
           const now = Date.now();
@@ -238,17 +212,7 @@ function App() {
 
           setEmotionUpdatedAt(now);
           setEmotionUpdateCount(newCount);
-
-          console.log(`✅ Emotion updated:`, {
-            emotion: mappedEmotion,
-            updateCount: newCount,  // ← 로컬 변수 사용으로 정확한 값 표시
-            timestamp: new Date(now).toLocaleTimeString(),
-            timeSinceLastUpdate: emotionUpdatedAt ? `${now - emotionUpdatedAt}ms` : 'first',
-            wasNeutralBefore: currentEmotion === 'neutral'
-          });
-
           setCurrentEmotion(mappedEmotion as EmotionType);
-          console.log('✅ currentEmotion state updated');
 
           // 🎨 타임라인에 추가
           const frameCount = (message.data as { frameCount?: number }).frameCount || 0;
@@ -260,14 +224,12 @@ function App() {
             frameCount,
             sttSnippet
           }]);
-          console.log('✅ Added to emotion timeline');
         } else {
-          console.warn('⚠️ emotion_update received but emotion field is missing/empty:', d);
+          Logger.warn('Emotion update received but emotion field is missing/empty');
         }
       }
     },
     onSessionMessage: (message) => {
-      console.log('📊 Session message:', message);
       if (message.type === 'status_update') {
         // 세션 상태 업데이트 처리
       }
@@ -288,7 +250,7 @@ function App() {
       }
     },
     onStatusChange: (channel, status) => {
-      console.log(`[App] ${channel} status changed to: ${status}`);
+      Logger.debug(`WebSocket channel status changed: ${channel} → ${status}`);
     },
   });
 
@@ -300,27 +262,19 @@ function App() {
 
   // 세션 시작
   const handleStartSession = async () => {
-    // Super early log - if this doesn't appear, the function isn't being called
-    console.log('\n\n🔴🔴🔴 [CRITICAL] handleStartSession() CALLED - ENTRY POINT 🔴🔴🔴');
-    console.log('[CRITICAL] Function parameters - isLoading:', isLoading, 'sessionId:', sessionId);
-
     // 이미 진행 중인 경우 중복 실행 방지
     if (isLoading || sessionId) {
-      console.error('⛔ [CRITICAL] Already loading or session exists, returning early');
-      console.error('   isLoading:', isLoading, 'sessionId:', sessionId);
       return;
     }
 
     // Onboarding guard
     const completed = localStorage.getItem(ONBOARDING_KEY) === 'true';
-    console.log('[CRITICAL] Onboarding check - localStorage key:', ONBOARDING_KEY, 'completed:', completed);
     if (!completed) {
-      console.log('⚠️ [CRITICAL] Onboarding not completed, showing onboarding');
       setShowOnboarding(true);
       funnelEvent('onboarding_required');
       return;
     }
-    console.log('✅ [CRITICAL] Onboarding check PASSED');
+
     setIsLoading(true);
     setError(null);
 
@@ -328,17 +282,13 @@ function App() {
     setCurrentEmotion(null);
     setEmotionUpdatedAt(null);
     setEmotionUpdateCount(0);
-    setEmotionTimeline([]); // 🎨 타임라인 초기화
-    console.log('✅ [CRITICAL] Reset emotion state for new session');
-    setUserClosedSummary(false); // Reset flag for new session
-
-    console.log('✅ [CRITICAL] setIsLoading(true), now starting session...');
+    setEmotionTimeline([]);
+    setUserClosedSummary(false);
 
     try {
-      console.log('\n📍 [CRITICAL] Step 1: Calling sessionAPI.start()...');
       // 1. 세션 시작 API 호출
       const response = await (markAndMeasure('StartSessionAPI', () => {}), sessionAPI.start('frontend_user_001', 'ai_counselor_001'));
-      console.log('✅ [CRITICAL] sessionAPI.start() returned:', response.sessionId);
+      Logger.info('Session started', { sessionId: response.sessionId });
 
       const started = Date.now();
       localStorage.setItem('bemore_last_session', JSON.stringify({ sessionId: response.sessionId, started }));
@@ -346,14 +296,9 @@ function App() {
       // 🔧 FIX: Set sessionId BEFORE calling connectWS()
       // This ensures isSessionActive = !!sessionId is true when WebSocket connects
       // and frame callbacks execute (prevents race condition)
-      console.log('\n📍 [CRITICAL] Step 2: Setting session state BEFORE WebSocket connection...');
       setSessionId(response.sessionId);
       setSessionStatus('active');
       setSessionStartAt(started);
-      console.log('✅ [CRITICAL] Session state updated - isSessionActive is now TRUE');
-
-      console.log('📍 [CRITICAL] Step 2b: About to call connectWS()...');
-      console.log('WS_URL:', WS_URL);
 
       // 2. WebSocket 연결 (완료될 때까지 기다림)
       const wsUrls = {
@@ -361,31 +306,24 @@ function App() {
         voice: `${WS_URL}/ws/voice/${response.sessionId}`,
         session: `${WS_URL}/ws/session/${response.sessionId}`,
       };
-      console.log('✅ [CRITICAL] wsUrls prepared:', wsUrls);
-      console.log('🚀 [CRITICAL] Calling connectWS() NOW...');
       connectWS(wsUrls);
-      console.log('✅ [CRITICAL] connectWS() returned');
 
       // 3. WebSocket 연결 완료를 기다림 (최대 5초)
       // Use a promise that resolves when WebSocket is connected
       // Using connectionStatusRef to avoid closure stale value issues
-      console.log('⏳ [CRITICAL] Step 3: Now waiting for WebSocket connection...');
       await new Promise<void>((resolve, reject) => {
-        console.log('[WebSocket] ⏳ Starting connection wait - current state:', connectionStatusRef.current);
-
         // If already connected, resolve immediately
         const currentStatus = connectionStatusRef.current;
         const allConnected = Object.values(currentStatus).every((s) => s === 'connected');
         if (allConnected) {
-          console.log('[WebSocket] ✅ Already connected, resolving immediately');
           resolve();
           return;
         }
 
         let resolved = false;
-         
+
         let timeout: ReturnType<typeof setTimeout> | undefined = undefined;
-         
+
         let pollInterval: ReturnType<typeof setInterval> | undefined = undefined;
 
         const cleanup = () => {
@@ -397,15 +335,13 @@ function App() {
           if (!resolved) {
             resolved = true;
             cleanup();
-            console.error('❌ WebSocket connection timeout after 5s');
-            console.error('   Current status:', connectionStatusRef.current);
+            Logger.error('WebSocket connection timeout after 5s');
             reject(new Error('WebSocket 연결 시간 초과'));
           }
         }, 5000);
 
         // Poll every 100ms to check connection status
         // Use ref to avoid stale closure values
-        let pollCount = 0;
         pollInterval = setInterval(() => {
           // Skip if already resolved
           if (resolved) {
@@ -416,35 +352,23 @@ function App() {
           const currentStatus = connectionStatusRef.current;
           const allConnected = Object.values(currentStatus).every((s) => s === 'connected');
 
-          // Log every 10 polls (approx every 1 second)
-          if (++pollCount % 10 === 0) {
-            console.log(`[WebSocket] Poll #${pollCount} - Status:`, currentStatus);
-          }
-
           if (allConnected && !resolved) {
             resolved = true;
             cleanup();
-            console.log('[WebSocket] ✅ All channels connected:', currentStatus);
             resolve();
           }
         }, 100);
       });
 
       // 4. WebSocket 연결 확인 완료
-      console.log('📍 [CRITICAL] Step 3: All WebSockets connected');
-      console.log('✅ [CRITICAL] 세션 시작 완료:', response.sessionId);
-      console.log('=== 🎯 [CRITICAL] handleStartSession() COMPLETED SUCCESSFULLY ===\n');
       funnelEvent('session_started');
     } catch (err) {
-      console.error('\n❌ [CRITICAL] ERROR in handleStartSession():');
-      console.error('Error object:', err);
-      console.error('Error message:', err instanceof Error ? err.message : JSON.stringify(err));
-      console.error('Stack:', err instanceof Error ? err.stack : 'no stack');
+      Logger.error('Failed to start session', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       setError(err instanceof Error ? err.message : '세션 시작 실패');
       funnelEvent('session_start_failed');
-      console.log('=== 🎯 [CRITICAL] handleStartSession() FAILED ===\n');
     } finally {
-      console.log('📍 [CRITICAL] Finally block: setIsLoading(false)');
       setIsLoading(false);
     }
   };
@@ -456,9 +380,8 @@ function App() {
     try {
       await sessionAPI.pause(sessionId);
       setSessionStatus('paused');
-      console.log('⏸️ 세션 일시정지');
     } catch (err) {
-      console.error('❌ 일시정지 실패:', err);
+      Logger.error('Failed to pause session', { error: err instanceof Error ? err.message : String(err) });
       setError(err instanceof Error ? err.message : '일시정지 실패');
     }
   };
@@ -470,19 +393,15 @@ function App() {
     try {
       await sessionAPI.resume(sessionId);
       setSessionStatus('active');
-      console.log('▶️ 세션 재개');
     } catch (err) {
-      console.error('❌ 재개 실패:', err);
+      Logger.error('Failed to resume session', { error: err instanceof Error ? err.message : String(err) });
       setError(err instanceof Error ? err.message : '재개 실패');
     }
   };
 
   // 세션 종료
   const handleEndSession = async () => {
-    console.log('🎯 [세션 종료] 시작', { sessionId });
-
     if (!sessionId) {
-      console.log('❌ [세션 종료] sessionId 없음, 함수 종료');
       return;
     }
 
@@ -490,15 +409,12 @@ function App() {
     const currentSessionId = sessionId;
 
     // 🎬 1단계: 즉시 UI 상태 업데이트 (로딩 모달 표시)
-    console.log('🎬 [세션 종료] Step 1: UI 상태 업데이트 시작');
     setSessionStatus('ended');
     // ⭐ 주의: 아직 WebSocket을 닫지 않음! API 호출까지 연결 유지
     setSessionStartAt(null);
-    console.log('⏹️ [세션 종료] 세션 상태 업데이트 완료');
     funnelEvent('session_ended');
 
     // 🎬 2단계: 로딩 모달 표시
-    console.log('🎬 [세션 종료] Step 2: 로딩 모달 표시');
     setIsWaitingForSessionEnd(true);
     setSidebarTab('result');
 
@@ -507,26 +423,21 @@ function App() {
     suppressWSReconnect();
 
     // 🎬 3단계: SessionResult 컴포넌트가 데이터를 로드하도록 sessionId를 null로 설정
-    console.log('🎬 [세션 종료] Step 3: SessionResult 데이터 로드 트리거');
     setSessionId(null);
 
     // 🎬 4단계: 백그라운드에서 sessionAPI.end() 호출 (40초 타임아웃)
     // ⭐ 중요: 백엔드의 grace period (30초)가 완료될 때까지 대기!
-    console.log('🎬 [세션 종료] Step 4: API 호출 시작 (백엔드의 30초 grace period 대기)');
     try {
       await sessionAPI.end(currentSessionId);
-      console.log('✅ [세션 종료] sessionAPI.end() 성공 - 이제 WebSocket 연결 해제');
+      Logger.info('Session ended successfully');
     } catch (err) {
-      console.warn('⚠️ [세션 종료] sessionAPI.end() 실패:', err instanceof Error ? err.message : 'Unknown');
+      Logger.warn('Failed to end session on backend', { error: err instanceof Error ? err.message : String(err) });
     } finally {
       // 🎬 5단계: API 호출 완료 후 WebSocket 닫기
-      console.log('🎬 [세션 종료] Step 5: WebSocket 연결 해제');
       // 우선 재연결 억제하여 자동 재연결 방지
       suppressWSReconnect();
       disconnectWS();
     }
-
-    console.log('🎯 [세션 종료] 완료 - 로딩 모달이 표시 중이어야 함');
   };
 
   // 온보딩 완료 처리
@@ -550,11 +461,10 @@ function App() {
       const raw = localStorage.getItem('bemore_last_session');
       if (raw) {
         // 이전 세션이 있으면 자동으로 폐기 (재개 프롬프트 없음)
-        console.log('🗑️ 이전 세션 자동 폐기');
         localStorage.removeItem('bemore_last_session');
       }
     } catch (error) {
-      console.error('세션 복구 중 오류:', error);
+      Logger.error('Failed to clean up previous session', { error: error instanceof Error ? error.message : String(error) });
       localStorage.removeItem('bemore_last_session');
     }
   }, [sessionId]);
@@ -563,7 +473,6 @@ function App() {
     try {
       const raw = localStorage.getItem('bemore_last_session');
       if (!raw) {
-        console.warn('⚠️ 재개할 세션 정보 없음');
         setShowResumePrompt(false);
         return;
       }
@@ -572,12 +481,10 @@ function App() {
 
       // 유효성 검증
       if (!last.sessionId) {
-        console.warn('⚠️ 세션 ID 없음');
         discardLastSession();
         return;
       }
 
-      console.log('♻️ 세션 재개 시작:', last.sessionId);
       setSessionId(last.sessionId);
       setSessionStatus('active');
       setSessionStartAt(last.started);
@@ -588,20 +495,18 @@ function App() {
         voice: `${WS_URL}/ws/voice/${last.sessionId}`,
         session: `${WS_URL}/ws/session/${last.sessionId}`,
       };
-      console.log('[WebSocket] 재연결 시도:', wsResume);
       connectWS(wsResume);
 
       setShowResumePrompt(false);
       setResumeSessionStartedAt(undefined);
     } catch (error) {
-      console.error('❌ 세션 재개 실패:', error);
+      Logger.error('Failed to resume session', { error: error instanceof Error ? error.message : String(error) });
       setError('세션을 재개할 수 없습니다. 새로 시작해주세요.');
       discardLastSession();
     }
   };
 
   const discardLastSession = () => {
-    console.log('🗑️ 이전 세션 폐기');
     localStorage.removeItem('bemore_last_session');
     setShowResumePrompt(false);
     setResumeSessionStartedAt(undefined);
@@ -678,7 +583,6 @@ function App() {
 
     // Cleanup only on unmount
     return () => {
-      console.log('[App.tsx] 🧹 Component unmount cleanup - disconnecting WebSocket');
       disconnectWS();
     };
   }, []); // Empty dependency array - only run on mount/unmount
@@ -733,38 +637,6 @@ function App() {
     }
   }, [consent, openDialog]);
 
-  // 🔍 DIAGNOSTIC: Monitor when landmarksWs changes
-  useEffect(() => {
-    console.log('[App.tsx] 🔴 CRITICAL: landmarksWs state changed!');
-    console.log('[App.tsx]   ├─ landmarksWs exists:', !!landmarksWs);
-    console.log('[App.tsx]   ├─ readyState:', landmarksWs?.readyState);
-    console.log('[App.tsx]   ├─ OPEN constant:', WebSocket.OPEN);
-    console.log('[App.tsx]   ├─ Is OPEN?:', landmarksWs?.readyState === WebSocket.OPEN);
-    console.log('[App.tsx]   └─ URL:', landmarksWs?.url);
-
-    if (landmarksWs?.readyState === WebSocket.OPEN) {
-      console.log('[App.tsx] ✅✅✅ landmarksWs is OPEN and ready! - WILL SEND LANDMARKS!');
-    } else {
-      console.log('[App.tsx] ⛔⛔⛔ landmarksWs NOT READY - landmarks WILL NOT SEND');
-    }
-  }, [landmarksWs]);
-
-  // 🎯 DIAGNOSTIC: Monitor when currentEmotion state changes
-  useEffect(() => {
-    console.log('[App.tsx] 🎯 [CRITICAL] currentEmotion state changed!');
-    console.log('[App.tsx]   ├─ currentEmotion value:', currentEmotion);
-    console.log('[App.tsx]   ├─ currentEmotion type:', typeof currentEmotion);
-    const validEmotions = ['neutral', 'happy', 'sad', 'angry', 'anxious', 'surprised', 'disgusted', 'fearful'];
-    console.log('[App.tsx]   ├─ isValidEmotion:', validEmotions.includes(currentEmotion ?? ''));
-    console.log('[App.tsx]   └─ validEmotions list:', validEmotions);
-
-    if (currentEmotion) {
-      console.log(`[App.tsx] ✅ currentEmotion successfully updated to: "${currentEmotion}"`);
-      console.log(`[App.tsx] ✅ EmotionCard will now display with emotion="${currentEmotion}"`);
-    } else {
-      console.log('[App.tsx] ⚠️ currentEmotion is null - EmotionCard will show "감정 분석 중..."');
-    }
-  }, [currentEmotion]);
 
   return (
     <div id="main" className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -1073,21 +945,18 @@ function App() {
       <SessionSummaryModal
         isOpen={showSummary}
         onClose={() => {
-          console.log('🎬 [App.tsx] SessionSummaryModal onClose 콜백 실행:', { showSummary });
           setShowSummary(false);
           setUserClosedSummary(true);
-          console.log('🎬 [App.tsx] setShowSummary(false) + setUserClosedSummary(true) 완료');
         }}
         onSubmitFeedback={async (rating, note) => {
           if (!sessionId) {
             throw new Error('세션 ID가 없습니다.');
           }
           try {
-            console.log('📝 세션 피드백 제출 시작:', { rating, note, sessionId });
-            const result = await sessionAPI.submitFeedback(sessionId, { rating, note });
-            console.log('✅ 피드백 제출 성공:', result);
+            await sessionAPI.submitFeedback(sessionId, { rating, note });
+            Logger.info('Feedback submitted successfully');
           } catch (err) {
-            console.error('❌ 피드백 제출 실패:', err);
+            Logger.error('Failed to submit feedback', { error: err instanceof Error ? err.message : String(err) });
             throw err instanceof Error ? err : new Error('피드백 제출에 실패했습니다.');
           }
         }}
@@ -1106,10 +975,7 @@ function App() {
       <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
 
       {/* 🎬 세션 종료 후 결과 로딩 모달 - 끝에 배치하여 다른 요소의 영향을 받지 않도록 */}
-      {(() => {
-        console.log('🔴 [RENDER] 로딩 모달 조건 확인:', { isWaitingForSessionEnd, shouldRender: isWaitingForSessionEnd });
-        return isWaitingForSessionEnd;
-      })() && (
+      {isWaitingForSessionEnd && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="결과 대기 중">
           <div className="absolute inset-0 bg-black/40" />
           <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-soft-lg p-8 max-w-md mx-auto">
