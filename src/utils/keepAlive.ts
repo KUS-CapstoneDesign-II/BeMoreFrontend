@@ -51,7 +51,7 @@ export class KeepAliveManager {
   private timeoutMs: number;
   private maxRetries: number;
   private enableLogging: boolean;
-  private timer: NodeJS.Timeout | null = null;
+  private timer: ReturnType<typeof setInterval> | null = null;
   private successCount: number = 0;
   private failureCount: number = 0;
   private lastPingTime: Date | null = null;
