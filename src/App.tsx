@@ -157,8 +157,11 @@ function App() {
       }
 
       if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {
-        // 1. Analyze incoming format
-        const analysis = analyzeVADFormat(message.data);
+        // 1. Cast data from unknown type (WebSocket message)
+        const data = message.data as any;
+
+        // 2. Analyze incoming format
+        const analysis = analyzeVADFormat(data);
         Logger.debug('🔍 VAD Format Analysis', {
           detectedFields: analysis.fieldNames,
           detectedRatios: analysis.ratioFields,
@@ -166,15 +169,15 @@ function App() {
           recommendations: analysis.recommendations,
         });
 
-        // 2. Transform VAD data with automatic format detection
-        const vadMetrics = transformVADData(message.data, {
+        // 3. Transform VAD data with automatic format detection
+        const vadMetrics = transformVADData(data, {
           mapFields: true,
           normalizeRanges: true,
           convertTimeUnits: true,
           validateOutput: true,
         });
 
-        // 3. Handle result
+        // 4. Handle result
         if (vadMetrics) {
           setVadMetrics(vadMetrics);
           Logger.info('✅ VAD metrics processed successfully', {
@@ -188,9 +191,9 @@ function App() {
         } else {
           Logger.error('❌ VAD metrics validation failed - invalid data format', {
             type: message.type,
-            receivedDataKeys: Object.keys(message.data),
+            receivedDataKeys: Object.keys(data),
             recommendations: analysis.recommendations,
-            fullData: message.data,
+            fullData: data,
           });
           setVadMetrics(null);
         }

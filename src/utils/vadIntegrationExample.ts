@@ -10,7 +10,8 @@
  * 3. Adjust transformation options based on Backend format feedback
  */
 
-import { transformVADData, analyzeVADFormat, debugVADTransformation, VADMetrics } from './vadUtils';
+import { transformVADData, analyzeVADFormat, debugVADTransformation } from './vadUtils';
+import type { VADMetrics } from './vadUtils';
 import { Logger } from '../config/env';
 
 /**
@@ -222,19 +223,19 @@ export function transformVADDataCustom(
   timeConverter?: (value: number) => number,
 ): VADMetrics | null {
   try {
-    const transformed: Record<string, unknown> = {};
+    const transformed: Record<string, any> = {};
 
     // Apply custom field mapping
     for (const [backendField, frontendField] of Object.entries(fieldMapping)) {
       if (backendField in backendData) {
-        let value = backendData[backendField];
+        let value: any = backendData[backendField];
 
         // Apply range scaling if provided
         if (
           (frontendField === 'speechRatio' || frontendField === 'pauseRatio') &&
           rangeScaler
         ) {
-          value = rangeScaler(value);
+          value = rangeScaler(Number(value));
         }
 
         // Apply time conversion if provided
@@ -244,14 +245,14 @@ export function transformVADDataCustom(
             frontendField === 'averageSpeechBurst') &&
           timeConverter
         ) {
-          value = timeConverter(value);
+          value = timeConverter(Number(value));
         }
 
         transformed[frontendField] = value;
       }
     }
 
-    return transformed as VADMetrics;
+    return transformed as any as VADMetrics;
   } catch (error) {
     Logger.error('❌ Custom VAD transformation failed', {
       error: error instanceof Error ? error.message : String(error),
