@@ -151,21 +151,21 @@ function App() {
         // 1. Cast data from unknown type (WebSocket message)
         let data = message.data as any;
 
-        // DEBUG: Log raw data BEFORE any transformation (using Logger for Production visibility)
-        Logger.info('🔴 RAW DATA FROM BACKEND', {
+        // DEBUG: Log raw data BEFORE any transformation (using Logger.warn for Production visibility)
+        Logger.warn('🔴 RAW DATA FROM BACKEND', {
           keys: Object.keys(data),
           data: data,
         });
 
         // 2. Extract nested metrics if present (handle Backend's { metrics: {...} } structure)
         data = extractNestedMetrics(data);
-        Logger.info('🟡 AFTER extractNestedMetrics', {
+        Logger.warn('🟡 AFTER extractNestedMetrics', {
           keys: Object.keys(data),
         });
 
         // 3. Analyze incoming format
         const analysis = analyzeVADFormat(data);
-        Logger.info('🟢 analyzeVADFormat result', {
+        Logger.warn('🟢 analyzeVADFormat result', {
           fieldNames: analysis.fieldNames,
           ratioFields: analysis.ratioFields,
           timeFields: analysis.timeFields,
@@ -174,7 +174,7 @@ function App() {
         });
 
         // 4. Transform VAD data with automatic format detection
-        Logger.info('🔵 Starting transformVADData');
+        Logger.warn('🔵 Starting transformVADData');
         const vadMetrics = transformVADData(data, {
           mapFields: true,
           normalizeRanges: true,
@@ -183,7 +183,7 @@ function App() {
         });
 
         // 5. Log the result after transformation
-        Logger.info('🟣 transformVADData result', {
+        Logger.warn('🟣 transformVADData result', {
           result: vadMetrics,
           success: !!vadMetrics,
         });
