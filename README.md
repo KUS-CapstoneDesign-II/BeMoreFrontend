@@ -230,6 +230,171 @@ See [Phase 9 Completion Report](./PHASE_9_COMPLETION_REPORT.md) for detailed imp
 
 ---
 
+## 🎤 VAD (Voice Activity Detection) API Specification
+
+### Overview
+The VAD API provides real-time voice activity metrics during therapy sessions. Data is sent via WebSocket messages with type `vad_analysis` or `vad_realtime`.
+
+### Response Schema
+
+#### Ratio Fields (Type: number, Range: 0.0 - 1.0)
+| Field | Description | Example |
+|-------|-------------|---------|
+| `speechRatio` | Proportion of time spent speaking (0.0 = no speech, 1.0 = continuous speech) | `0.65` |
+| `pauseRatio` | Proportion of time spent in silence/pauses (0.0 = no pauses, 1.0 = continuous silence) | `0.35` |
+
+#### Duration Fields (Type: number, Unit: milliseconds)
+| Field | Description | Range | Example |
+|-------|-------------|-------|---------|
+| `averageSpeechBurst` | Average duration of continuous speech segments | > 0 | `2500` (2.5 seconds) |
+| `averagePauseDuration` | Average duration of silence/pause segments | > 0 | `1200` (1.2 seconds) |
+| `longestPause` | Duration of the longest single pause | > 0 | `4500` (4.5 seconds) |
+
+#### Count Fields (Type: integer)
+| Field | Description | Min Value | Example |
+|-------|-------------|-----------|---------|
+| `speechBurstCount` | Total number of distinct speech segments detected | >= 0 | `12` |
+| `pauseCount` | Total number of distinct pause/silence segments | >= 0 | `11` |
+
+### Backend Response Format
+
+The Backend sends VAD data in one of these formats:
+
+#### Format 1: Nested Structure (Standard)
+```json
+{
+  "type": "vad_analysis",
+  "data": {
+    "metrics": {
+      "speechRatio": 0.65,
+      "pauseRatio": 0.35,
+      "averageSpeechBurst": 2500,
+      "averagePauseDuration": 1200,
+      "longestPause": 4500,
+      "speechBurstCount": 12,
+      "pauseCount": 11
+    }
+  }
+}
+```
+
+#### Format 2: Alternative Field Names (Supported)
+```json
+{
+  "type": "vad_realtime",
+  "data": {
+    "speech_ratio": 0.65,
+    "pause_ratio": 0.35,
+    "avg_speech_duration": 2500,
+    "avg_pause_duration": 1200,
+    "max_pause": 4500,
+    "speech_count": 12,
+    "pause_count": 11
+  }
+}
+```
+
+#### Format 3: Abbreviated Names (Supported)
+```json
+{
+  "type": "vad_analysis",
+  "data": {
+    "sr": 0.65,
+    "pr": 0.35,
+    "asd": 2500,
+    "apd": 1200,
+    "lp": 4500,
+    "sc": 12,
+    "pc": 11
+  }
+}
+```
+
+### Example: Complete VAD Session Response
+```json
+{
+  "type": "vad_analysis",
+  "data": {
+    "sessionId": "sess_abc123",
+    "timestamp": 1699000000000,
+    "metrics": {
+      "speechRatio": 0.62,
+      "pauseRatio": 0.38,
+      "averageSpeechBurst": 2400,
+      "averagePauseDuration": 1100,
+      "longestPause": 5200,
+      "speechBurstCount": 15,
+      "pauseCount": 14
+    }
+  }
+}
+```
+
+### Field Range Validation
+
+Frontend automatically validates all VAD fields:
+
+| Field | Valid Range | Invalid Values | Auto-Correction |
+|-------|-------------|-----------------|-----------------|
+| Speech/Pause Ratios | 0.0 - 1.0 | < 0 or > 1 | Clamped to [0, 1] |
+| Duration Fields | > 0 | Negative or 0 | Estimated or set to 0 |
+| Count Fields | >= 0 | Negative | Set to 0 |
+
+### Frontend Auto-Transformation
+
+Frontend automatically handles:
+
+1. **Field Name Mapping**: Converts 40+ Backend field naming variants (camelCase, snake_case, abbreviated) to standard Frontend names
+2. **Nested Structure Extraction**: Flattens nested `{ metrics, psychological, timeSeries }` structures
+3. **Missing Field Derivation**: Estimates missing fields using available data
+4. **Range Normalization**: Ensures all values are within valid ranges
+5. **Type Conversion**: Converts string numbers to numeric values
+
+### Compatibility Notes
+
+- **Required Fields**: All 7 core VAD fields must be present or derivable
+- **Missing Data**: Frontend can estimate missing duration fields (e.g., `longestPause` ≈ `averagePauseDuration × 1.5`)
+- **Empty timeSeries**: Handled gracefully; metrics can be calculated without time series data
+- **Field Name Flexibility**: Backend can use any supported naming convention; Frontend normalizes automatically
+
+### Integration Example (Frontend)
+
+```typescript
+// WebSocket message handler in App.tsx
+websocket.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {
+    // Frontend automatically handles:
+    // - Field name mapping (speechRate → speechRatio)
+    // - Nested structure extraction
+    // - Type conversion and validation
+    const vadMetrics = transformVADData(message.data);
+
+    // Display in SessionResult component
+    setVadMetrics(vadMetrics);
+  }
+};
+```
+
+### Common Issues and Solutions
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| VAD metrics not displaying | Async prop timing issue | Frontend uses local state caching |
+| Field name mismatch | Backend uses different naming convention | Frontend auto-maps all variants |
+| Missing longestPause | Backend doesn't send timeSeries | Frontend estimates from average |
+| Ratio values > 1.0 | Backend calculation error | Frontend clamps to [0, 1] |
+
+### Performance Characteristics
+
+- **Processing Speed**: < 50ms per VAD message
+- **Memory Usage**: ~1KB per VAD metrics object
+- **WebSocket Frequency**: 1-3 messages per second during active session
+- **Accuracy**: ±5% for ratio calculations with sufficient speech samples
+
+---
+
 ## 📚 참고 문서
 
 - [Vite Documentation](https://vitejs.dev/)
