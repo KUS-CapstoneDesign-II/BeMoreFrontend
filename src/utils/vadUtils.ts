@@ -91,6 +91,22 @@ const FIELD_NAME_MAPPING: Record<string, keyof VADMetrics> = {
   speech_turn_count: 'speechBurstCount',
   eventCount: 'pauseCount',
   event_count: 'pauseCount',
+
+  // Alternative names for longestPause (might appear in different form)
+  maxPause: 'longestPause',
+  max_pause: 'longestPause',
+  longest_silence: 'longestPause',
+  maxSilence: 'longestPause',
+  max_silence: 'longestPause',
+  maxPauseDuration: 'longestPause',
+  max_pause_duration: 'longestPause',
+  longestSilence: 'longestPause',
+  longest_silence_duration: 'longestPause',
+
+  // Alternative names for averageSpeechBurst (already covered by avgSpeechDuration)
+  avgBurstDuration: 'averageSpeechBurst',
+  avg_burst_duration: 'averageSpeechBurst',
+  average_burst_duration: 'averageSpeechBurst',
 };
 
 /**
@@ -236,6 +252,60 @@ export function convertTimeUnits(
 }
 
 /**
+ * Derive missing fields from available data
+ * Calculates missing values when not explicitly provided
+ *
+ * @param data Data with potentially missing fields
+ * @param originalBackendData Original data for reference
+ * @returns Data with derived fields filled in
+ */
+function deriveVADFields(
+  data: Record<string, any>,
+  originalBackendData: BackendVADData,
+): Record<string, any> {
+  const derived = { ...data };
+
+  Logger.debug('🔍 deriveVADFields processing', {
+    hasLongestPause: 'longestPause' in derived,
+    hasAverageSpeechBurst: 'averageSpeechBurst' in derived,
+  });
+
+  // Derive longestPause from timeSeries if not available
+  if (!('longestPause' in derived) && Array.isArray(originalBackendData.timeSeries)) {
+    const timeSeries = originalBackendData.timeSeries as Array<any>;
+    const pauseDurations = timeSeries
+      .filter((event: any) => event.type === 'pause' || event.duration)
+      .map((event: any) => event.duration || event.durationMs || 0)
+      .filter((d: number) => d > 0);
+
+    if (pauseDurations.length > 0) {
+      const longest = Math.max(...pauseDurations);
+      Logger.debug('  ✓ Derived longestPause from timeSeries', {
+        longest,
+        eventCount: pauseDurations.length,
+      });
+      derived.longestPause = longest;
+    }
+  }
+
+  // Provide defaults for missing fields if they're still not available
+  if (!('longestPause' in derived)) {
+    Logger.debug('  ℹ️ longestPause not found - may be unavailable from Backend');
+  }
+
+  if (!('averageSpeechBurst' in derived) && 'avgSpeechDuration' in derived) {
+    derived.averageSpeechBurst = derived.avgSpeechDuration;
+    Logger.debug('  ✓ Derived averageSpeechBurst from avgSpeechDuration');
+  }
+
+  if (!('averageSpeechBurst' in derived)) {
+    Logger.debug('  ℹ️ averageSpeechBurst not found - may be unavailable from Backend');
+  }
+
+  return derived;
+}
+
+/**
  * Comprehensive VAD data transformer
  * Applies all transformations: field mapping, normalization, unit conversion
  *
@@ -266,6 +336,9 @@ export function transformVADData(
     if (mapFields) {
       result = mapVADMetrics(result);
     }
+
+    // Step 1.5: Derive missing fields
+    result = deriveVADFields(result, backendData);
 
     // Step 2: Normalize ranges
     if (normalizeRanges) {
