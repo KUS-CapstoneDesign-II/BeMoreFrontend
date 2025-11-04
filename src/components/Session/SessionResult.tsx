@@ -24,6 +24,11 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
   const [filter, setFilter] = useState<{ spike:boolean; low:boolean; bookmark:boolean }>({ spike: true, low: true, bookmark: true });
   const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
 
+  // 🔧 FIX: Fallback sessionId from localStorage if prop is null
+  // When session ends, sessionId state in App becomes null before this component
+  // loads, so we retrieve it from localStorage where it was saved
+  const [effectiveSessionId, setEffectiveSessionId] = useState<string>(sessionId);
+
   // 🔧 FIX: Preserve vadMetrics in local state to handle async prop updates
   // Parent component passes vadMetrics as prop, but it might come after SessionResult renders
   // Store it locally so it persists even if prop becomes undefined later
@@ -42,11 +47,34 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     }
   }, [vadMetrics]);
 
+  // 🔧 FIX: Load sessionId and VAD metrics from localStorage if prop is not provided
+  // When session ends, the parent component sets sessionId to null immediately
+  // We need to retrieve both from localStorage where they were saved
+  useEffect(() => {
+    if (!sessionId) {
+      try {
+        const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
+        if (lastSession.sessionId) {
+          setEffectiveSessionId(lastSession.sessionId);
+          if (import.meta.env.DEV) {
+            console.log('📋 Loaded sessionId from localStorage:', lastSession.sessionId);
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('Failed to load sessionId from localStorage:', error);
+        }
+      }
+    } else {
+      setEffectiveSessionId(sessionId);
+    }
+  }, [sessionId]);
+
   // 🔧 FIX: Load VAD metrics from localStorage if prop is not provided
   // When session ends and WebSocket disconnects, the parent may not have vadMetrics to pass
   // Fallback to localStorage where we saved it during session end
   useEffect(() => {
-    if (!preservedVadMetrics && !vadMetrics && sessionId) {
+    if (!preservedVadMetrics && !vadMetrics && effectiveSessionId) {
       try {
         const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
         if (lastSession.vadMetrics) {
@@ -65,7 +93,7 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
         }
       }
     }
-  }, [sessionId]);
+  }, [effectiveSessionId]);
 
   // 🔧 FIX: Loading state management - sync with both summary and report loading
   // This ensures UI doesn't show incomplete data while one API is still loading
@@ -83,8 +111,8 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
   }, [loading, onLoadingChange]);
 
   useEffect(() => {
-    // sessionId가 없으면 API 호출 하지 않음
-    if (!sessionId) {
+    // effectiveSessionId가 없으면 API 호출 하지 않음
+    if (!effectiveSessionId) {
       setSummary({});
       setSummaryLoading(false);
       return;
@@ -93,7 +121,7 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     let mounted = true;
     (async () => {
       try {
-        const data = await sessionAPI.getSummary(sessionId);
+        const data = await sessionAPI.getSummary(effectiveSessionId);
         if (mounted) setSummary(data);
       } catch (e) {
         // 요약 데이터 실패 시 기본값으로 계속 진행
@@ -107,11 +135,11 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
       }
     })();
     return () => { mounted = false; };
-  }, [sessionId]);
+  }, [effectiveSessionId]);
 
   useEffect(() => {
-    // sessionId가 없으면 API 호출 하지 않음
-    if (!sessionId) {
+    // effectiveSessionId가 없으면 API 호출 하지 않음
+    if (!effectiveSessionId) {
       setTimeline([]);
       setAutoMarkers([]);
       setReportLoading(false);
@@ -121,7 +149,7 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     let mounted = true;
     (async () => {
       try {
-        const report = await sessionAPI.getReport(sessionId);
+        const report = await sessionAPI.getReport(effectiveSessionId);
         if (mounted) {
           setTimeline(report?.vadTimeline || []);
           // naive auto-markers: big valence delta, low arousal windows
@@ -156,15 +184,15 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
       }
     })();
     return () => { mounted = false; };
-  }, [sessionId]);
+  }, [effectiveSessionId]);
 
   const handleDownloadPdf = async () => {
     try {
-      const blob = await sessionAPI.downloadPdf(sessionId);
+      const blob = await sessionAPI.downloadPdf(effectiveSessionId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `bemore-report-${sessionId}.pdf`;
+      a.download = `bemore-report-${effectiveSessionId}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
@@ -350,11 +378,11 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
               <button
                 onClick={async () => {
                   try {
-                    const blob = await sessionAPI.downloadCsv(sessionId, 'vad');
+                    const blob = await sessionAPI.downloadCsv(effectiveSessionId, 'vad');
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `vad-timeline-${sessionId}.csv`;
+                    a.download = `vad-timeline-${effectiveSessionId}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
                   } catch (e) {
@@ -366,11 +394,11 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
               <button
                 onClick={async () => {
                   try {
-                    const blob = await sessionAPI.downloadCsv(sessionId, 'emotion');
+                    const blob = await sessionAPI.downloadCsv(effectiveSessionId, 'emotion');
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `emotion-timeline-${sessionId}.csv`;
+                    a.download = `emotion-timeline-${effectiveSessionId}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
                   } catch (e) {

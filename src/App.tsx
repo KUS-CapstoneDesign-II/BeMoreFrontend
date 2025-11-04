@@ -435,13 +435,14 @@ function App() {
     // 저장: sessionId를 지역변수에 저장 (나중에 API 호출에 사용)
     const currentSessionId = sessionId;
 
-    // 🎬 0단계: 현재 VAD 메트릭스를 localStorage에 저장 (결과 탭에서 표시하기 위해)
+    // 🎬 0단계: 현재 VAD 메트릭스와 sessionId를 localStorage에 저장 (결과 탭에서 표시하기 위해)
     if (vadMetrics) {
       try {
         const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
         lastSession.vadMetrics = vadMetrics;
+        lastSession.sessionId = currentSessionId;  // ⭐ sessionId도 함께 저장
         localStorage.setItem('bemore_last_session', JSON.stringify(lastSession));
-        Logger.info('✅ VAD metrics saved to localStorage', { vadMetrics });
+        Logger.info('✅ VAD metrics and sessionId saved to localStorage', { vadMetrics, sessionId: currentSessionId });
       } catch (error) {
         Logger.warn('Failed to save VAD metrics to localStorage', { error });
       }
@@ -499,11 +500,15 @@ function App() {
     try {
       const raw = localStorage.getItem('bemore_last_session');
       if (raw) {
-        // 이전 세션이 있으면 자동으로 폐기 (재개 프롬프트 없음)
-        localStorage.removeItem('bemore_last_session');
+        const lastSession = JSON.parse(raw);
+        // ⭐ VAD 메트릭스와 sessionId가 없을 때만 삭제 (현재 세션 종료 데이터 보존)
+        if (!lastSession.vadMetrics && !lastSession.sessionId) {
+          localStorage.removeItem('bemore_last_session');
+        }
       }
     } catch (error) {
       Logger.error('Failed to clean up previous session', { error: error instanceof Error ? error.message : String(error) });
+      // 파싱 에러 시만 삭제
       localStorage.removeItem('bemore_last_session');
     }
   }, [sessionId]);
@@ -989,11 +994,26 @@ function App() {
           setUserClosedSummary(true);
         }}
         onSubmitFeedback={async (rating, note) => {
-          if (!sessionId) {
-            throw new Error('세션 ID가 없습니다.');
+          // 🔧 FIX: Get sessionId from prop or localStorage fallback
+          // When session ends and sessionId state becomes null, we still need it for feedback submission
+          let effectiveSessionId = sessionId;
+          if (!effectiveSessionId) {
+            try {
+              const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
+              effectiveSessionId = lastSession.sessionId;
+              if (import.meta.env.DEV) {
+                console.log('📋 Loaded sessionId from localStorage for feedback:', effectiveSessionId);
+              }
+            } catch (error) {
+              Logger.warn('Failed to load sessionId from localStorage', { error });
+            }
+          }
+
+          if (!effectiveSessionId) {
+            throw new Error('세션 ID가 없습니다. 세션을 다시 시작해주세요.');
           }
           try {
-            await sessionAPI.submitFeedback(sessionId, { rating, note });
+            await sessionAPI.submitFeedback(effectiveSessionId, { rating, note });
             Logger.info('Feedback submitted successfully');
           } catch (err) {
             Logger.error('Failed to submit feedback', { error: err instanceof Error ? err.message : String(err) });
