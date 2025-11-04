@@ -136,8 +136,39 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
 
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
+  // 🔧 Calculate VAD averages from timeline data
+  const calculateVadAverages = () => {
+    if (!timeline || timeline.length === 0) {
+      return { valence: '-', arousal: '-', dominance: '-' };
+    }
+
+    let valenceSum = 0, arousalSum = 0, dominanceSum = 0;
+    let valenceCount = 0, arousalCount = 0, dominanceCount = 0;
+
+    for (const point of timeline) {
+      if (typeof point.valence === 'number') {
+        valenceSum += point.valence;
+        valenceCount++;
+      }
+      if (typeof point.arousal === 'number') {
+        arousalSum += point.arousal;
+        arousalCount++;
+      }
+      if (typeof point.dominance === 'number') {
+        dominanceSum += point.dominance;
+        dominanceCount++;
+      }
+    }
+
+    return {
+      valence: valenceCount > 0 ? (valenceSum / valenceCount).toFixed(2) : '-',
+      arousal: arousalCount > 0 ? (arousalSum / arousalCount).toFixed(2) : '-',
+      dominance: dominanceCount > 0 ? (dominanceSum / dominanceCount).toFixed(2) : '-'
+    };
+  };
+
   const vad = (summary?.vadVector as { valence?: string | number; arousal?: string | number; dominance?: string | number } | undefined)
-    ?? { valence: '-', arousal: '-', dominance: '-' };
+    ?? calculateVadAverages();
   const keyObs: string[] = Array.isArray((summary as Record<string, unknown>)?.keyObservations)
     ? ((summary as Record<string, unknown>).keyObservations as string[])
     : [];
