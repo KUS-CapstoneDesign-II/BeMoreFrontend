@@ -151,29 +151,27 @@ function App() {
         // 1. Cast data from unknown type (WebSocket message)
         let data = message.data as any;
 
+        // DEBUG: Log raw data BEFORE any transformation
+        console.log('🔴 RAW DATA FROM BACKEND:', data);
+        console.log('   Keys:', Object.keys(data));
+        console.log('   Full data:', JSON.stringify(data, null, 2));
+
         // 2. Extract nested metrics if present (handle Backend's { metrics: {...} } structure)
         data = extractNestedMetrics(data);
-        Logger.debug('🔧 After extracting nested metrics', {
-          keys: Object.keys(data),
-          hasMetricsField: 'metrics' in data,
-        });
+        console.log('🟡 AFTER extractNestedMetrics:', Object.keys(data));
 
         // 3. Analyze incoming format
         const analysis = analyzeVADFormat(data);
-        Logger.debug('🔍 VAD Format Analysis', {
-          detectedFields: analysis.fieldNames,
-          detectedRatios: analysis.ratioFields,
-          detectedTimes: analysis.timeFields,
+        console.log('🟢 analyzeVADFormat result:', {
+          fieldNames: analysis.fieldNames,
+          ratioFields: analysis.ratioFields,
+          timeFields: analysis.timeFields,
+          countFields: analysis.countFields,
           recommendations: analysis.recommendations,
         });
 
-        // 3.5 Log the data before transformation for debugging
-        Logger.debug('📦 Data before transformation', {
-          dataKeys: Object.keys(data),
-          dataSample: JSON.stringify(data).substring(0, 300),
-        });
-
         // 4. Transform VAD data with automatic format detection
+        console.log('🔵 Starting transformVADData...');
         const vadMetrics = transformVADData(data, {
           mapFields: true,
           normalizeRanges: true,
@@ -181,11 +179,8 @@ function App() {
           validateOutput: true,
         });
 
-        // 4.5 Log the result after transformation
-        Logger.debug('📋 After transformation', {
-          resultKeys: vadMetrics ? Object.keys(vadMetrics) : null,
-          resultValues: vadMetrics,
-        });
+        // 5. Log the result after transformation
+        console.log('🟣 transformVADData result:', vadMetrics);
 
         // 5. Handle result
         if (vadMetrics) {
