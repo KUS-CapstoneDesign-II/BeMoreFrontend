@@ -273,33 +273,64 @@ function deriveVADFields(
   // Derive longestPause from timeSeries if not available
   if (!('longestPause' in derived) && Array.isArray(originalBackendData.timeSeries)) {
     const timeSeries = originalBackendData.timeSeries as Array<any>;
-    const pauseDurations = timeSeries
-      .filter((event: any) => event.type === 'pause' || event.duration)
-      .map((event: any) => event.duration || event.durationMs || 0)
-      .filter((d: number) => d > 0);
 
-    if (pauseDurations.length > 0) {
-      const longest = Math.max(...pauseDurations);
-      Logger.debug('  ✓ Derived longestPause from timeSeries', {
-        longest,
-        eventCount: pauseDurations.length,
-      });
-      derived.longestPause = longest;
+    if (timeSeries.length > 0) {
+      // Extract pause durations from timeSeries events
+      const pauseDurations = timeSeries
+        .filter((event: any) => event.type === 'pause' || event.duration)
+        .map((event: any) => event.duration || event.durationMs || 0)
+        .filter((d: number) => d > 0);
+
+      if (pauseDurations.length > 0) {
+        const longest = Math.max(...pauseDurations);
+        Logger.debug('  ✓ Derived longestPause from timeSeries', {
+          longest,
+          eventCount: pauseDurations.length,
+        });
+        derived.longestPause = longest;
+      }
+    } else {
+      // timeSeries is empty - estimate longestPause from available metrics
+      const avgPauseDuration = derived.averagePauseDuration as number;
+      const eventCount = derived.pauseCount as number || derived.eventCount as number || 0;
+
+      if (avgPauseDuration && avgPauseDuration > 0) {
+        // Estimate: longest pause is typically 1.5x to 2x the average
+        // Use 1.5x as conservative estimate
+        const estimated = avgPauseDuration * 1.5;
+        Logger.debug('  ✓ Estimated longestPause from averagePauseDuration', {
+          averagePauseDuration: avgPauseDuration,
+          estimated: Math.round(estimated),
+          eventCount,
+        });
+        derived.longestPause = Math.round(estimated);
+      } else if (eventCount > 0) {
+        // Has events but no pause data yet - use 0 as placeholder
+        derived.longestPause = 0;
+        Logger.debug('  ℹ️ Events detected but no pause data - using 0 for longestPause');
+      } else {
+        // No events at all - session just started or no pauses detected
+        derived.longestPause = 0;
+        Logger.debug('  ℹ️ No pause events - using 0 for longestPause');
+      }
     }
   }
 
   // Provide defaults for missing fields if they're still not available
   if (!('longestPause' in derived)) {
-    Logger.debug('  ℹ️ longestPause not found - may be unavailable from Backend');
-  }
-
-  if (!('averageSpeechBurst' in derived) && 'avgSpeechDuration' in derived) {
-    derived.averageSpeechBurst = derived.avgSpeechDuration;
-    Logger.debug('  ✓ Derived averageSpeechBurst from avgSpeechDuration');
+    Logger.debug('  ⚠️ longestPause still missing - using 0 as fallback');
+    derived.longestPause = 0;
   }
 
   if (!('averageSpeechBurst' in derived)) {
-    Logger.debug('  ℹ️ averageSpeechBurst not found - may be unavailable from Backend');
+    if ('avgSpeechDuration' in derived) {
+      derived.averageSpeechBurst = derived.avgSpeechDuration;
+      Logger.debug('  ✓ Derived averageSpeechBurst from avgSpeechDuration');
+    } else {
+      // Fallback: use 0 if no speech duration available
+      derived.averageSpeechBurst = 0;
+      Logger.debug('  ℹ️ averageSpeechBurst not found - using 0 as fallback');
+    }
   }
 
   return derived;
