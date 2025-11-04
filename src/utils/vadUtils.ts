@@ -118,20 +118,20 @@ export function normalizeVADMetrics(
 
   for (const field of ratioFields) {
     if (field in normalized && typeof normalized[field] === 'number') {
-      const value = normalized[field];
+      const value = normalized[field] as number;
 
       // Detect format and normalize
-      if (value > 1.0) {
-        // Assume 0-100 range
-        if (value > 100) {
-          Logger.warn(`⚠️ ${field} value exceeds 100: ${value}`, { field, value });
-          normalized[field] = Math.min(1.0, value / 1000); // Possible millisecond format
-        } else {
-          // 0-100 range
-          normalized[field] = value / 100;
-        }
+      // Values in range [1, 100] are percentages that need normalization
+      // Values in range [0, 1) are already normalized
+      if (value >= 1 && value <= 100) {
+        // 0-100 percentage range: divide by 100
+        normalized[field] = value / 100;
+      } else if (value > 100) {
+        // Invalid value > 100
+        Logger.warn(`⚠️ ${field} value exceeds 100: ${value}`, { field, value });
+        normalized[field] = Math.min(1.0, value / 1000);
       }
-      // else: already in 0.0-1.0 range
+      // else: value < 1, assume already in 0.0-1.0 range
     }
   }
 
@@ -157,20 +157,40 @@ export function convertTimeUnits(
     'averageSpeechBurst',
   ];
 
+  // First pass: check if ANY field has decimal values (indicates seconds format)
+  let hasDecimalValues = false;
   for (const field of timeFields) {
     if (field in converted && typeof converted[field] === 'number') {
-      const value = converted[field];
+      const value = converted[field] as number;
+      if (!Number.isInteger(value) && value > 0 && value < 100) {
+        hasDecimalValues = true;
+        break;
+      }
+    }
+  }
 
-      // Detect time unit from value magnitude
+  // Second pass: convert fields based on detected format
+  for (const field of timeFields) {
+    if (field in converted && typeof converted[field] === 'number') {
+      const value = converted[field] as number;
+
+      // Detect time unit from value magnitude and type
       if (value > 100000) {
-        // Likely already in milliseconds (max ~100 seconds)
+        // Large values: definitely already milliseconds, don't convert
         // Do nothing
       } else if (value > 100) {
-        // Likely in seconds (if >100, must be milliseconds)
-        // Assume seconds
+        // Values > 100: likely milliseconds (2500, 8000), don't convert
+        // Do nothing
+      } else if (hasDecimalValues) {
+        // If ANY field has decimals, treat all values < 100 as seconds
+        if (value > 0 && value < 100) {
+          converted[field] = value * 1000;
+        }
+      } else if (!Number.isInteger(value) && value > 0 && value < 100) {
+        // Decimal values < 100 without other context: likely seconds
         converted[field] = value * 1000;
       }
-      // else: likely already in milliseconds
+      // else: integer values < 100 without decimal context: likely already milliseconds
     }
   }
 
@@ -358,54 +378,87 @@ export function analyzeVADFormat(backendData: BackendVADData): {
   const countFields: { name: string; value: number }[] = [];
   const recommendations: string[] = [];
 
-  // Analyze each field
+  // Analyze each field with proper categorization priority
   for (const [key, value] of Object.entries(backendData)) {
     if (typeof value !== 'number') continue;
 
-    // Detect ratio fields
-    if (
-      key.toLowerCase().includes('ratio') ||
-      key.toLowerCase().includes('rate') ||
-      key.toLowerCase().includes('percentage')
-    ) {
-      let detectedFormat = 'unknown';
-      if (value >= 0 && value <= 1) {
-        detectedFormat = '0.0-1.0';
-      } else if (value >= 0 && value <= 100) {
-        detectedFormat = '0-100';
-        recommendations.push(`Normalize ${key} from 0-100 to 0.0-1.0`);
-      }
-      ratioFields.push({ name: key, value, detectedFormat });
+    const keyLower = key.toLowerCase();
+    let categorized = false;
+
+    // Priority 1: Check for count fields (most specific - includes integer check)
+    const isCountField =
+      (keyLower.includes('count') || keyLower.includes('number')) &&
+      Number.isInteger(value) &&
+      value >= 0;
+
+    if (isCountField) {
+      countFields.push({ name: key, value });
+      categorized = true;
     }
 
-    // Detect time fields
-    if (
-      key.toLowerCase().includes('duration') ||
-      key.toLowerCase().includes('pause') ||
-      key.toLowerCase().includes('burst')
-    ) {
-      let detectedUnit = 'unknown';
-      if (value > 100000) {
-        detectedUnit = 'milliseconds';
-      } else if (value > 100) {
-        detectedUnit = 'seconds (needs conversion to ms)';
-        recommendations.push(`Convert ${key} from seconds to milliseconds`);
-      } else if (value > 1) {
-        detectedUnit = 'seconds or milliseconds (ambiguous)';
-        recommendations.push(`Confirm ${key} time unit (seconds or milliseconds)`);
-      } else {
-        detectedUnit = 'milliseconds or fractional seconds';
+    // Priority 2: Detect ratio fields
+    // Be specific: check for 'ratio' or 'rate' or 'percentage', but exclude 'duration' which contains 'ratio'
+    if (!categorized) {
+      const isRatioField =
+        (keyLower.includes('ratio') && !keyLower.includes('duration')) ||
+        (keyLower.includes('rate') && !keyLower.includes('duration')) ||
+        keyLower.includes('percentage');
+
+      if (isRatioField) {
+        let detectedFormat = 'unknown';
+        if (value >= 0 && value <= 1) {
+          detectedFormat = '0.0-1.0';
+        } else if (value >= 0 && value <= 100) {
+          detectedFormat = '0-100';
+          recommendations.push(`Normalize ${key} from 0-100 to 0.0-1.0`);
+        }
+        ratioFields.push({ name: key, value, detectedFormat });
+        categorized = true;
       }
-      timeFields.push({ name: key, value, detectedUnit });
     }
 
-    // Detect count fields
-    if (
-      key.toLowerCase().includes('count') ||
-      key.toLowerCase().includes('number')
-    ) {
-      if (Number.isInteger(value) && value >= 0) {
-        countFields.push({ name: key, value });
+    // Priority 3: Detect time fields (only if not already categorized)
+    if (!categorized) {
+      // Check for time-related keywords, but exclude count/ratio keywords
+      // Note: be careful not to reject 'duration' just because it contains 'ratio'
+      const hasTimeKeyword =
+        keyLower.includes('duration') ||
+        (keyLower.includes('pause') &&
+          !keyLower.includes('count')) ||
+        (keyLower.includes('burst') &&
+          !keyLower.includes('count'));
+
+      // Make sure it's not actually a ratio field (by checking if it explicitly has ratio/rate/percentage, not just the substring)
+      const isExplicitlyRatio =
+        (keyLower.includes('ratio') && !keyLower.includes('duration')) ||
+        (keyLower.includes('rate') && !keyLower.includes('duration')) ||
+        keyLower.includes('percentage');
+
+      const isTimeField = hasTimeKeyword && !isExplicitlyRatio;
+
+      if (isTimeField) {
+        let detectedUnit = 'unknown';
+        if (value > 100000) {
+          detectedUnit = 'milliseconds';
+        } else if (!Number.isInteger(value) && value > 0 && value < 100) {
+          // Decimal values < 100 are likely seconds (2.5, 5.5, etc.)
+          detectedUnit = 'seconds (needs conversion to ms)';
+          recommendations.push(`Convert ${key} from seconds to milliseconds`);
+        } else if (value > 100) {
+          // Integer values > 100 are likely milliseconds (2500, 8000, etc.)
+          detectedUnit = 'milliseconds';
+        } else if (value > 1 && Number.isInteger(value)) {
+          // Integer values 1-100 are ambiguous
+          detectedUnit = 'seconds or milliseconds (ambiguous)';
+          recommendations.push(`Confirm ${key} time unit (seconds or milliseconds)`);
+        } else if (value > 0 && value <= 1) {
+          // Small decimal values might be milliseconds
+          detectedUnit = 'milliseconds or fractional seconds';
+        } else {
+          detectedUnit = 'milliseconds';
+        }
+        timeFields.push({ name: key, value, detectedUnit });
+        categorized = true;
       }
     }
   }

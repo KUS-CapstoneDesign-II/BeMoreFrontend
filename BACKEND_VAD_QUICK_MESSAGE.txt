@@ -1,0 +1,76 @@
+═══════════════════════════════════════════════════════════════════════════════
+Backend 팀께 전달할 메시지 (간단 버전)
+═══════════════════════════════════════════════════════════════════════════════
+
+안녕하세요.
+
+Frontend Phase 9 통합 작업이 거의 완료되었는데, 한 가지 긴급 확인이 필요합니다.
+
+【 현재 상황 】
+
+✅ 완료: API 3가지 미스매치 수정, Batch API 호환성, Retry policy 동기화
+✅ 완료: GitHub Actions CI/CD, Service Worker 캐싱, Keep-Alive 구현
+✅ 완료: WebSocket 3채널 (landmarks, voice, session) 정상 작동
+
+⚠️  현재 이슈: VAD(음성 활동) 데이터가 NaN으로 표시됨
+
+【 발견된 문제 】
+
+Frontend에서 관찰:
+- Backend에서 vad_analysis 메시지가 도착함 ✅
+- 하지만 화면에 "발화 비율: NaN%", "침묵 비율: NaN%" 표시됨 ❌
+
+근본 원인 분석:
+- 필드명 불일치 추정
+  예: Backend가 "speech_ratio" (snake_case)로 보내면
+      Frontend는 "speechRatio" (camelCase)를 기대
+- 필드명 불일치 → undefined 값 → NaN 계산 결과
+
+【 Backend에서 확인해주실 사항 】
+
+1. vad_analysis 메시지 형식 (정확한 필드명과 타입)
+
+   Frontend 기대 형식:
+   {
+     "type": "vad_analysis",
+     "data": {
+       "speechRatio": <number 0.0-1.0>,
+       "pauseRatio": <number 0.0-1.0>,
+       "averagePauseDuration": <number milliseconds>,
+       "longestPause": <number milliseconds>,
+       "speechBurstCount": <number>,
+       "averageSpeechBurst": <number milliseconds>,
+       "pauseCount": <number>,
+       "summary": <string>
+     }
+   }
+
+2. 다음을 꼭 확인해주세요:
+   - 필드명이 snake_case가 아니라 camelCase로 보내지고 있나요?
+   - 비율이 0~100 범위가 아니라 0.0~1.0 범위인가요?
+   - 시간 값이 초(초)가 아니라 밀리초(ms)로 보내지고 있나요?
+
+3. 현재 Backend에서 실제로 보내는 메시지 샘플 1-2개 제공해주실 수 있나요?
+
+【 Frontend에서 준비한 것 】
+
+- 데이터 검증 함수 (준비 완료)
+- VAD 전역 상태 관리 (준비 완료)
+- 리포트 페이지 VAD 섹션 (대기 중)
+
+Backend 확인만 되면 12시간 내에 완성할 수 있습니다.
+
+【 다음 단계 】
+
+1. Backend에서 vad_analysis 메시지 형식 확인 (또는 샘플 제공)
+2. Frontend에서 필드명 매핑/변환 적용
+3. 전체 E2E 테스트
+4. Production Deploy
+
+감사합니다!
+
+─────────────────────────────────────────────────────────────────────────────
+참고 파일:
+- VAD_AND_REPORT_DATA_ANALYSIS.md (상세 분석)
+- BACKEND_VAD_DEBUG_REQUEST.md (정식 요청 문서)
+═══════════════════════════════════════════════════════════════════════════════
