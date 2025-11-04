@@ -172,13 +172,26 @@ export const sessionAPI = {
   },
 
   /**
-   * 세션 종료
+   * 세션 종료 (자동 재시도 포함)
    */
   end: async (sessionId: string): Promise<void> => {
-    const response = await api.post<ApiResponse>(`/api/session/${sessionId}/end`);
+    const retryResult = await retryWithBackoff(
+      async () => {
+        const response = await api.post<ApiResponse>(`/api/session/${sessionId}/end`);
 
-    if (!response.data.success) {
-      throw new Error(response.data.error?.message || 'Failed to end session');
+        if (!response.data.success) {
+          throw new Error(response.data.error?.message || 'Failed to end session');
+        }
+      },
+      {
+        maxAttempts: 3,
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+      }
+    );
+
+    if (!retryResult.success) {
+      throw retryResult.error || new Error(retryResult.lastError || 'Failed to end session');
     }
   },
 

@@ -27,6 +27,7 @@ export default function ActiveSessionView({
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isEnding, setIsEnding] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
+  const [endSessionError, setEndSessionError] = useState<string | null>(null);
 
   const sessionState = useSessionStore((s) => ({
     minuteIndex: s.minuteIndex,
@@ -66,6 +67,7 @@ export default function ActiveSessionView({
 
   const handleEndSession = async () => {
     setIsEnding(true);
+    setEndSessionError(null); // Clear previous errors
     try {
       Logger.info('🛑 Ending session', { sessionId, duration: elapsedTime });
       await sessionState.endSession();
@@ -75,7 +77,9 @@ export default function ActiveSessionView({
         onSessionEnded();
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '세션 종료 중 오류가 발생했습니다';
       Logger.error('❌ Failed to end session', error);
+      setEndSessionError(errorMessage);
       setIsEnding(false);
     }
   };
@@ -303,18 +307,45 @@ export default function ActiveSessionView({
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
                     현재까지 수집된 데이터({timelineCards.length}분)가 저장됩니다.
                   </p>
+
+                  {/* Error Message Display */}
+                  {endSessionError && (
+                    <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg">
+                      <p className="text-sm text-red-800 dark:text-red-200">
+                        <span className="font-bold">❌ 오류: </span>
+                        {endSessionError}
+                      </p>
+                      <p className="text-xs text-red-700 dark:text-red-300 mt-1">
+                        다시 시도하거나 계속 진행할 수 있습니다.
+                      </p>
+                    </div>
+                  )}
+
                   <div className="flex gap-3">
                     <button
-                      onClick={() => setShowQuitConfirm(false)}
-                      className="flex-1 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-900/30 transition"
+                      onClick={() => {
+                        setShowQuitConfirm(false);
+                        setEndSessionError(null);
+                      }}
+                      disabled={isEnding}
+                      className={`flex-1 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition ${
+                        isEnding
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-900/30'
+                      }`}
                     >
                       계속 진행
                     </button>
                     <button
                       onClick={handleEndSession}
-                      className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+                      disabled={isEnding}
+                      className={`flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium transition ${
+                        isEnding
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-red-700'
+                      }`}
                     >
-                      종료 확인
+                      {isEnding ? '⏳ 종료 중...' : '종료 확인'}
                     </button>
                   </div>
                 </div>

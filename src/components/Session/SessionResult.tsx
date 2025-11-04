@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props) {
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [reportLoading, setReportLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
@@ -40,11 +42,26 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     }
   }, [vadMetrics]);
 
+  // 🔧 FIX: Loading state management - sync with both summary and report loading
+  // This ensures UI doesn't show incomplete data while one API is still loading
+  useEffect(() => {
+    const isLoading = summaryLoading || reportLoading;
+    setLoading(isLoading);
+    if (import.meta.env.DEV) {
+      console.log('📊 Loading state updated:', { summaryLoading, reportLoading, isLoading });
+    }
+  }, [summaryLoading, reportLoading]);
+
+  // 🎬 로딩 상태 변경 알림
+  useEffect(() => {
+    onLoadingChange?.(loading);
+  }, [loading, onLoadingChange]);
+
   useEffect(() => {
     // sessionId가 없으면 API 호출 하지 않음
     if (!sessionId) {
       setSummary({});
-      setLoading(false);
+      setSummaryLoading(false);
       return;
     }
 
@@ -61,22 +78,18 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
         }
         if (mounted) setSummary({});
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setSummaryLoading(false);
       }
     })();
     return () => { mounted = false; };
   }, [sessionId]);
-
-  // 🎬 로딩 상태 변경 알림
-  useEffect(() => {
-    onLoadingChange?.(loading);
-  }, [loading, onLoadingChange]);
 
   useEffect(() => {
     // sessionId가 없으면 API 호출 하지 않음
     if (!sessionId) {
       setTimeline([]);
       setAutoMarkers([]);
+      setReportLoading(false);
       return;
     }
 
@@ -113,6 +126,8 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
           setTimeline([]);
           setAutoMarkers([]);
         }
+      } finally {
+        if (mounted) setReportLoading(false);
       }
     })();
     return () => { mounted = false; };
