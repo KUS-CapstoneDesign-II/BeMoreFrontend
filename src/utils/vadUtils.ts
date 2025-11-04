@@ -94,7 +94,15 @@ export function mapVADMetrics(data: BackendVADData): Record<string, unknown> {
     Logger.warn('⚠️ VAD field mapping failed - no recognized field names found', {
       receivedFields: Object.keys(data),
       expectedFields: Object.keys(FIELD_NAME_MAPPING),
+      DEBUG_receivedData: JSON.stringify(data),
     });
+
+    // Try to infer mapping from received fields
+    Logger.debug('🔍 Attempting to infer field mapping from Backend data...', {
+      receivedKeys: Object.keys(data),
+      sampleData: data,
+    });
+
     return data; // Return original data as fallback
   }
 
