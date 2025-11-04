@@ -3,6 +3,7 @@ import { useSessionStore } from '../../stores/sessionStore';
 import { useMetricsStore } from '../../stores/metricsStore';
 import { useTimelineStore } from '../../stores/timelineStore';
 import { Logger } from '../../config/env';
+import { useToast } from '../../contexts/ToastContext';
 
 interface ActiveSessionViewProps {
   sessionId: string;
@@ -28,6 +29,8 @@ export default function ActiveSessionView({
   const [isEnding, setIsEnding] = useState(false);
   const [showQuitConfirm, setShowQuitConfirm] = useState(false);
   const [endSessionError, setEndSessionError] = useState<string | null>(null);
+
+  const { addToast } = useToast();
 
   const sessionState = useSessionStore((s) => ({
     minuteIndex: s.minuteIndex,
@@ -67,12 +70,20 @@ export default function ActiveSessionView({
 
   const handleEndSession = async () => {
     setIsEnding(true);
-    setEndSessionError(null); // Clear previous errors
+    setEndSessionError(null);
+
+    // Show background retry notification (persistent)
+    addToast('🔄 세션 종료 중... (자동 재시도 진행)', 'info', 0);
+
     try {
       Logger.info('🛑 Ending session', { sessionId, duration: elapsedTime });
       await sessionState.endSession();
 
       Logger.info('✅ Session ended successfully');
+
+      // Show success toast
+      addToast('✅ 세션이 정상 종료되었습니다', 'success', 3000);
+
       if (onSessionEnded) {
         onSessionEnded();
       }
@@ -81,6 +92,9 @@ export default function ActiveSessionView({
       Logger.error('❌ Failed to end session', error);
       setEndSessionError(errorMessage);
       setIsEnding(false);
+
+      // Show error toast
+      addToast(`❌ 세션 종료 실패: ${errorMessage}`, 'error', 5000);
     }
   };
 
@@ -315,8 +329,8 @@ export default function ActiveSessionView({
                         <span className="font-bold">❌ 오류: </span>
                         {endSessionError}
                       </p>
-                      <p className="text-xs text-red-700 dark:text-red-300 mt-1">
-                        다시 시도하거나 계속 진행할 수 있습니다.
+                      <p className="text-xs text-red-700 dark:text-red-300 mt-2">
+                        자동 재시도가 백그라운드에서 진행 중입니다. 계속 진행을 눌러 팝업을 닫을 수 있습니다.
                       </p>
                     </div>
                   )}
@@ -324,28 +338,36 @@ export default function ActiveSessionView({
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
+                        // Only close popup, keep error state if retry is ongoing
                         setShowQuitConfirm(false);
-                        setEndSessionError(null);
+                        // Don't clear error if isEnding is true (background retry in progress)
+                        if (!isEnding) {
+                          setEndSessionError(null);
+                        }
                       }}
-                      disabled={isEnding}
+                      disabled={isEnding && !endSessionError} // Disable if ending without error
                       className={`flex-1 px-4 py-2 border-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition ${
-                        isEnding
+                        isEnding && !endSessionError
                           ? 'opacity-50 cursor-not-allowed'
                           : 'hover:bg-gray-50 dark:hover:bg-gray-900/30'
                       }`}
                     >
-                      계속 진행
+                      {isEnding ? '백그라운드 진행 중...' : '계속 진행'}
                     </button>
                     <button
                       onClick={handleEndSession}
-                      disabled={isEnding}
+                      disabled={isEnding && !endSessionError} // Enable retry if error exists
                       className={`flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-medium transition ${
-                        isEnding
+                        isEnding && !endSessionError
                           ? 'opacity-50 cursor-not-allowed'
                           : 'hover:bg-red-700'
                       }`}
                     >
-                      {isEnding ? '⏳ 종료 중...' : '종료 확인'}
+                      {isEnding && !endSessionError
+                        ? '⏳ 종료 중...'
+                        : endSessionError
+                          ? '🔄 다시 시도'
+                          : '종료 확인'}
                     </button>
                   </div>
                 </div>

@@ -19,7 +19,7 @@ const API_BASE_URL: string =
 // Axios 인스턴스 생성
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20000, // Increased from 10s to 20s for slower API endpoints
+  timeout: 30000, // Increased from 20s to 30s for session end endpoint
   headers: {
     'Content-Type': 'application/json',
   },
