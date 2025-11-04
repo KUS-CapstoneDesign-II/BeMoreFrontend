@@ -75,8 +75,22 @@ const FIELD_NAME_MAPPING: Record<string, keyof VADMetrics> = {
   // Backend 'rate' variants (converted to 'ratio')
   speechRate: 'speechRatio',
   pauseRate: 'pauseRatio',
+  silenceRate: 'pauseRatio', // Backend uses 'silenceRate' instead of 'pauseRate'
   speech_rate: 'speechRatio',
   pause_rate: 'pauseRatio',
+  silence_rate: 'pauseRatio',
+
+  // Backend duration variants (partial naming)
+  avgSpeechDuration: 'averageSpeechBurst',
+  avgSilenceDuration: 'averagePauseDuration',
+  avg_speech_duration: 'averageSpeechBurst',
+  avg_silence_duration: 'averagePauseDuration',
+
+  // Backend count variants
+  speechTurnCount: 'speechBurstCount',
+  speech_turn_count: 'speechBurstCount',
+  eventCount: 'pauseCount',
+  event_count: 'pauseCount',
 };
 
 /**
@@ -511,29 +525,71 @@ export function analyzeVADFormat(backendData: BackendVADData): {
 
 /**
  * Handle Backend nested metrics structure
- * Extracts metrics from nested object if present
- * Handles: { metrics: { ... } } format
+ * Extracts metrics from nested objects if present
+ * Handles: { metrics: { ... }, psychological: { ... }, timeSeries: [...] } format
  *
  * @param backendData Raw Backend data possibly with nested metrics
  * @returns Flattened data with metrics extracted to top level
  */
 export function extractNestedMetrics(data: BackendVADData): BackendVADData {
-  // Check if data has a nested 'metrics' object
-  if (data.metrics && typeof data.metrics === 'object' && !Array.isArray(data.metrics)) {
-    Logger.debug('🔍 Extracting nested metrics from Backend data', {
-      topLevelKeys: Object.keys(data),
-      nestedMetricsKeys: Object.keys(data.metrics as Record<string, any>),
-    });
+  const extracted: BackendVADData = { ...data };
 
-    // Extract metrics and merge with top level
-    // Metrics take precedence over top-level fields with same name
-    return {
-      ...data,
-      ...(data.metrics as Record<string, any>),
-    };
+  // Log original structure
+  Logger.debug('🔍 extractNestedMetrics processing', {
+    topLevelKeys: Object.keys(data),
+    hasMetrics: !!data.metrics,
+    hasPsychological: !!data.psychological,
+    hasTimeSeries: !!data.timeSeries,
+  });
+
+  // Extract from 'metrics' nested object (highest priority)
+  if (data.metrics && typeof data.metrics === 'object' && !Array.isArray(data.metrics)) {
+    Logger.debug('  ✓ Extracting from metrics object', {
+      metricsKeys: Object.keys(data.metrics as Record<string, any>),
+    });
+    Object.assign(extracted, data.metrics as Record<string, any>);
   }
 
-  return data;
+  // Extract from 'psychological' nested object
+  if (
+    data.psychological &&
+    typeof data.psychological === 'object' &&
+    !Array.isArray(data.psychological)
+  ) {
+    Logger.debug('  ✓ Extracting from psychological object', {
+      psychologicalKeys: Object.keys(data.psychological as Record<string, any>),
+    });
+    // Only merge fields that don't already exist (lower priority than metrics)
+    for (const [key, value] of Object.entries(
+      data.psychological as Record<string, any>,
+    )) {
+      if (!(key in extracted)) {
+        extracted[key] = value;
+      }
+    }
+  }
+
+  // Extract from 'timeSeries' if it contains relevant data
+  if (Array.isArray(data.timeSeries) && data.timeSeries.length > 0) {
+    const firstTimeSeries = data.timeSeries[0];
+    if (typeof firstTimeSeries === 'object') {
+      Logger.debug('  ✓ Extracting from timeSeries[0]', {
+        timeSeriesKeys: Object.keys(firstTimeSeries as Record<string, any>),
+      });
+      for (const [key, value] of Object.entries(firstTimeSeries as Record<string, any>)) {
+        if (!(key in extracted)) {
+          extracted[key] = value;
+        }
+      }
+    }
+  }
+
+  Logger.debug('🔍 extractNestedMetrics result', {
+    extractedKeys: Object.keys(extracted),
+    totalFields: Object.keys(extracted).length,
+  });
+
+  return extracted;
 }
 
 /**
