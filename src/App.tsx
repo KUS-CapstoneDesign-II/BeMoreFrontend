@@ -151,18 +151,21 @@ function App() {
         // 1. Cast data from unknown type (WebSocket message)
         let data = message.data as any;
 
-        // DEBUG: Log raw data BEFORE any transformation
-        console.log('🔴 RAW DATA FROM BACKEND:', data);
-        console.log('   Keys:', Object.keys(data));
-        console.log('   Full data:', JSON.stringify(data, null, 2));
+        // DEBUG: Log raw data BEFORE any transformation (using Logger for Production visibility)
+        Logger.info('🔴 RAW DATA FROM BACKEND', {
+          keys: Object.keys(data),
+          data: data,
+        });
 
         // 2. Extract nested metrics if present (handle Backend's { metrics: {...} } structure)
         data = extractNestedMetrics(data);
-        console.log('🟡 AFTER extractNestedMetrics:', Object.keys(data));
+        Logger.info('🟡 AFTER extractNestedMetrics', {
+          keys: Object.keys(data),
+        });
 
         // 3. Analyze incoming format
         const analysis = analyzeVADFormat(data);
-        console.log('🟢 analyzeVADFormat result:', {
+        Logger.info('🟢 analyzeVADFormat result', {
           fieldNames: analysis.fieldNames,
           ratioFields: analysis.ratioFields,
           timeFields: analysis.timeFields,
@@ -171,7 +174,7 @@ function App() {
         });
 
         // 4. Transform VAD data with automatic format detection
-        console.log('🔵 Starting transformVADData...');
+        Logger.info('🔵 Starting transformVADData');
         const vadMetrics = transformVADData(data, {
           mapFields: true,
           normalizeRanges: true,
@@ -180,7 +183,10 @@ function App() {
         });
 
         // 5. Log the result after transformation
-        console.log('🟣 transformVADData result:', vadMetrics);
+        Logger.info('🟣 transformVADData result', {
+          result: vadMetrics,
+          success: !!vadMetrics,
+        });
 
         // 5. Handle result
         if (vadMetrics) {
