@@ -120,8 +120,9 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           // Update cache with new version
           if (response && response.status === 200) {
+            const cachedResponse = response.clone();
             const cache = caches.open(CACHE_NAME);
-            cache.then((c) => c.put(request, response.clone()));
+            cache.then((c) => c.put(request, cachedResponse));
           }
           return response;
         })
