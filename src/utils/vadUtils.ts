@@ -89,24 +89,34 @@ const FIELD_NAME_MAPPING: Record<string, keyof VADMetrics> = {
 export function mapVADMetrics(data: BackendVADData): Record<string, unknown> {
   const mapped: Record<string, unknown> = {};
 
+  Logger.debug('🔎 mapVADMetrics START', {
+    inputKeys: Object.keys(data),
+  });
+
   for (const [backendKey, frontendKey] of Object.entries(FIELD_NAME_MAPPING)) {
     if (backendKey in data) {
       mapped[frontendKey] = data[backendKey];
+      Logger.debug(`  ✅ Mapped ${backendKey} → ${frontendKey}`);
     }
   }
+
+  Logger.debug('🔎 mapVADMetrics END', {
+    mappedKeys: Object.keys(mapped),
+    mappedCount: Object.keys(mapped).length,
+  });
 
   // If no fields were mapped, check for alternative patterns
   if (Object.keys(mapped).length === 0) {
     Logger.warn('⚠️ VAD field mapping failed - no recognized field names found', {
       receivedFields: Object.keys(data),
       expectedFields: Object.keys(FIELD_NAME_MAPPING),
-      DEBUG_receivedData: JSON.stringify(data),
+      DEBUG_receivedData: JSON.stringify(data).substring(0, 500),
     });
 
     // Try to infer mapping from received fields
     Logger.debug('🔍 Attempting to infer field mapping from Backend data...', {
       receivedKeys: Object.keys(data),
-      sampleData: data,
+      sampleDataKeys: Object.keys(data),
     });
 
     return data; // Return original data as fallback
@@ -290,6 +300,10 @@ export function validateVADMetrics(metrics: Partial<VADMetrics>): {
 } {
   const errors: string[] = [];
 
+  Logger.debug('🔍 validateVADMetrics START', {
+    metricsKeys: Object.keys(metrics),
+  });
+
   // Check required fields
   const requiredFields: (keyof VADMetrics)[] = [
     'speechRatio',
@@ -303,7 +317,11 @@ export function validateVADMetrics(metrics: Partial<VADMetrics>): {
 
   for (const field of requiredFields) {
     if (!(field in metrics)) {
-      errors.push(`Missing required field: ${field}`);
+      const err = `Missing required field: ${field}`;
+      errors.push(err);
+      Logger.debug(`  ❌ ${err}`);
+    } else {
+      Logger.debug(`  ✅ Found ${field}: ${JSON.stringify(metrics[field])}`);
     }
   }
 

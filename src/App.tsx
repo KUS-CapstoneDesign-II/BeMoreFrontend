@@ -167,12 +167,24 @@ function App() {
           recommendations: analysis.recommendations,
         });
 
+        // 3.5 Log the data before transformation for debugging
+        Logger.debug('📦 Data before transformation', {
+          dataKeys: Object.keys(data),
+          dataSample: JSON.stringify(data).substring(0, 300),
+        });
+
         // 4. Transform VAD data with automatic format detection
         const vadMetrics = transformVADData(data, {
           mapFields: true,
           normalizeRanges: true,
           convertTimeUnits: true,
           validateOutput: true,
+        });
+
+        // 4.5 Log the result after transformation
+        Logger.debug('📋 After transformation', {
+          resultKeys: vadMetrics ? Object.keys(vadMetrics) : null,
+          resultValues: vadMetrics,
         });
 
         // 5. Handle result
