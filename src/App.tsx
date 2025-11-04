@@ -199,6 +199,13 @@ function App() {
             longestPause: (vadMetrics.longestPause / 1000).toFixed(2) + 's',
             summary: vadMetrics.summary,
           });
+          // 🔧 DEBUG: Log that state was updated
+          if (import.meta.env.DEV) {
+            console.log('🎤 [App.tsx] setVadMetrics called with:', {
+              speechBurstCount: vadMetrics.speechBurstCount,
+              speechRatio: vadMetrics.speechRatio,
+            });
+          }
         } else {
           Logger.error('❌ VAD metrics validation failed - invalid data format', {
             type: message.type,
