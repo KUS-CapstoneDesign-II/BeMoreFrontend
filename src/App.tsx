@@ -909,6 +909,7 @@ function App() {
                 <SessionResult
                   sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''}
                   onLoadingChange={handleSessionResultLoading}
+                  vadMetrics={vadMetrics}
                 />
               </div>
             )}

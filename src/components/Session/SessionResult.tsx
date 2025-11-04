@@ -3,12 +3,15 @@ import { sessionAPI } from '../../services/api';
 import { VADTimeline } from '../Charts/VADTimeline';
 import { LoadingState, ErrorState } from '../Common/States';
 
+import type { VADMetrics } from '../../types';
+
 interface Props {
   sessionId: string;
   onLoadingChange?: (isLoading: boolean) => void;
+  vadMetrics?: VADMetrics | null;
 }
 
-export function SessionResult({ sessionId, onLoadingChange }: Props) {
+export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<Record<string, unknown> | null>(null);
@@ -184,6 +187,44 @@ export function SessionResult({ sessionId, onLoadingChange }: Props) {
               </div>
             </div>
           </div>
+
+          {/* 🎤 Speech Analysis (VAD Metrics) */}
+          {vadMetrics && (
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">🎤 음성 분석</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">발화 비율</div>
+                  <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{(vadMetrics.speechRatio * 100).toFixed(1)}%</div>
+                </div>
+                <div className="p-3 rounded-lg bg-gray-200 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">침묵 비율</div>
+                  <div className="text-lg font-bold text-gray-700 dark:text-gray-300">{(vadMetrics.pauseRatio * 100).toFixed(1)}%</div>
+                </div>
+                <div className="p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">평균 침묵</div>
+                  <div className="text-lg font-bold text-purple-600 dark:text-purple-400">{(vadMetrics.averagePauseDuration / 1000).toFixed(2)}s</div>
+                </div>
+                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">최장 침묵</div>
+                  <div className="text-lg font-bold text-red-600 dark:text-red-400">{(vadMetrics.longestPause / 1000).toFixed(2)}s</div>
+                </div>
+                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">발화 횟수</div>
+                  <div className="text-lg font-bold text-green-600 dark:text-green-400">{vadMetrics.speechBurstCount}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800">
+                  <div className="text-xs text-gray-600 dark:text-gray-400">침묵 구간</div>
+                  <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{vadMetrics.pauseCount}</div>
+                </div>
+              </div>
+              {vadMetrics.summary && (
+                <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40 text-sm text-gray-700 dark:text-gray-300">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">요약: </span>{vadMetrics.summary}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 
