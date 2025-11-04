@@ -18,6 +18,7 @@ import { SessionTimer } from './components/Common/SessionTimer';
 import { IdleTimeoutModal } from './components/Common/IdleTimeoutModal';
 import { useIdleTimeout } from './hooks/useIdleTimeout';
 import { useConsent } from './contexts/ConsentContext';
+import { useKeepAlive } from './utils/keepAlive';
 import { SettingsPanel } from './components/Settings/SettingsPanel';
 import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { sessionAPI } from './services/api';
@@ -94,6 +95,10 @@ function App() {
 
   // 🎬 사용자가 요약 모달을 수동으로 닫았는지 추적 (재오픈 방지)
   const [userClosedSummary, setUserClosedSummary] = useState(false);
+
+  // 🔄 Keep-Alive: Prevent Render free tier auto-shutdown (1 hour inactivity)
+  // Sends periodic health check pings every 25 minutes
+  useKeepAlive(!!sessionId);
 
   // 🔴 DEBUG: isWaitingForSessionEnd 상태 변경 모니터링
   useEffect(() => {
