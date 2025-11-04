@@ -1015,6 +1015,15 @@ function App() {
           try {
             await sessionAPI.submitFeedback(effectiveSessionId, { rating, note });
             Logger.info('Feedback submitted successfully');
+
+            // 🔧 FIX: Clean up localStorage after successful feedback submission
+            // Remove sessionId and VAD metrics as the session is now complete
+            try {
+              localStorage.removeItem('bemore_last_session');
+              Logger.info('Cleaned up session data from localStorage after feedback');
+            } catch (cleanupError) {
+              Logger.warn('Failed to clean up localStorage after feedback', { cleanupError });
+            }
           } catch (err) {
             Logger.error('Failed to submit feedback', { error: err instanceof Error ? err.message : String(err) });
             throw err instanceof Error ? err : new Error('피드백 제출에 실패했습니다.');
