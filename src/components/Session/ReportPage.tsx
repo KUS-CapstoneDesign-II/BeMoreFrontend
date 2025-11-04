@@ -5,11 +5,13 @@ import { sessionAPI } from '../../services/api';
 import { Logger } from '../../config/env';
 import TimelineGrid from './TimelineGrid';
 import SessionHighlights from './SessionHighlights';
+import type { VADMetrics } from '../../types';
 
 interface ReportPageProps {
   sessionId: string;
   onFeedbackSubmitted?: () => void;
   onClose?: () => void;
+  vadMetrics?: VADMetrics | null;
 }
 
 /**
@@ -25,6 +27,7 @@ export default function ReportPage({
   sessionId,
   onFeedbackSubmitted,
   onClose,
+  vadMetrics,
 }: ReportPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [feedbackRating, setFeedbackRating] = useState(0);
@@ -227,6 +230,64 @@ export default function ReportPage({
                 {timelineSummary}
               </p>
             </div>
+
+            {/* VAD Analysis Section */}
+            {vadMetrics ? (
+              <div className="p-6 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4">🎤 음성 활동 분석</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">발화 비율</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
+                      {(vadMetrics.speechRatio * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">침묵 비율</p>
+                    <p className="text-2xl font-bold text-gray-600 dark:text-gray-400 mt-1">
+                      {(vadMetrics.pauseRatio * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">평균 침묵 시간</p>
+                    <p className="text-2xl font-bold text-purple-600 dark:text-purple-400 mt-1">
+                      {(vadMetrics.averagePauseDuration / 1000).toFixed(1)}s
+                    </p>
+                  </div>
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">최장 침묵 시간</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
+                      {(vadMetrics.longestPause / 1000).toFixed(1)}s
+                    </p>
+                  </div>
+                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">발화 버스트</p>
+                    <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
+                      {vadMetrics.speechBurstCount}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">침묵 구간</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
+                      {vadMetrics.pauseCount}
+                    </p>
+                  </div>
+                </div>
+                {vadMetrics.summary && (
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-900/20 rounded">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">분석:</span> {vadMetrics.summary}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-600">
+                <p className="text-gray-600 dark:text-gray-400 text-center">
+                  음성 활동 데이터가 없습니다
+                </p>
+              </div>
+            )}
 
             {/* Timeline Grid */}
             <TimelineGrid />

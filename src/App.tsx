@@ -33,6 +33,8 @@ import { funnelEvent, markAndMeasure } from './utils/analytics_extra';
 import { trackWebVitals } from './utils/analytics';
 import { initAnalytics, trackPageView } from './utils/analytics';
 import { initSentry } from './utils/sentry';
+import { transformVADData, analyzeVADFormat } from './utils/vadUtils';
+import { Logger } from './config/env';
 
 // Lazy load non-critical components
 const AIChat = lazy(() => import('./components/AIChat').then(module => ({ default: module.AIChat })));
@@ -142,13 +144,56 @@ function App() {
   // WebSocket 연결
   const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs } = useWebSocket({
     onVoiceMessage: (message) => {
-      console.log('🎤 Voice message:', message);
+      Logger.debug('🎤 Voice message received', {
+        type: message.type,
+        dataKeys: message.data ? Object.keys(message.data) : [],
+      });
+
       if (message.type === 'stt_received') {
         const d = message.data as { text?: string };
-        setSttText(d?.text ?? '');
+        const text = d?.text ?? '';
+        setSttText(text);
+        Logger.debug('📝 STT text updated', { textLength: text.length });
       }
+
       if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {
-        setVadMetrics(message.data as VADMetrics);
+        // 1. Analyze incoming format
+        const analysis = analyzeVADFormat(message.data);
+        Logger.debug('🔍 VAD Format Analysis', {
+          detectedFields: analysis.fieldNames,
+          detectedRatios: analysis.ratioFields,
+          detectedTimes: analysis.timeFields,
+          recommendations: analysis.recommendations,
+        });
+
+        // 2. Transform VAD data with automatic format detection
+        const vadMetrics = transformVADData(message.data, {
+          mapFields: true,
+          normalizeRanges: true,
+          convertTimeUnits: true,
+          validateOutput: true,
+        });
+
+        // 3. Handle result
+        if (vadMetrics) {
+          setVadMetrics(vadMetrics);
+          Logger.info('✅ VAD metrics processed successfully', {
+            type: message.type,
+            speechRatio: (vadMetrics.speechRatio * 100).toFixed(1) + '%',
+            pauseRatio: (vadMetrics.pauseRatio * 100).toFixed(1) + '%',
+            avgPauseDuration: (vadMetrics.averagePauseDuration / 1000).toFixed(2) + 's',
+            longestPause: (vadMetrics.longestPause / 1000).toFixed(2) + 's',
+            summary: vadMetrics.summary,
+          });
+        } else {
+          Logger.error('❌ VAD metrics validation failed - invalid data format', {
+            type: message.type,
+            receivedDataKeys: Object.keys(message.data),
+            recommendations: analysis.recommendations,
+            fullData: message.data,
+          });
+          setVadMetrics(null);
+        }
       }
     },
     onLandmarksMessage: (message) => {

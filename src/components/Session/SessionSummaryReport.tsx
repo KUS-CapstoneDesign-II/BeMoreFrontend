@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useI18n } from '../../contexts/I18nContext';
 import { useToast } from '../../contexts/ToastContext';
+import type { VADMetrics } from '../../types';
 
 export interface SessionData {
   sessionId: string;
@@ -22,6 +23,7 @@ export interface SessionData {
     note?: string;
   };
   aiInsights: string[];
+  vadMetrics?: VADMetrics | null;
 }
 
 interface SessionSummaryReportProps {
@@ -244,6 +246,79 @@ export function SessionSummaryReport({
               ))}
             </div>
           </div>
+
+          {/* VAD Analysis Section */}
+          {sessionData.vadMetrics && (
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                🎤 {t('session.summary.voiceActivity') || '음성 활동 분석'}
+              </h3>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                    {t('session.summary.speechRatio') || '발화 비율'}
+                  </p>
+                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {(sessionData.vadMetrics.speechRatio * 100).toFixed(1)}%
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-900/20 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                    {t('session.summary.pauseRatio') || '침묵 비율'}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-600 dark:text-gray-400">
+                    {(sessionData.vadMetrics.pauseRatio * 100).toFixed(1)}%
+                  </p>
+                </div>
+
+                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                    {t('session.summary.avgPauseDuration') || '평균 침묵'}
+                  </p>
+                  <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {(sessionData.vadMetrics.averagePauseDuration / 1000).toFixed(1)}s
+                  </p>
+                </div>
+
+                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                    {t('session.summary.longestPause') || '최장 침묵'}
+                  </p>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {(sessionData.vadMetrics.longestPause / 1000).toFixed(1)}s
+                  </p>
+                </div>
+
+                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                    {t('session.summary.speechBurstCount') || '발화 버스트'}
+                  </p>
+                  <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {sessionData.vadMetrics.speechBurstCount}
+                  </p>
+                </div>
+
+                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mb-2">
+                    {t('session.summary.pauseCount') || '침묵 구간'}
+                  </p>
+                  <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                    {sessionData.vadMetrics.pauseCount}
+                  </p>
+                </div>
+              </div>
+
+              {sessionData.vadMetrics.summary && (
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <span className="font-medium">{t('session.summary.analysis') || '분석'}:</span> {sessionData.vadMetrics.summary}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* AI 인사이트 */}
           {sessionData.aiInsights.length > 0 && (
