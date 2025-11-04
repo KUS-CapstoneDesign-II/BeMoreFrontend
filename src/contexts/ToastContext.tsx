@@ -40,22 +40,54 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      {/* Toast viewport */}
-      <div className="fixed top-3 right-3 z-50 space-y-2 w-[92%] sm:w-96">
-        {toasts.map((t) => (
-          <div key={t.id} role="status" className={
-            `px-4 py-3 rounded-lg shadow-soft text-sm border ` +
-            (t.variant === 'success' ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/20 dark:text-green-200 dark:border-green-800' :
-             t.variant === 'error' ? 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:text-red-200 dark:border-red-800' :
-             t.variant === 'warning' ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200 dark:border-amber-800' :
-             'bg-gray-50 border-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700')
-          }>
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 break-words">{t.message}</div>
-              <button aria-label="닫기" className="text-xs opacity-70 hover:opacity-100" onClick={() => removeToast(t.id)}>✕</button>
+      {/* Toast viewport - Enhanced styling */}
+      <div className="fixed top-4 right-4 z-50 space-y-3 w-[calc(100%-2rem)] sm:w-96 pointer-events-none">
+        {toasts.map((t) => {
+          const variantStyles =
+            t.variant === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-700 shadow-emerald-100 dark:shadow-emerald-900/20'
+              : t.variant === 'error'
+                ? 'bg-red-50 border-red-300 text-red-800 dark:bg-red-900/30 dark:text-red-200 dark:border-red-700 shadow-red-100 dark:shadow-red-900/20'
+                : t.variant === 'warning'
+                  ? 'bg-amber-50 border-amber-300 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-700 shadow-amber-100 dark:shadow-amber-900/20'
+                  : 'bg-blue-50 border-blue-300 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-700 shadow-blue-100 dark:shadow-blue-900/20';
+
+          return (
+            <div
+              key={t.id}
+              role="status"
+              aria-live={t.variant === 'error' ? 'assertive' : 'polite'}
+              className={`
+                px-4 py-3 rounded-xl shadow-soft border backdrop-blur-sm
+                animate-in slide-in-from-top-2 fade-in duration-300
+                pointer-events-auto cursor-default
+                ${variantStyles}
+              `}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 flex-1">
+                  <span className="text-lg flex-shrink-0 mt-0.5">
+                    {t.variant === 'success'
+                      ? '✅'
+                      : t.variant === 'error'
+                        ? '❌'
+                        : t.variant === 'warning'
+                          ? '⚠️'
+                          : 'ℹ️'}
+                  </span>
+                  <div className="flex-1 break-words text-sm font-medium">{t.message}</div>
+                </div>
+                <button
+                  aria-label="닫기"
+                  className="text-lg opacity-60 hover:opacity-100 transition-opacity flex-shrink-0"
+                  onClick={() => removeToast(t.id)}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </ToastContext.Provider>
   );
