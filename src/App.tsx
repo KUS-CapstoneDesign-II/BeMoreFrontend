@@ -435,6 +435,18 @@ function App() {
     // 저장: sessionId를 지역변수에 저장 (나중에 API 호출에 사용)
     const currentSessionId = sessionId;
 
+    // 🎬 0단계: 현재 VAD 메트릭스를 localStorage에 저장 (결과 탭에서 표시하기 위해)
+    if (vadMetrics) {
+      try {
+        const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
+        lastSession.vadMetrics = vadMetrics;
+        localStorage.setItem('bemore_last_session', JSON.stringify(lastSession));
+        Logger.info('✅ VAD metrics saved to localStorage', { vadMetrics });
+      } catch (error) {
+        Logger.warn('Failed to save VAD metrics to localStorage', { error });
+      }
+    }
+
     // 🎬 1단계: 즉시 UI 상태 업데이트 (로딩 모달 표시)
     setSessionStatus('ended');
     // ⭐ 주의: 아직 WebSocket을 닫지 않음! API 호출까지 연결 유지

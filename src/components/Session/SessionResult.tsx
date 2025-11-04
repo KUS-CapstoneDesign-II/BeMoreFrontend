@@ -42,6 +42,31 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     }
   }, [vadMetrics]);
 
+  // 🔧 FIX: Load VAD metrics from localStorage if prop is not provided
+  // When session ends and WebSocket disconnects, the parent may not have vadMetrics to pass
+  // Fallback to localStorage where we saved it during session end
+  useEffect(() => {
+    if (!preservedVadMetrics && !vadMetrics && sessionId) {
+      try {
+        const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
+        if (lastSession.vadMetrics) {
+          setPreservedVadMetrics(lastSession.vadMetrics);
+          if (import.meta.env.DEV) {
+            console.log('🎤 Loaded VAD metrics from localStorage:', {
+              speechRatio: (lastSession.vadMetrics.speechRatio * 100).toFixed(1) + '%',
+              pauseRatio: (lastSession.vadMetrics.pauseRatio * 100).toFixed(1) + '%',
+              speechBurstCount: lastSession.vadMetrics.speechBurstCount,
+            });
+          }
+        }
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.warn('Failed to load VAD metrics from localStorage:', error);
+        }
+      }
+    }
+  }, [sessionId]);
+
   // 🔧 FIX: Loading state management - sync with both summary and report loading
   // This ensures UI doesn't show incomplete data while one API is still loading
   useEffect(() => {
