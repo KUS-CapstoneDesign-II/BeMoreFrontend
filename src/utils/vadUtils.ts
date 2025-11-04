@@ -71,6 +71,12 @@ const FIELD_NAME_MAPPING: Record<string, keyof VADMetrics> = {
   sbc: 'speechBurstCount',
   asb: 'averageSpeechBurst',
   pc: 'pauseCount',
+
+  // Backend 'rate' variants (converted to 'ratio')
+  speechRate: 'speechRatio',
+  pauseRate: 'pauseRatio',
+  speech_rate: 'speechRatio',
+  pause_rate: 'pauseRatio',
 };
 
 /**
@@ -486,6 +492,33 @@ export function analyzeVADFormat(backendData: BackendVADData): {
 }
 
 /**
+ * Handle Backend nested metrics structure
+ * Extracts metrics from nested object if present
+ * Handles: { metrics: { ... } } format
+ *
+ * @param backendData Raw Backend data possibly with nested metrics
+ * @returns Flattened data with metrics extracted to top level
+ */
+export function extractNestedMetrics(data: BackendVADData): BackendVADData {
+  // Check if data has a nested 'metrics' object
+  if (data.metrics && typeof data.metrics === 'object' && !Array.isArray(data.metrics)) {
+    Logger.debug('🔍 Extracting nested metrics from Backend data', {
+      topLevelKeys: Object.keys(data),
+      nestedMetricsKeys: Object.keys(data.metrics as Record<string, any>),
+    });
+
+    // Extract metrics and merge with top level
+    // Metrics take precedence over top-level fields with same name
+    return {
+      ...data,
+      ...(data.metrics as Record<string, any>),
+    };
+  }
+
+  return data;
+}
+
+/**
  * Debug helper: Log VAD data transformation details
  * Useful for troubleshooting data format mismatches
  *
@@ -511,5 +544,6 @@ export default {
   transformVADData,
   validateVADMetrics,
   analyzeVADFormat,
+  extractNestedMetrics,
   debugVADTransformation,
 };

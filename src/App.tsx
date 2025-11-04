@@ -33,7 +33,7 @@ import { funnelEvent, markAndMeasure } from './utils/analytics_extra';
 import { trackWebVitals } from './utils/analytics';
 import { initAnalytics, trackPageView } from './utils/analytics';
 import { initSentry } from './utils/sentry';
-import { transformVADData, analyzeVADFormat } from './utils/vadUtils';
+import { transformVADData, analyzeVADFormat, extractNestedMetrics } from './utils/vadUtils';
 import { Logger } from './config/env';
 
 // Lazy load non-critical components
@@ -149,9 +149,16 @@ function App() {
 
       if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {
         // 1. Cast data from unknown type (WebSocket message)
-        const data = message.data as any;
+        let data = message.data as any;
 
-        // 2. Analyze incoming format
+        // 2. Extract nested metrics if present (handle Backend's { metrics: {...} } structure)
+        data = extractNestedMetrics(data);
+        Logger.debug('🔧 After extracting nested metrics', {
+          keys: Object.keys(data),
+          hasMetricsField: 'metrics' in data,
+        });
+
+        // 3. Analyze incoming format
         const analysis = analyzeVADFormat(data);
         Logger.debug('🔍 VAD Format Analysis', {
           detectedFields: analysis.fieldNames,
@@ -160,7 +167,7 @@ function App() {
           recommendations: analysis.recommendations,
         });
 
-        // 3. Transform VAD data with automatic format detection
+        // 4. Transform VAD data with automatic format detection
         const vadMetrics = transformVADData(data, {
           mapFields: true,
           normalizeRanges: true,
@@ -168,7 +175,7 @@ function App() {
           validateOutput: true,
         });
 
-        // 4. Handle result
+        // 5. Handle result
         if (vadMetrics) {
           setVadMetrics(vadMetrics);
           Logger.info('✅ VAD metrics processed successfully', {
