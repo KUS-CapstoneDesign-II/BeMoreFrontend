@@ -1,3 +1,4 @@
+import { Button } from '../ui/Button';
 import type { SessionStatus } from '../../types';
 
 interface SessionControlsProps {
@@ -23,75 +24,61 @@ export function SessionControls({
   const isPaused = status === 'paused';
   const isActive = status === 'active';
 
+  const pauseIcon = (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+    </svg>
+  );
+
+  const resumeIcon = (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+    </svg>
+  );
+
+  const endIcon = (
+    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
+    </svg>
+  );
+
   return (
     <div
       className={`flex items-center justify-center space-x-3 ${className}`}
       role="toolbar"
       aria-label="세션 제어"
     >
-      {/* 일시정지/재개 버튼 */}
       {isActive && (
-        <button
+        <Button
+          variant="warning"
+          icon={pauseIcon}
+          label="일시정지"
           onClick={onPause}
-          className="
-            flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-600 hover:to-amber-600
-            text-white font-semibold rounded-lg
-            transition-all duration-200 shadow-soft hover:shadow-soft-lg
-            focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:ring-offset-2
-            active:scale-95 transform
-            animate-fade-in
-          "
           aria-label="세션 일시정지"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          <span>일시정지</span>
-        </button>
+          className="animate-fade-in"
+        />
       )}
 
       {isPaused && (
-        <button
+        <Button
+          variant="success"
+          icon={resumeIcon}
+          label="재개"
           onClick={onResume}
-          className="
-            flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600
-            text-white font-semibold rounded-lg
-            transition-all duration-200 shadow-soft hover:shadow-soft-lg
-            focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-2
-            active:scale-95 transform
-            animate-scale-in
-          "
           aria-label="세션 재개"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-          </svg>
-          <span>재개</span>
-        </button>
+          className="animate-scale-in"
+        />
       )}
 
-      {/* 종료 버튼 (세션이 활성 상태일 때만 표시) */}
       {isActive && (
-        <button
+        <Button
+          variant="danger"
+          icon={endIcon}
+          label="종료"
           onClick={onEnd}
-          className="
-            flex items-center space-x-2 px-6 py-3 min-h-[44px]
-            bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600
-            text-white font-semibold rounded-lg
-            transition-all duration-200 shadow-soft hover:shadow-soft-lg
-            focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2
-            active:scale-95 transform
-            animate-fade-in
-          "
           aria-label="세션 종료"
-        >
-          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 001 1h4a1 1 0 001-1V8a1 1 0 00-1-1H8z" clipRule="evenodd" />
-          </svg>
-          <span>종료</span>
-        </button>
+          className="animate-fade-in"
+        />
       )}
 
       {/* 상태 표시 */}

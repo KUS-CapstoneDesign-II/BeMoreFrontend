@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Card } from '../ui/Card';
 import type { EmotionType } from '../../types';
 
 interface EmotionCardProps {
   emotion: EmotionType | null;
   confidence?: number;
   className?: string;
-  lastUpdatedAt?: number | null;  // ← 추가
-  updateCount?: number;            // ← 추가
+  lastUpdatedAt?: number | null;
+  updateCount?: number;
 }
 
 const emotionConfig: Record<EmotionType, {
@@ -14,6 +15,7 @@ const emotionConfig: Record<EmotionType, {
   icon: string;
   color: string;
   bgColor: string;
+  progressColor: string;
   animation: string;
   message: string;
 }> = {
@@ -22,6 +24,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😊',
     color: 'text-amber-600',
     bgColor: 'bg-amber-50 border-amber-200',
+    progressColor: 'bg-amber-600',
     animation: 'animate-bounce-subtle',
     message: '긍정적인 에너지가 느껴지네요!'
   },
@@ -30,6 +33,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😢',
     color: 'text-blue-600',
     bgColor: 'bg-blue-50 border-blue-200',
+    progressColor: 'bg-blue-600',
     animation: 'animate-fade-in-up',
     message: '힘든 시간을 겪고 계시는군요.'
   },
@@ -38,6 +42,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😠',
     color: 'text-red-500',
     bgColor: 'bg-red-50 border-red-200',
+    progressColor: 'bg-red-500',
     animation: 'animate-scale-in',
     message: '감정이 격해진 상태입니다.'
   },
@@ -46,6 +51,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😰',
     color: 'text-purple-600',
     bgColor: 'bg-purple-50 border-purple-200',
+    progressColor: 'bg-purple-600',
     animation: 'animate-fade-in',
     message: '불안함을 느끼고 계시는군요.'
   },
@@ -54,6 +60,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😐',
     color: 'text-gray-600',
     bgColor: 'bg-gray-50 border-gray-200',
+    progressColor: 'bg-gray-600',
     animation: 'animate-fade-in',
     message: '안정적인 상태입니다.'
   },
@@ -62,6 +69,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😲',
     color: 'text-orange-600',
     bgColor: 'bg-orange-50 border-orange-200',
+    progressColor: 'bg-orange-600',
     animation: 'animate-scale-in',
     message: '놀라운 일이 있었나요?'
   },
@@ -70,6 +78,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '🤢',
     color: 'text-green-600',
     bgColor: 'bg-green-50 border-green-200',
+    progressColor: 'bg-green-600',
     animation: 'animate-fade-in-up',
     message: '불편함을 느끼고 계시네요.'
   },
@@ -78,6 +87,7 @@ const emotionConfig: Record<EmotionType, {
     icon: '😨',
     color: 'text-indigo-600',
     bgColor: 'bg-indigo-50 border-indigo-200',
+    progressColor: 'bg-indigo-600',
     animation: 'animate-fade-in',
     message: '두려움이 느껴지는 상황입니다.'
   }
@@ -114,11 +124,11 @@ export function EmotionCard({
 
   if (!emotion) {
     return (
-      <div
-        className={`p-4 rounded-lg border-2 bg-gray-50 border-gray-200 ${className}`}
+      <Card
+        className={className}
         role="status"
-        aria-live="polite"
-        aria-label="감정 분석 중"
+        ariaLabel="감정 분석 중"
+        ariaLive="polite"
       >
         <div className="text-center">
           <div className="text-4xl mb-2 animate-pulse" aria-hidden="true">❓</div>
@@ -129,24 +139,24 @@ export function EmotionCard({
             </div>
           )}
         </div>
-      </div>
+      </Card>
     );
   }
 
   const config = emotionConfig[emotion];
   if (!config) {
     return (
-      <div
-        className={`p-4 rounded-lg border-2 bg-gray-50 border-gray-200 ${className}`}
+      <Card
+        className={className}
         role="status"
-        aria-live="polite"
-        aria-label="감정 분석 오류"
+        ariaLabel="감정 분석 오류"
+        ariaLive="polite"
       >
         <div className="text-center">
           <div className="text-4xl mb-2" aria-hidden="true">⚠️</div>
           <div className="text-sm text-gray-500 font-medium">알 수 없는 감정</div>
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -154,18 +164,12 @@ export function EmotionCard({
   const ariaLabel = `현재 감정: ${config.label}${confidencePercent !== null ? `, 신뢰도 ${confidencePercent}퍼센트` : ''}`;
 
   return (
-    <div
-      className={`
-        p-5 rounded-xl border-2 shadow-soft
-        ${config.bgColor}
-        transition-all duration-300 ease-smooth
-        hover:shadow-soft-lg hover:scale-[1.02]
-        ${config.animation}
-        ${className}
-      `}
+    <Card
+      bgColor={config.bgColor}
+      className={`${config.animation} ${className}`}
       role="status"
-      aria-live="polite"
-      aria-label={ariaLabel}
+      ariaLabel={ariaLabel}
+      ariaLive="polite"
     >
       <div className="text-center">
         {/* 이모티콘 */}
@@ -183,7 +187,7 @@ export function EmotionCard({
           {config.message}
         </p>
 
-        {/* ✨ 새 코드: 업데이트 정보 */}
+        {/* 업데이트 정보 */}
         {lastUpdatedAt && (
           <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-200">
             <span>마지막 업데이트: {elapsedTime}초 전</span>
@@ -200,13 +204,13 @@ export function EmotionCard({
             </div>
             <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
               <div
-                className={`h-full ${config.color.replace('text', 'bg')} transition-all duration-500 ease-out`}
+                className={`h-full ${config.progressColor} transition-all duration-500 ease-out`}
                 style={{ width: `${confidencePercent}%` }}
               />
             </div>
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }

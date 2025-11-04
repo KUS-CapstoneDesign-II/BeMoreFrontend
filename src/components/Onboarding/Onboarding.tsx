@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Modal } from '../ui/Modal';
+import { Button } from '../ui/Button';
 import { DeviceTestStep } from './DeviceTestStep';
 import { PermissionHelpModal } from './PermissionHelpModal';
 
@@ -71,15 +73,15 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fade-in"
-      role="dialog"
-      aria-labelledby="onboarding-title"
-      aria-describedby="onboarding-description"
-    >
-      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 animate-scale-in">
+    <>
+      <Modal
+        isOpen={true}
+        title={step.title}
+        size="lg"
+        className="text-center"
+      >
         {/* 상단: 아이콘 */}
-        <div className="text-center mb-6">
+        <div className="mb-6">
           <div
             className="text-6xl sm:text-7xl mb-4 animate-bounce-subtle"
             role="img"
@@ -87,16 +89,7 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
           >
             {step.icon}
           </div>
-          <h2
-            id="onboarding-title"
-            className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2"
-          >
-            {step.title}
-          </h2>
-          <p
-            id="onboarding-description"
-            className="text-base sm:text-lg text-gray-600"
-          >
+          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-400">
             {step.description}
           </p>
         </div>
@@ -109,7 +102,7 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
             step.details.map((detail, index) => (
               <div
                 key={index}
-                className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg animate-fade-in-up"
+                className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg animate-fade-in-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div
@@ -118,7 +111,7 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
                 >
                   {index + 1}
                 </div>
-                <p className="text-sm sm:text-base text-gray-700 flex-1">
+                <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 flex-1">
                   {detail}
                 </p>
               </div>
@@ -138,8 +131,8 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
                   ${index === currentStep
                     ? 'bg-blue-500 w-8'
                     : index < currentStep
-                    ? 'bg-blue-300'
-                    : 'bg-gray-300'
+                    ? 'bg-blue-300 dark:bg-blue-600'
+                    : 'bg-gray-300 dark:bg-gray-600'
                   }
                 `}
                 aria-label={`${index === currentStep ? '현재' : index < currentStep ? '완료' : '미완료'} 단계 ${index + 1}`}
@@ -150,39 +143,25 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
 
           {/* 버튼 그룹 */}
           <div className="flex items-center justify-between gap-3">
-            {/* 이전/건너뛰기 버튼 */}
-            <button
+            <Button
+              variant="ghost"
+              label={currentStep === 0 ? '건너뛰기' : '이전'}
               onClick={currentStep === 0 ? onSkip : handlePrev}
-              className="
-                px-4 py-2 min-h-[44px] text-gray-600 hover:text-gray-800
-                font-medium rounded-lg hover:bg-gray-100
-                transition-all duration-200
-                focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
-              "
               aria-label={currentStep === 0 ? '온보딩 건너뛰기' : '이전 단계'}
-            >
-              {currentStep === 0 ? '건너뛰기' : '이전'}
-            </button>
+            />
 
-            {/* 다음/시작 버튼 */}
-            <button
+            <Button
+              variant="primary"
+              label={isLastStep ? '시작하기' : '다음'}
               onClick={handleNext}
-              className="
-                flex-1 px-6 py-3 min-h-[44px]
-                bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700
-                text-white font-semibold rounded-lg
-                transition-all duration-200 shadow-soft hover:shadow-soft-lg
-                focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2
-                active:scale-95 transform
-              "
+              fullWidth
+              className="flex-1"
               aria-label={isLastStep ? '온보딩 완료하고 시작하기' : '다음 단계'}
-            >
-              {isLastStep ? '시작하기' : '다음'}
-            </button>
+            />
           </div>
         </div>
-      </div>
+      </Modal>
       <PermissionHelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
-    </div>
+    </>
   );
 }
