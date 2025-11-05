@@ -3,16 +3,59 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ===== Mobile-First Viewport Optimization (M-03) ===== -->
+    <!-- Core viewport meta tag for responsive design -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, maximum-scale=1.0" />
+
+    <!-- iOS Safari specific: disable auto-zoom on form inputs -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="BeMore" />
+
+    <!-- Android Chrome specific -->
+    <meta name="theme-color" content="#14b8a6" />
+    <meta name="format-detection" content="telephone=no,email=no,address=no" />
+
+    <!-- Color scheme support for dark mode -->
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- X-UA-Compatible for IE compatibility -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- Security headers (CSP) -->
     <!-- Note: frame-ancestors is ignored in meta. For prod, prefer HTTP header. -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://browser.sentry-cdn.com https://cdn.jsdelivr.net http://localhost:8000 http://127.0.0.1:8000 https://localhost:8000 ws://localhost:8000 ws://127.0.0.1:8000 wss://localhost:8000 https://bemorebackend.onrender.com wss://bemorebackend.onrender.com; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self' data:;" />
     <meta http-equiv="Permissions-Policy" content="camera=(self), microphone=(self)" />
+
+    <!-- Link prefetching for performance -->
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+
+    <!-- Accessibility and SEO -->
     <meta name="description" content="AI 기반 실시간 심리 상담 시스템. MediaPipe 얼굴 감정 인식과 Gemini AI를 활용한 24시간 심리 상담 서비스." />
-    <meta name="theme-color" content="#14b8a6" />
+    <meta name="keywords" content="심리상담,AI상담,감정인식,정신건강" />
+    <meta name="author" content="BeMore" />
+
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- Apple/iOS specific icons and settings -->
     <link rel="apple-touch-icon" href="/icon-192x192.png" />
-    <!-- Preload for icons not necessary; manifest handles icons -->
+    <link rel="apple-touch-icon" sizes="192x192" href="/icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icon-512x512.png" />
+
+    <!-- Open Graph for social sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="BeMore - AI 심리 상담 시스템" />
+    <meta property="og:description" content="AI 기반 실시간 심리 상담 시스템. MediaPipe 얼굴 감정 인식과 Gemini AI를 활용합니다." />
+    <meta property="og:url" content="https://bemore.app" />
+
+    <!-- Twitter Card for social sharing -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="BeMore - AI 심리 상담 시스템" />
+    <meta name="twitter:description" content="AI 기반 심리 상담 서비스" />
+
+    <!-- Page title -->
     <title>BeMore - AI 심리 상담 시스템</title>
   </head>
   <body>
