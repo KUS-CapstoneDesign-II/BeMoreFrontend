@@ -13,9 +13,29 @@
  */
 export interface FontMetrics {
   fontName: string;
+  weight?: number;
   startTime: number;
   loadTime: number;
   status: 'loading' | 'loaded' | 'failed';
+}
+
+/**
+ * 폰트 로딩 상태
+ */
+export interface FontStatus {
+  loaded: number;
+  loading: number;
+  failed: number;
+}
+
+/**
+ * 폰트 로딩 요약
+ */
+export interface FontLoadingSummary {
+  totalFonts: number;
+  loadedFonts: number;
+  failedFonts: number;
+  averageLoadTime: number;
 }
 
 /**
@@ -27,9 +47,11 @@ export class FontLoadingTracker {
   /**
    * 폰트 로딩 시작
    */
-  startTracking(fontName: string): void {
-    this.metrics.set(fontName, {
+  startTracking(fontName: string, weight?: number): void {
+    const key = weight ? `${fontName}@${weight}` : fontName;
+    this.metrics.set(key, {
       fontName,
+      weight,
       startTime: performance.now(),
       loadTime: 0,
       status: 'loading',
@@ -39,8 +61,9 @@ export class FontLoadingTracker {
   /**
    * 폰트 로딩 완료 기록
    */
-  recordLoad(fontName: string): void {
-    const metric = this.metrics.get(fontName);
+  recordLoad(fontName: string, weight?: number): void {
+    const key = weight ? `${fontName}@${weight}` : fontName;
+    const metric = this.metrics.get(key);
     if (metric) {
       metric.loadTime = performance.now() - metric.startTime;
       metric.status = 'loaded';
@@ -48,10 +71,18 @@ export class FontLoadingTracker {
   }
 
   /**
+   * 폰트 로딩 완료 (별칭)
+   */
+  fontLoaded(fontName: string, weight?: number): void {
+    this.recordLoad(fontName, weight);
+  }
+
+  /**
    * 폰트 로딩 실패 기록
    */
-  recordError(fontName: string): void {
-    const metric = this.metrics.get(fontName);
+  recordError(fontName: string, weight?: number): void {
+    const key = weight ? `${fontName}@${weight}` : fontName;
+    const metric = this.metrics.get(key);
     if (metric) {
       metric.loadTime = performance.now() - metric.startTime;
       metric.status = 'failed';
@@ -59,10 +90,18 @@ export class FontLoadingTracker {
   }
 
   /**
+   * 폰트 로딩 실패 (별칭)
+   */
+  fontFailed(fontName: string, weight?: number): void {
+    this.recordError(fontName, weight);
+  }
+
+  /**
    * 로딩 메트릭스 조회
    */
-  getMetrics(fontName: string): FontMetrics | undefined {
-    return this.metrics.get(fontName);
+  getMetrics(fontName: string, weight?: number): FontMetrics | undefined {
+    const key = weight ? `${fontName}@${weight}` : fontName;
+    return this.metrics.get(key);
   }
 
   /**
@@ -70,6 +109,56 @@ export class FontLoadingTracker {
    */
   getAllMetrics(): FontMetrics[] {
     return Array.from(this.metrics.values());
+  }
+
+  /**
+   * 현재 로딩 상태 조회
+   */
+  getStatus(): FontStatus {
+    const metrics = Array.from(this.metrics.values());
+    return {
+      loaded: metrics.filter((m) => m.status === 'loaded').length,
+      loading: metrics.filter((m) => m.status === 'loading').length,
+      failed: metrics.filter((m) => m.status === 'failed').length,
+    };
+  }
+
+  /**
+   * 로딩 진행률 (%) 계산
+   */
+  getLoadingPercentage(): number {
+    const metrics = Array.from(this.metrics.values());
+    if (metrics.length === 0) return 0;
+    const loaded = metrics.filter((m) => m.status === 'loaded').length;
+    return (loaded / metrics.length) * 100;
+  }
+
+  /**
+   * 로딩 요약 정보
+   */
+  getSummary(): FontLoadingSummary {
+    const metrics = Array.from(this.metrics.values());
+    const loaded = metrics.filter((m) => m.status === 'loaded').length;
+    const failed = metrics.filter((m) => m.status === 'failed').length;
+    const loadedMetrics = metrics.filter((m) => m.status === 'loaded');
+    const avgLoadTime =
+      loadedMetrics.length > 0
+        ? loadedMetrics.reduce((sum, m) => sum + m.loadTime, 0) / loadedMetrics.length
+        : 0;
+
+    return {
+      totalFonts: metrics.length,
+      loadedFonts: loaded,
+      failedFonts: failed,
+      averageLoadTime: avgLoadTime,
+    };
+  }
+
+  /**
+   * 추적 초기화
+   */
+  reset(): void {
+    this.metrics.clear();
   }
 
   /**
@@ -159,29 +248,43 @@ export function createOptimizedFontFace(
  * 폰트 로딩 완료 감지
  *
  * @param fontName - 폰트 이름 (예: 'Inter')
+ * @param weight - 폰트 가중치 (선택사항)
+ * @param timeoutMs - 타임아웃 시간 (ms, 기본값: 3000)
  * @returns 로딩 완료 Promise
  *
  * @example
  * ```typescript
- * await waitForFontLoad('Inter');
+ * await waitForFontLoad('Inter', 400, 3000);
  * // 폰트가 로드될 때까지 대기
  * ```
  */
-export async function waitForFontLoad(fontName: string): Promise<void> {
+export async function waitForFontLoad(
+  fontName: string,
+  weight?: number,
+  timeoutMs: number = 3000
+): Promise<void> {
   if (!('fonts' in document)) {
     // FontFaceSet API 미지원
     return;
   }
 
   try {
-    fontLoadingTracker.startTracking(fontName);
+    fontLoadingTracker.startTracking(fontName, weight);
 
-    // FontFaceSet API works at runtime (fonts.load returns Promise)
-    await (document.fonts as any).load(`1em '${fontName}'`);
+    // 타임아웃과 함께 폰트 로딩 대기
+    const loadPromise = (document.fonts as any).load(
+      `${weight || 400} 1em '${fontName}'`
+    );
 
-    fontLoadingTracker.recordLoad(fontName);
+    const timeoutPromise = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error(`Font load timeout: ${fontName}`)), timeoutMs)
+    );
+
+    await Promise.race([loadPromise, timeoutPromise]);
+
+    fontLoadingTracker.recordLoad(fontName, weight);
   } catch (error) {
-    fontLoadingTracker.recordError(fontName);
+    fontLoadingTracker.recordError(fontName, weight);
     console.warn(`Failed to load font: ${fontName}`, error);
   }
 }

@@ -141,6 +141,7 @@ export class ImageLoadingMetrics {
   startMeasure(url: string): void {
     this.imageUrl = url;
     this.startTime = performance.now();
+    this.endTime = this.startTime; // 초기화: 측정이 시작된 순간부터
   }
 
   /**
@@ -154,7 +155,8 @@ export class ImageLoadingMetrics {
    * 로딩 시간 (ms) 반환
    */
   getDuration(): number {
-    return this.endTime - this.startTime;
+    // endTime이 설정되지 않았으면 0 반환
+    return this.endTime >= this.startTime ? this.endTime - this.startTime : 0;
   }
 
   /**
@@ -259,15 +261,40 @@ export function applyLazyLoadingToImages(
  * 이미지 로딩 에러 처리
  *
  * @param imageElement - 이미지 엘리먼트
- * @param fallbackSrc - 폴백 이미지 경로
+ * @param fallbackSrc - 폴백 이미지 경로 (선택사항)
+ * @param callback - 에러 처리 후 실행할 콜백 (선택사항)
  */
 export function handleImageError(
   imageElement: HTMLImageElement,
-  fallbackSrc: string
+  fallbackSrc?: string,
+  callback?: () => void
 ): void {
-  imageElement.onerror = () => {
-    console.warn(`Failed to load image: ${imageElement.src}, using fallback: ${fallbackSrc}`);
+  // 즉시 error 클래스 추가
+  imageElement.classList.add('image-error');
+
+  // fallbackSrc가 제공되면 설정
+  if (fallbackSrc) {
     imageElement.src = fallbackSrc;
+    console.warn(
+      `Failed to load image: ${imageElement.src}, using fallback: ${fallbackSrc}`
+    );
+  }
+
+  // 콜백 실행
+  if (callback) {
+    callback();
+  }
+
+  // onerror 핸들러도 설정 (자동 에러 처리)
+  imageElement.onerror = () => {
+    imageElement.classList.add('image-error');
+    if (fallbackSrc) {
+      imageElement.src = fallbackSrc;
+      console.warn(`Failed to load image: ${imageElement.src}, using fallback: ${fallbackSrc}`);
+    }
+    if (callback) {
+      callback();
+    }
   };
 }
 

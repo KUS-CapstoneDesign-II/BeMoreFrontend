@@ -67,7 +67,7 @@ describe('Font Optimization Utils', () => {
 
     it('should define all standard sizes', () => {
       // Check for common size values
-      const sizes = ['--font-size-xs', '--font-size-sm', '--font-size-md', '--font-size-lg', '--font-size-xl'];
+      const sizes = ['--font-size-xs', '--font-size-sm', '--font-size-base', '--font-size-lg', '--font-size-xl'];
       sizes.forEach(size => {
         expect(fontCSSVariables).toContain(size);
       });

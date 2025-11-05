@@ -4,7 +4,7 @@
  * Tests for SettingsProvider and useSettings hook
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React, { useEffect } from 'react';
 import { SettingsProvider, useSettings } from '../SettingsContext';
@@ -46,6 +46,10 @@ function TestComponent() {
 }
 
 describe('SettingsContext', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+  });
 
   describe('SettingsProvider', () => {
     it('should provide default settings', () => {

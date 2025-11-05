@@ -190,7 +190,8 @@ describe('Image Optimization Utils', () => {
 
       handleImageError(img, fallbackSrc);
 
-      expect(img.src).toBe(fallbackSrc);
+      // img.src is converted to absolute URL by browser
+      expect(img.src).toContain('fallback.jpg');
     });
 
     it('should add error class', () => {
