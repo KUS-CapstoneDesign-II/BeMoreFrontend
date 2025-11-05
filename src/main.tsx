@@ -17,6 +17,7 @@ import { initA11y } from './utils/a11y'
 import { initializeSecurity } from './utils/security'
 import { fontCSSVariables } from './utils/fontOptimization'
 import { initWebVitals, sendVitalsToAnalytics } from './utils/webVitals'
+import { initPerformanceReporting, performanceReporting } from './utils/performanceReporting'
 
 // PWA 초기화
 if (import.meta.env.PROD) {
@@ -40,9 +41,11 @@ if (import.meta.env.DEV) {
   initA11y();
 }
 
-// 📊 성능 모니터링 초기화 (Web Vitals)
+// 📊 성능 모니터링 초기화 (Web Vitals + Performance Reporting)
+initPerformanceReporting();
 initWebVitals((metric) => {
   sendVitalsToAnalytics(metric);
+  performanceReporting.recordMetric(metric);
 });
 
 createRoot(document.getElementById('root')!).render(
