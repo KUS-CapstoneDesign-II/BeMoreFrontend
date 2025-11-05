@@ -1,6 +1,21 @@
 import type { WSMessage } from '../types';
 
 // =====================================
+// Message Sequencing & Deduplication
+// =====================================
+
+export interface QueuedMessage {
+  message: WSMessage;
+  addedAt: number;
+}
+
+export interface MessageSequenceTracker {
+  lastSeq: number;
+  receivedSeqs: Set<number>; // Track recent sequences to detect duplicates
+  maxTrackedSeqs: number; // Max seqs to track (prevents memory growth)
+}
+
+// =====================================
 // WebSocket Manager
 // =====================================
 
@@ -29,6 +44,14 @@ export class ReconnectingWebSocket {
   private lastActivityAt = 0;
   private visibilityHandler?: () => void;
   private onlineHandler?: () => void;
+
+  // Message Sequencing & Deduplication
+  private messageQueue: QueuedMessage[] = [];
+  private seqTracker: MessageSequenceTracker = {
+    lastSeq: -1,
+    receivedSeqs: new Set(),
+    maxTrackedSeqs: 1000, // Track last 1000 sequence numbers
+  };
 
   constructor(
     url: string,
@@ -111,6 +134,77 @@ export class ReconnectingWebSocket {
     window.addEventListener('online', this.onlineHandler);
   }
 
+  // =============================
+  // Message Sequencing & Queueing
+  // =============================
+
+  /**
+   * Process incoming message with duplicate detection
+   * Returns true if message should be processed, false if duplicate
+   */
+  private processIncomingMessage(message: WSMessage): boolean {
+    // Check if message has sequence number
+    const seq = (message as any).seq;
+
+    if (seq !== undefined && typeof seq === 'number') {
+      // Duplicate detection: check if we've seen this seq before
+      if (this.seqTracker.receivedSeqs.has(seq)) {
+        console.warn(`[WebSocket] ⚠️ ${this.name} duplicate message detected (seq: ${seq})`);
+        return false; // Skip duplicate
+      }
+
+      // Track this sequence number
+      this.seqTracker.receivedSeqs.add(seq);
+      this.seqTracker.lastSeq = Math.max(this.seqTracker.lastSeq, seq);
+
+      // Prevent memory growth by removing old sequences
+      if (this.seqTracker.receivedSeqs.size > this.seqTracker.maxTrackedSeqs) {
+        // Keep only the most recent sequences
+        const sorted = Array.from(this.seqTracker.receivedSeqs).sort((a, b) => b - a);
+        const toKeep = sorted.slice(0, this.seqTracker.maxTrackedSeqs);
+        this.seqTracker.receivedSeqs.clear();
+        toKeep.forEach((s) => this.seqTracker.receivedSeqs.add(s));
+      }
+
+      if (import.meta.env.DEV) {
+        console.log(`[WebSocket] ✓ ${this.name} message seq: ${seq}, tracked: ${this.seqTracker.receivedSeqs.size}`);
+      }
+    }
+
+    return true; // Not a duplicate, process it
+  }
+
+  /**
+   * Process queued messages on reconnection
+   * (Reserved for future message queueing enhancements)
+   */
+  private processMessageQueue(): void {
+    // Currently not used - messages are processed immediately on receipt
+    // This method is reserved for future server-side message queueing support
+    if (this.messageQueue.length === 0) {
+      return;
+    }
+
+    console.log(`[WebSocket] 🔄 ${this.name} processing ${this.messageQueue.length} queued messages`);
+
+    const queue = [...this.messageQueue];
+    this.messageQueue = [];
+
+    queue.forEach((item) => {
+      // Filter out messages older than 5 minutes
+      const age = Date.now() - item.addedAt;
+      if (age > 5 * 60 * 1000) {
+        console.warn(`[WebSocket] ⏰ ${this.name} skipped stale queued message (age: ${age}ms)`);
+        return;
+      }
+
+      // Process with duplicate detection
+      if (this.processIncomingMessage(item.message)) {
+        this.messageHandlers.forEach((handler) => handler(item.message));
+      }
+    });
+  }
+
   /**
    * WebSocket 연결
    */
@@ -169,12 +263,20 @@ export class ReconnectingWebSocket {
         this.lastActivityAt = Date.now();
         this.startHeartbeat();
         this.registerVisibilityListener();
+
+        // Process queued messages on reconnection
+        this.processMessageQueue();
       };
 
       this.ws.onmessage = (event) => {
         try {
           const message: WSMessage = JSON.parse(event.data);
-          this.messageHandlers.forEach((handler) => handler(message));
+
+          // Process message with duplicate detection
+          if (this.processIncomingMessage(message)) {
+            this.messageHandlers.forEach((handler) => handler(message));
+          }
+
           this.lastActivityAt = Date.now();
         } catch (error) {
           console.error(`[WebSocket] ❌ ${this.name} message parse error:`, error);
@@ -249,6 +351,17 @@ export class ReconnectingWebSocket {
   }
 
   /**
+   * Get message queue info for debugging
+   */
+  getQueueInfo(): { queueSize: number; lastSeq: number; trackedSeqs: number } {
+    return {
+      queueSize: this.messageQueue.length,
+      lastSeq: this.seqTracker.lastSeq,
+      trackedSeqs: this.seqTracker.receivedSeqs.size,
+    };
+  }
+
+  /**
    * 메시지 핸들러 등록
    */
   onMessage(handler: WSMessageHandler): () => void {
@@ -269,6 +382,11 @@ export class ReconnectingWebSocket {
     this.ws?.close();
     this.ws = null;
     this.messageHandlers.clear();
+
+    // Clear message queue on close
+    this.messageQueue = [];
+    this.seqTracker.receivedSeqs.clear();
+
     console.log(`🔌 ${this.name} closed`);
     this.stopHeartbeat();
     this.unregisterVisibilityListener();
