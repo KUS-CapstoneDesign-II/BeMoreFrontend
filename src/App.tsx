@@ -11,13 +11,14 @@ import { NetworkStatusBanner } from './components/Common/NetworkStatusBanner';
 import { SessionTimer } from './components/Common/SessionTimer';
 import { useIdleTimeout } from './hooks/useIdleTimeout';
 import { useConsent } from './contexts/ConsentContext';
+import { useSession } from './contexts/SessionContext';
 import { useKeepAlive } from './utils/keepAlive';
 import { SettingsPanel } from './components/Settings/SettingsPanel';
 import { sessionAPI } from './services/api';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './contexts/ThemeContext';
-import type { EmotionType, VADMetrics, SessionStatus } from './types';
+import type { EmotionType, VADMetrics } from './types';
 import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { AIChatSkeleton, VADMonitorSkeleton } from './components/Skeleton/Skeleton';
 import { collectWebVitals, logPerformanceMetrics } from './utils/performance';
@@ -80,24 +81,31 @@ function App() {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
 
-  // 세션 상태
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [sessionStatus, setSessionStatus] = useState<SessionStatus>('ended');
-  const [sessionStartAt, setSessionStartAt] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
+  // 세션 상태 (SessionContext에서 가져옴)
+  const {
+    sessionId,
+    sessionStatus,
+    sessionStartAt,
+    isLoading,
+    error,
+    showSummary,
+    isWaitingForSessionEnd,
+    userClosedSummary,
+    setSessionId,
+    setSessionStatus,
+    setSessionStartAt,
+    setIsLoading,
+    setError,
+    setShowSummary,
+    setIsWaitingForSessionEnd,
+    setUserClosedSummary,
+  } = useSession();
+
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [idlePromptOpen, setIdlePromptOpen] = useState(false);
   const [idleSecondsRemaining, setIdleSecondsRemaining] = useState(60);
   const [sidebarTab, setSidebarTab] = useState<'analyze'|'result'>('analyze');
-
-  // 🎬 세션 종료 후 결과 로딩 중 상태
-  const [isWaitingForSessionEnd, setIsWaitingForSessionEnd] = useState(false);
-
-  // 🎬 사용자가 요약 모달을 수동으로 닫았는지 추적 (재오픈 방지)
-  const [userClosedSummary, setUserClosedSummary] = useState(false);
 
   // 🔄 Keep-Alive: Prevent Render free tier auto-shutdown (1 hour inactivity)
   // Sends periodic health check pings every 25 minutes
