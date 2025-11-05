@@ -13,12 +13,16 @@ import { ModalManagerProvider } from './contexts/ModalManagerContext'
 import { SessionContextProvider } from './contexts/SessionContext'
 import { registerServiceWorker, initPWAInstall } from './utils/registerSW'
 import { initA11y } from './utils/a11y'
+import { initializeSecurity } from './utils/security'
 
 // PWA 초기화
 if (import.meta.env.PROD) {
   registerServiceWorker();
   initPWAInstall();
 }
+
+// 🔒 보안 초기화 (HTTPS, CSP, HSTS 등)
+initializeSecurity();
 
 // Dev a11y checks (axe)
 if (import.meta.env.DEV) {

@@ -18,7 +18,9 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       }
-    }
+    },
+    // 🔒 보안 헤더는 vercel.json에서 관리 (프로덕션)
+    // 개발 환경: main.tsx의 initializeSecurity()에서 처리
   },
   build: {
     // 코드 분할 최적화
