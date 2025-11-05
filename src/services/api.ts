@@ -96,6 +96,29 @@ api.interceptors.request.use(
   }
 );
 
+/**
+ * CORS 오류 감지 및 분류
+ */
+function detectCORSError(error: any): { isCORS: boolean; details?: string } {
+  const message = error?.message || '';
+  const statusCode = error?.response?.status;
+
+  // 프리플라이트 실패 (preflight CORS error)
+  if (statusCode === 0 && message.includes('Failed to fetch')) {
+    return { isCORS: true, details: 'preflight-failed' };
+  }
+
+  // 응답은 받았지만 CORS 헤더 문제
+  if (error?.response?.status === 403 || error?.response?.status === 401) {
+    const corsHeader = error?.response?.headers?.['access-control-allow-origin'];
+    if (!corsHeader) {
+      return { isCORS: true, details: 'missing-cors-header' };
+    }
+  }
+
+  return { isCORS: false };
+}
+
 // 응답 인터셉터 (Rate limiting & 보안 헤더 모니터링)
 api.interceptors.response.use(
   (response) => {
@@ -162,6 +185,16 @@ api.interceptors.response.use(
       ? maskSensitiveDataInObject(errorData as Record<string, any>)
       : errorData;
 
+    // CORS 오류 감지
+    const corsError = detectCORSError(error);
+    let corsDetails = '';
+    if (corsError.isCORS) {
+      corsDetails = corsError.details === 'preflight-failed'
+        ? ' (CORS preflight failed - check backend CORS headers)'
+        : ' (CORS header missing or invalid)';
+      errorMsg = `${error.message} - CORS Configuration Error${corsDetails}`;
+    }
+
     // 실패한 요청 모니터링 기록
     const monitoring = (error.config as any)?.__monitoring;
     if (monitoring) {
@@ -175,6 +208,13 @@ api.interceptors.response.use(
           error: errorMsg,
           errorData: maskedErrorData,
         });
+      } else if (corsError.isCORS) {
+        console.error(`🔒 CORS Error [${maskedReqId}]: ${sanitizedUrl}`, {
+          error: errorMsg,
+          details: corsError.details,
+          errorData: maskedErrorData,
+          suggestion: 'Backend needs to include x-request-id in Access-Control-Allow-Headers'
+        });
       } else {
         console.error(`❌ API Error [${maskedReqId}] (${statusCode}): ${sanitizedUrl}`, {
           error: errorMsg,
@@ -185,6 +225,8 @@ api.interceptors.response.use(
       // 프로덕션 환경: 간단한 메시지만 로깅
       if (isTimeout) {
         console.warn(`⏱️ API Timeout [${maskedReqId}]: ${sanitizedUrl}`);
+      } else if (corsError.isCORS) {
+        console.error(`🔒 CORS Error [${maskedReqId}]: ${sanitizedUrl} - Backend CORS configuration needed`);
       } else {
         console.error(`❌ API Error [${maskedReqId}] (${statusCode}): ${sanitizedUrl}`);
       }

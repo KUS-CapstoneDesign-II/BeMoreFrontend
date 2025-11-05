@@ -197,9 +197,27 @@ export function initWebVitals(callback: (metric: VitalsMetric) => void): void {
 }
 
 /**
+ * Analytics 엔드포인트 가용성 캐시
+ * 404 응답을 받으면 더 이상 재시도하지 않음
+ */
+let analyticsEndpointAvailable: boolean | null = null;
+
+/**
  * 성능 메트릭을 분석 서버로 전송 (선택사항)
+ *
+ * 환경 변수:
+ * - VITE_ANALYTICS_ENABLED: 분석 활성화 여부 (기본값: true)
+ *
+ * 동작:
+ * - DEV: 로컬 로깅만 수행
+ * - PROD: /api/analytics/vitals 엔드포인트에 전송
+ *   - 404 응답 시 재시도 중단
+ *   - CORS 오류 시 로깅 후 무시
  */
 export async function sendVitalsToAnalytics(metric: VitalsMetric): Promise<void> {
+  // 분석 비활성화 확인
+  const analyticsEnabled = import.meta.env.VITE_ANALYTICS_ENABLED !== 'false';
+
   if (import.meta.env.DEV) {
     console.log(`📊 Web Vitals: ${metric.name}`, {
       value: `${metric.value}${metric.name === 'CLS' ? '' : 'ms'}`,
@@ -209,9 +227,21 @@ export async function sendVitalsToAnalytics(metric: VitalsMetric): Promise<void>
     return;
   }
 
+  // 프로덕션 && 분석 활성화 상태에서만 전송
+  if (!analyticsEnabled) {
+    if (import.meta.env.DEV) {
+      console.log('📊 Analytics disabled via VITE_ANALYTICS_ENABLED');
+    }
+    return;
+  }
+
+  // 이전에 404 받았으면 더 이상 요청하지 않음
+  if (analyticsEndpointAvailable === false) {
+    return;
+  }
+
   try {
-    // TODO: Replace with actual analytics endpoint
-    await fetch('/api/analytics/vitals', {
+    const response = await fetch('/api/analytics/vitals', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -220,11 +250,34 @@ export async function sendVitalsToAnalytics(metric: VitalsMetric): Promise<void>
         rating: metric.rating,
         timestamp: new Date().toISOString()
       })
-    }).catch(() => {
-      // Fail silently to not impact performance
     });
-  } catch {
-    // Ignore errors
+
+    // 404: 엔드포인트 없음 → 재시도 중단
+    if (response.status === 404) {
+      analyticsEndpointAvailable = false;
+      console.warn('⚠️ Analytics endpoint not available (404) - stopping vitals collection');
+      return;
+    }
+
+    // CORS 오류 (이미 fetch 성공했으므로 여기서는 안 나타남)
+    if (!response.ok) {
+      console.warn(`⚠️ Analytics endpoint returned ${response.status} - ${response.statusText}`);
+      return;
+    }
+
+    // 성공
+    analyticsEndpointAvailable = true;
+    if (import.meta.env.DEV) {
+      console.log('✅ Analytics vitals sent successfully');
+    }
+  } catch (error) {
+    // CORS 오류는 fetch 단계에서 발생
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      console.warn('⚠️ Analytics endpoint unreachable (possible CORS error) - retrying next time');
+    } else {
+      console.warn('⚠️ Failed to send analytics vitals:', error);
+    }
+    // 네트워크 오류는 재시도 허용
   }
 }
 

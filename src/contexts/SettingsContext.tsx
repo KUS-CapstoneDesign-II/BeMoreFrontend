@@ -6,6 +6,7 @@ import type { ReactNode } from 'react';
 export type FontScale = 'sm' | 'md' | 'lg' | 'xl';
 export type LayoutDensity = 'compact' | 'spacious';
 export type LanguageCode = 'ko' | 'en';
+export type APIStatus = 'idle' | 'loading' | 'error' | 'success';
 
 export interface SettingsState {
   fontScale: FontScale;
@@ -15,11 +16,17 @@ export interface SettingsState {
 }
 
 interface SettingsContextType extends SettingsState {
+  // 설정 업데이트 함수
   setFontScale: (scale: FontScale) => void;
   setLayoutDensity: (density: LayoutDensity) => void;
   setLanguage: (lang: LanguageCode) => void;
   setNotificationsOptIn: (optIn: boolean) => void;
   requestNotificationPermission: () => Promise<NotificationPermission>;
+
+  // API 상태 추적
+  apiStatus: APIStatus;
+  apiError: string | null;
+  retryApiSync: () => Promise<void>;
 }
 
 const DEFAULT_SETTINGS: SettingsState = {
@@ -61,6 +68,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return DEFAULT_SETTINGS;
   });
 
+  // API 상태 추적 (원격 설정 동기화)
+  const [apiStatus, setApiStatus] = useState<APIStatus>('idle');
+  const [apiError, setApiError] = useState<string | null>(null);
+
   // Persist to storage
   useEffect(() => {
     try {
@@ -70,19 +81,38 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
   }, [settings]);
 
+  /**
+   * 원격 설정 로드 및 동기화
+   */
+  const loadRemotePreferences = async () => {
+    setApiStatus('loading');
+    setApiError(null);
+
+    try {
+      const remote = await userAPI.getPreferences();
+      if (remote && typeof remote === 'object') {
+        setSettings((s) => ({ ...s, ...remote }));
+        setApiStatus('success');
+      }
+    } catch (error) {
+      // API 에러 상태 추적
+      const errorMessage = error instanceof Error ? error.message : '설정 로드 실패';
+      setApiError(errorMessage);
+      setApiStatus('error');
+      console.debug('Failed to load remote preferences, using local defaults', error);
+    }
+  };
+
+  /**
+   * 수동 재시도 함수 (UI에서 호출)
+   */
+  const retryApiSync = async () => {
+    await loadRemotePreferences();
+  };
+
   // Load backend preferences on mount (merge into local)
   useEffect(() => {
-    (async () => {
-      try {
-        const remote = await userAPI.getPreferences();
-        if (remote && typeof remote === 'object') {
-          setSettings((s) => ({ ...s, ...remote }));
-        }
-      } catch (error) {
-        // Silently fail - use local defaults if remote preferences unavailable
-        console.debug('Failed to load remote preferences, using local defaults', error);
-      }
-    })();
+    loadRemotePreferences();
   }, []);
 
   // Apply font scale to root for rem-based scaling
@@ -132,7 +162,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     setLanguage,
     setNotificationsOptIn,
     requestNotificationPermission,
-  }), [settings, requestNotificationPermission]);
+    // API 상태 추적
+    apiStatus,
+    apiError,
+    retryApiSync,
+  }), [settings, requestNotificationPermission, apiStatus, apiError]);
 
   return (
     <SettingsContext.Provider value={value}>

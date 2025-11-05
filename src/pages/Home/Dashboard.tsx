@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dashboardAPI } from '../../services/api';
+import { useSettings } from '../../contexts/SettingsContext';
 import { LoadingState, ErrorState, EmptyState } from '../../components/Common/States';
 
 interface DashboardProps {
@@ -9,6 +10,7 @@ interface DashboardProps {
 
 export function Dashboard({ onResumeSession }: DashboardProps) {
   const navigate = useNavigate();
+  const { apiStatus, apiError, retryApiSync } = useSettings();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +56,35 @@ export function Dashboard({ onResumeSession }: DashboardProps) {
 
   return (
     <div className="space-y-4">
+      {/* API Error Banner - Show connection issues */}
+      {apiStatus === 'error' && apiError && (
+        <div className="bg-gradient-to-r from-red-500 to-pink-500 dark:from-red-600 dark:to-pink-600 rounded-xl shadow-lg p-6 text-white">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h2 className="text-lg font-bold mb-2 flex items-center">
+                🔒 서버 연결 오류
+              </h2>
+              <p className="text-sm opacity-90 mb-4">
+                {apiError.includes('CORS')
+                  ? '백엔드 서버의 CORS 설정이 필요합니다.'
+                  : '서버와의 연결이 끊어졌습니다. 인터넷 연결을 확인해주세요.'}
+              </p>
+              {apiError && (
+                <p className="text-xs opacity-75 font-mono mb-4 bg-black bg-opacity-20 p-2 rounded">
+                  {apiError}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={retryApiSync}
+              className="ml-4 px-4 py-2 bg-white text-red-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200 whitespace-nowrap flex-shrink-0"
+            >
+              🔄 재시도
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Resume Last Session Banner - Show if last session exists */}
       {hasLastSession && onResumeSession && (
         <div className="bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600 rounded-xl shadow-lg p-6 text-white">
