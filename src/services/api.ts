@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { apiMonitoring } from '../utils/apiMonitoring';
 import { retryWithBackoff, requestDeduplicator } from '../utils/retry';
+import { initMockAPIInterceptor } from '../utils/mockAPI';
 import {
   generateRequestId,
   getClientVersion,
@@ -36,6 +37,9 @@ const api = axios.create({
   },
   withCredentials: false,
 });
+
+// Initialize mock API interceptor if enabled
+initMockAPIInterceptor(api);
 
 // 요청 인터셉터 (보안 헤더 자동 추가)
 api.interceptors.request.use(
