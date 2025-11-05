@@ -3,11 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { dashboardAPI } from '../../services/api';
 import { LoadingState, ErrorState, EmptyState } from '../../components/Common/States';
 
-export function Dashboard() {
+interface DashboardProps {
+  onResumeSession?: () => void;
+}
+
+export function Dashboard({ onResumeSession }: DashboardProps) {
   const navigate = useNavigate();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasLastSession, setHasLastSession] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -24,6 +29,21 @@ export function Dashboard() {
     return () => { mounted = false; };
   }, []);
 
+  // Check if there's a last session to resume
+  useEffect(() => {
+    try {
+      const lastSession = localStorage.getItem('bemore_last_session');
+      if (lastSession) {
+        const parsed = JSON.parse(lastSession);
+        if (parsed?.sessionId) {
+          setHasLastSession(true);
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }, []);
+
   if (loading) return <LoadingState text="대시보드를 불러오는 중..." />;
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
@@ -34,6 +54,20 @@ export function Dashboard() {
 
   return (
     <div className="space-y-4">
+      {/* Resume Last Session Banner - Show if last session exists */}
+      {hasLastSession && onResumeSession && (
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-500 dark:from-purple-600 dark:to-indigo-600 rounded-xl shadow-lg p-6 text-white">
+          <h2 className="text-2xl font-bold mb-2">마지막 세션 재개</h2>
+          <p className="text-sm opacity-90 mb-4">진행 중이던 상담 세션을 계속하실 수 있습니다</p>
+          <button
+            onClick={onResumeSession}
+            className="px-6 py-2 bg-white text-purple-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
+          >
+            🔄 세션 계속하기 →
+          </button>
+        </div>
+      )}
+
       {/* Call-to-Action Banner */}
       <div className="bg-gradient-to-r from-teal-500 to-cyan-500 dark:from-teal-600 dark:to-cyan-600 rounded-xl shadow-lg p-6 text-white">
         <h2 className="text-2xl font-bold mb-2">심리 상담 세션 시작하기</h2>
