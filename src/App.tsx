@@ -760,12 +760,12 @@ function App() {
                 </select>
                 <ThemeToggle />
               </div>
-              {/* Settings Button */}
+              {/* Settings Button - Navigate to settings page */}
               <button
-                onClick={() => setShowSettings(true)}
+                onClick={() => navigate('/settings')}
                 className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
-                aria-label="설정 열기"
-              >설정</button>
+                aria-label="설정 페이지 열기"
+              >⚙️ 설정</button>
               {/* Shortcuts Help Button */}
               <button
                 onClick={() => setShowShortcutsHelp(true)}
