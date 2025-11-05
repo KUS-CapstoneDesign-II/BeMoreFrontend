@@ -16,6 +16,7 @@ import { registerServiceWorker, initPWAInstall } from './utils/registerSW'
 import { initA11y } from './utils/a11y'
 import { initializeSecurity } from './utils/security'
 import { fontCSSVariables } from './utils/fontOptimization'
+import { initWebVitals, sendVitalsToAnalytics } from './utils/webVitals'
 
 // PWA 초기화
 if (import.meta.env.PROD) {
@@ -38,6 +39,11 @@ document.head.appendChild(styleSheet);
 if (import.meta.env.DEV) {
   initA11y();
 }
+
+// 📊 성능 모니터링 초기화 (Web Vitals)
+initWebVitals((metric) => {
+  sendVitalsToAnalytics(metric);
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
