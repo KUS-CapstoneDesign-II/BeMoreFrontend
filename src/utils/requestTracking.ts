@@ -147,18 +147,32 @@ export function generateSecurityHeaders(requestId?: string): SecurityHeaders {
 
 /**
  * 민감한 데이터 로깅 방지
+ * URL 파라미터에서 민감한 정보 마스킹
  */
 export function sanitizeUrlForLogging(url: string): string {
   try {
     const parsed = new URL(url, 'http://localhost');
 
     // 민감한 파라미터 마스크
-    const sensitiveParams = ['token', 'apiKey', 'secret', 'password', 'sessionId', 'userId'];
+    const sensitiveParams = ['token', 'apiKey', 'secret', 'password', 'sessionId', 'userId', 'email', 'phone'];
     const params = new URLSearchParams(parsed.search);
 
     for (const key of params.keys()) {
       if (sensitiveParams.some((sensitive) => key.toLowerCase().includes(sensitive.toLowerCase()))) {
-        params.set(key, '[REDACTED]');
+        const value = params.get(key);
+        // 각 필드에 맞는 마스킹 적용
+        if (value && value.length > 0) {
+          if (key.toLowerCase().includes('token')) {
+            params.set(key, value.slice(0, 3) + '***' + value.slice(-3));
+          } else if (key.toLowerCase().includes('email')) {
+            const [local, domain] = value.split('@');
+            if (domain) {
+              params.set(key, local[0] + '***@' + domain);
+            }
+          } else {
+            params.set(key, '[REDACTED]');
+          }
+        }
       }
     }
 
@@ -167,6 +181,63 @@ export function sanitizeUrlForLogging(url: string): string {
   } catch {
     return url;
   }
+}
+
+/**
+ * 요청/응답 데이터에서 민감한 정보 마스킹
+ *
+ * @param data - 마스킹할 데이터 객체
+ * @param depth - 재귀 깊이 (순환 참조 방지)
+ * @returns 마스킹된 데이터
+ */
+export function maskSensitiveDataInObject(
+  data: Record<string, any>,
+  depth: number = 0
+): Record<string, any> {
+  if (depth > 3) return data; // 깊은 중첩 방지
+
+  const sensitiveKeyPatterns = [
+    'token', 'jwt', 'secret', 'apikey', 'password',
+    'sessionid', 'session_id', 'userid', 'user_id',
+    'email', 'phone', 'creditcard', 'ssn'
+  ];
+
+  const masked = { ...data };
+
+  for (const [key, value] of Object.entries(masked)) {
+    const keyLower = key.toLowerCase();
+
+    if (typeof value === 'string' && value.length > 0) {
+      // 민감한 키 패턴 확인
+      const isSensitive = sensitiveKeyPatterns.some((pattern) =>
+        keyLower.includes(pattern)
+      );
+
+      if (isSensitive) {
+        // 값의 타입에 따라 마스킹
+        if (keyLower.includes('token') || keyLower.includes('jwt')) {
+          masked[key] = value.slice(0, 3) + '***' + value.slice(-3);
+        } else if (keyLower.includes('email')) {
+          const [local, domain] = value.split('@');
+          masked[key] = domain ? `${local[0]}***@${domain}` : '[REDACTED]';
+        } else if (keyLower.includes('phone')) {
+          const digits = value.replace(/\D/g, '');
+          if (digits.length >= 8) {
+            masked[key] = digits.slice(0, 3) + '****' + digits.slice(-4);
+          } else {
+            masked[key] = '[REDACTED]';
+          }
+        } else {
+          masked[key] = '[REDACTED]';
+        }
+      }
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      // 재귀적으로 중첩 객체 처리
+      masked[key] = maskSensitiveDataInObject(value, depth + 1);
+    }
+  }
+
+  return masked;
 }
 
 /**
@@ -253,6 +324,7 @@ export default {
   timestampTracker,
   generateSecurityHeaders,
   sanitizeUrlForLogging,
+  maskSensitiveDataInObject,
   generateCsrfToken,
   getCsrfToken,
   setCsrfToken,

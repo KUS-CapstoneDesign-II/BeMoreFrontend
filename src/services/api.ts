@@ -8,7 +8,10 @@ import {
   parseRateLimitHeaders,
   timestampTracker,
   getCsrfToken,
+  sanitizeUrlForLogging,
+  maskSensitiveDataInObject,
 } from '../utils/requestTracking';
+import { maskSessionId } from '../utils/security';
 import type {
   ApiResponse,
   SessionStartResponse,
@@ -72,9 +75,10 @@ api.interceptors.request.use(
       } catch {}
     }
 
-    // 개발 환경 로깅
+    // 개발 환경 로깅 (민감한 데이터 마스킹)
     if (import.meta.env.DEV) {
-      console.log(`📡 API Request [${requestId}]: ${config.method?.toUpperCase()} ${config.url}`);
+      const sanitizedUrl = sanitizeUrlForLogging(config.url || '');
+      console.log(`📡 API Request [${requestId}]: ${config.method?.toUpperCase()} ${sanitizedUrl}`);
     }
 
     // API 모니터링 시작
@@ -104,8 +108,13 @@ api.interceptors.response.use(
     }
 
     if (import.meta.env.DEV) {
-      console.log(`✅ API Response [${requestId}]: ${response.config.url} (${response.status})`, {
-        data: response.data,
+      const sanitizedUrl = sanitizeUrlForLogging(response.config.url || '');
+      const maskedData = typeof response.data === 'object' && response.data
+        ? maskSensitiveDataInObject(response.data as Record<string, any>)
+        : response.data;
+
+      console.log(`✅ API Response [${requestId}]: ${sanitizedUrl} (${response.status})`, {
+        data: maskedData,
         rateLimit: rateLimitInfo,
       });
     }
@@ -131,14 +140,23 @@ api.interceptors.response.use(
     const serverReqId = error?.response?.data?.error?.requestId || (error?.response?.headers && (error.response.headers as any)['x-request-id']);
     const trackedReqId = requestId || serverReqId;
 
+    // 요청 ID 마스킹
+    const maskedReqId = trackedReqId ? maskSessionId(trackedReqId) : 'unknown';
+
     if (trackedReqId) {
-      errorMsg = `${errorMsg} [${trackedReqId}]`;
+      errorMsg = `${errorMsg} [${maskedReqId}]`;
     }
 
     // 상세 에러 로깅
     const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
     const statusCode = error?.response?.status || 'unknown';
-    const endpoint = error.config?.url || 'unknown';
+    const sanitizedUrl = sanitizeUrlForLogging(error.config?.url || 'unknown');
+
+    // 에러 응답 데이터 마스킹
+    const errorData = error?.response?.data;
+    const maskedErrorData = typeof errorData === 'object' && errorData
+      ? maskSensitiveDataInObject(errorData as Record<string, any>)
+      : errorData;
 
     // 실패한 요청 모니터링 기록
     const monitoring = (error.config as any)?.__monitoring;
@@ -146,11 +164,26 @@ api.interceptors.response.use(
       apiMonitoring.recordRequest(monitoring, false, statusCode, isTimeout);
     }
 
-    // 에러 로깅 (요청 ID 포함)
-    if (isTimeout) {
-      console.warn(`⏱️ API Timeout [${trackedReqId}]: ${endpoint} - ${errorMsg}`);
+    // 에러 로깅 (요청 ID 포함, 민감한 데이터 마스킹)
+    if (import.meta.env.DEV) {
+      if (isTimeout) {
+        console.warn(`⏱️ API Timeout [${maskedReqId}]: ${sanitizedUrl}`, {
+          error: errorMsg,
+          errorData: maskedErrorData,
+        });
+      } else {
+        console.error(`❌ API Error [${maskedReqId}] (${statusCode}): ${sanitizedUrl}`, {
+          error: errorMsg,
+          errorData: maskedErrorData,
+        });
+      }
     } else {
-      console.error(`❌ API Error [${trackedReqId}] (${statusCode}): ${endpoint} - ${errorMsg}`);
+      // 프로덕션 환경: 간단한 메시지만 로깅
+      if (isTimeout) {
+        console.warn(`⏱️ API Timeout [${maskedReqId}]: ${sanitizedUrl}`);
+      } else {
+        console.error(`❌ API Error [${maskedReqId}] (${statusCode}): ${sanitizedUrl}`);
+      }
     }
 
     return Promise.reject(error);

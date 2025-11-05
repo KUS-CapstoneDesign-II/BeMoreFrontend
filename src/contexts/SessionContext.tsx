@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { SessionStatus } from '../types';
+import { encryptedStorage } from '../utils/security';
 
 /**
  * SessionContext
@@ -54,6 +55,32 @@ interface SessionContextProviderProps {
   children: ReactNode;
 }
 
+/**
+ * 암호화된 토큰 저장/읽기 유틸리티
+ */
+const tokenStorage = {
+  async setToken(token: string): Promise<void> {
+    try {
+      await encryptedStorage.setItem('bemore_session_token', token);
+    } catch (error) {
+      console.error('❌ Failed to store session token securely:', error);
+    }
+  },
+
+  async getToken(): Promise<string | null> {
+    try {
+      return await encryptedStorage.getItem('bemore_session_token');
+    } catch (error) {
+      console.error('❌ Failed to retrieve session token:', error);
+      return null;
+    }
+  },
+
+  clearToken(): void {
+    encryptedStorage.removeItem('bemore_session_token');
+  },
+};
+
 export function SessionContextProvider({ children }: SessionContextProviderProps) {
   // 세션 식별 정보
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -70,6 +97,26 @@ export function SessionContextProvider({ children }: SessionContextProviderProps
   // UI 상태
   const [showSummary, setShowSummary] = useState(false);
   const [userClosedSummary, setUserClosedSummary] = useState(false);
+
+  /**
+   * 초기화: 암호화된 토큰 복원
+   */
+  useEffect(() => {
+    const loadEncryptedToken = async () => {
+      try {
+        const token = await tokenStorage.getToken();
+        if (token) {
+          // 토큰이 존재하면 기존 세션 복원
+          // (실제 API 호출이나 검증은 별도 로직에서 처리)
+          console.log('✅ Session token loaded from encrypted storage');
+        }
+      } catch (err) {
+        console.error('⚠️ Failed to load encrypted token on initialization:', err);
+      }
+    };
+
+    loadEncryptedToken();
+  }, []);
 
   /**
    * startSession
@@ -102,8 +149,13 @@ export function SessionContextProvider({ children }: SessionContextProviderProps
    * resetSession
    * 세션 상태 완전히 초기화
    * 세션 결과 확인 후 대시보드로 돌아갈 때 호출
+   * 암호화된 토큰도 함께 삭제
    */
   const resetSession = useCallback(() => {
+    // 암호화된 토큰 삭제
+    tokenStorage.clearToken();
+
+    // 세션 상태 초기화
     setSessionId(null);
     setSessionStatus('ended');
     setSessionStartAt(null);
