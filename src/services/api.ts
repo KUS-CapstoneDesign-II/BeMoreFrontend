@@ -1,6 +1,13 @@
 import axios from 'axios';
 import { apiMonitoring } from '../utils/apiMonitoring';
 import { retryWithBackoff, requestDeduplicator } from '../utils/retry';
+import {
+  generateRequestId,
+  getClientVersion,
+  getDeviceId,
+  parseRateLimitHeaders,
+  timestampTracker,
+} from '../utils/requestTracking';
 import type {
   ApiResponse,
   SessionStartResponse,
@@ -26,26 +33,44 @@ const api = axios.create({
   withCredentials: false,
 });
 
-// 요청 인터셉터
+// 요청 인터셉터 (보안 헤더 자동 추가)
 api.interceptors.request.use(
   (config) => {
-    // 간단한 요청 로깅 (개발 환경에서만 상세)
+    // 요청 ID 생성
+    const requestId = generateRequestId();
+    (config as any).__requestId = requestId;
+
+    // 요청 타임스탐프 추적 시작
+    timestampTracker.startRequest(requestId);
+
+    // 보안 헤더 자동 추가 (모든 요청)
+    const securityHeaders = {
+      'X-Request-ID': requestId,
+      'X-Client-Version': getClientVersion(),
+      'X-Device-ID': getDeviceId(),
+      'X-Timestamp': Date.now().toString(),
+    };
+
+    config.headers = config.headers || {};
+    Object.assign(config.headers, securityHeaders);
+
+    // 인증 토큰 추가
+    try {
+      const token = localStorage.getItem('bemore_token');
+      if (token) {
+        (config.headers as any)['Authorization'] = `Bearer ${token}`;
+      }
+    } catch {}
+
+    // 개발 환경 로깅
     if (import.meta.env.DEV) {
-      console.log(`📡 API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+      console.log(`📡 API Request [${requestId}]: ${config.method?.toUpperCase()} ${config.url}`);
     }
 
     // API 모니터링 시작
     const monitoring = apiMonitoring.startRequest(config.url || '', config.method?.toUpperCase());
     (config as any).__monitoring = monitoring;
 
-    try {
-      const token = localStorage.getItem('bemore_token');
-      if (token) {
-        config.headers = config.headers || {};
-        (config.headers as any)['Authorization'] = `Bearer ${token}`;
-      }
-      // Note: avoid custom headers that can trigger CORS preflight failures
-    } catch {}
     return config;
   },
   (error) => {
@@ -53,11 +78,26 @@ api.interceptors.request.use(
   }
 );
 
-// 응답 인터셉터
+// 응답 인터셉터 (Rate limiting & 보안 헤더 모니터링)
 api.interceptors.response.use(
   (response) => {
+    // 요청 ID 추적 종료
+    const requestId = (response.config as any).__requestId;
+    if (requestId) {
+      timestampTracker.endRequest(requestId);
+    }
+
+    // Rate limiting 헤더 모니터링
+    const rateLimitInfo = parseRateLimitHeaders(response.headers);
+    if (rateLimitInfo.remaining !== null && rateLimitInfo.remaining < 10) {
+      console.warn(`⚠️ Rate limit approaching: ${rateLimitInfo.remaining}/${rateLimitInfo.limit} remaining`);
+    }
+
     if (import.meta.env.DEV) {
-      console.log(`✅ API Response: ${response.config.url} (${response.status})`, response.data);
+      console.log(`✅ API Response [${requestId}]: ${response.config.url} (${response.status})`, {
+        data: response.data,
+        rateLimit: rateLimitInfo,
+      });
     }
 
     // 성공한 요청 모니터링 기록
@@ -69,17 +109,23 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
+    // 요청 ID 추적 종료
+    const requestId = (error.config as any)?.__requestId;
+    if (requestId) {
+      timestampTracker.endRequest(requestId);
+    }
+
     let errorMsg = error.message;
 
-    // Add request ID if available
-    try {
-      const reqId = error?.response?.data?.error?.requestId || (error?.response?.headers && (error.response.headers as any)['x-request-id']);
-      if (reqId) {
-        errorMsg = `${errorMsg} [${reqId}]`;
-      }
-    } catch {}
+    // 서버 또는 요청에서 제공한 요청 ID 추출
+    const serverReqId = error?.response?.data?.error?.requestId || (error?.response?.headers && (error.response.headers as any)['x-request-id']);
+    const trackedReqId = requestId || serverReqId;
 
-    // More detailed error logging
+    if (trackedReqId) {
+      errorMsg = `${errorMsg} [${trackedReqId}]`;
+    }
+
+    // 상세 에러 로깅
     const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
     const statusCode = error?.response?.status || 'unknown';
     const endpoint = error.config?.url || 'unknown';
@@ -90,10 +136,11 @@ api.interceptors.response.use(
       apiMonitoring.recordRequest(monitoring, false, statusCode, isTimeout);
     }
 
+    // 에러 로깅 (요청 ID 포함)
     if (isTimeout) {
-      console.warn(`⏱️ API Timeout (${statusCode}): ${endpoint} - ${errorMsg}`);
+      console.warn(`⏱️ API Timeout [${trackedReqId}]: ${endpoint} - ${errorMsg}`);
     } else {
-      console.error(`❌ API Error (${statusCode}): ${endpoint} - ${errorMsg}`);
+      console.error(`❌ API Error [${trackedReqId}] (${statusCode}): ${endpoint} - ${errorMsg}`);
     }
 
     return Promise.reject(error);
