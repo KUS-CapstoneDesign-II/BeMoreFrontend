@@ -15,6 +15,7 @@ import { NetworkContextProvider } from './contexts/NetworkContext'
 import { registerServiceWorker, initPWAInstall } from './utils/registerSW'
 import { initA11y } from './utils/a11y'
 import { initializeSecurity } from './utils/security'
+import { fontCSSVariables } from './utils/fontOptimization'
 
 // PWA 초기화
 if (import.meta.env.PROD) {
@@ -24,6 +25,14 @@ if (import.meta.env.PROD) {
 
 // 🔒 보안 초기화 (HTTPS, CSP, HSTS 등)
 initializeSecurity();
+
+// 📝 폰트 최적화 초기화 (font-display: swap, 시스템 폰트)
+const styleSheet = document.createElement('style');
+styleSheet.textContent = fontCSSVariables;
+document.head.appendChild(styleSheet);
+
+// Google Fonts 로드 (선택사항, 필요 시 활성화)
+// addGoogleFontsLink('Inter', [400, 500, 600, 700]);
 
 // Dev a11y checks (axe)
 if (import.meta.env.DEV) {
