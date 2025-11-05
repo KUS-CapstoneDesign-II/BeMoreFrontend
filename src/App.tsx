@@ -390,6 +390,9 @@ function App() {
 
       // 4. WebSocket 연결 확인 완료
       funnelEvent('session_started');
+
+      // 5. 세션 페이지로 네비게이션 (A-01)
+      navigate('/session');
     } catch (err) {
       Logger.error('Failed to start session', {
         error: err instanceof Error ? err.message : String(err),

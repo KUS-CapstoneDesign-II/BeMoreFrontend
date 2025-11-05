@@ -255,24 +255,54 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
 
         {/* Tab Navigation */}
         <div className="flex gap-2">
-          <TagPill
-            active={tab === 'summary'}
-            onClick={() => setTab('summary')}
-          >
-            📊 요약
-          </TagPill>
-          <TagPill
-            active={tab === 'details'}
-            onClick={() => setTab('details')}
-          >
-            📈 세부
-          </TagPill>
-          <TagPill
-            active={tab === 'pdf'}
-            onClick={() => setTab('pdf')}
-          >
-            📄 PDF
-          </TagPill>
+          <div className="relative group">
+            <TagPill
+              active={tab === 'summary'}
+              onClick={() => setTab('summary')}
+              disabled={loading}
+              title={loading ? '데이터를 로드하는 중입니다...' : ''}
+              className={loading ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              📊 요약
+            </TagPill>
+            {loading && (
+              <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                세션 종료 후 사용 가능합니다
+              </div>
+            )}
+          </div>
+          <div className="relative group">
+            <TagPill
+              active={tab === 'details'}
+              onClick={() => setTab('details')}
+              disabled={loading}
+              title={loading ? '데이터를 로드하는 중입니다...' : ''}
+              className={loading ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              📈 세부
+            </TagPill>
+            {loading && (
+              <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                세션 종료 후 사용 가능합니다
+              </div>
+            )}
+          </div>
+          <div className="relative group">
+            <TagPill
+              active={tab === 'pdf'}
+              onClick={() => setTab('pdf')}
+              disabled={loading}
+              title={loading ? '데이터를 로드하는 중입니다...' : ''}
+              className={loading ? 'opacity-50 cursor-not-allowed' : ''}
+            >
+              📄 PDF
+            </TagPill>
+            {loading && (
+              <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-100 dark:text-gray-900 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                세션 종료 후 사용 가능합니다
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
