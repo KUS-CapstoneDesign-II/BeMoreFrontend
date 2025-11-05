@@ -1,0 +1,129 @@
+/**
+ * AppLayout Styling
+ *
+ * 전체 앱 레이아웃의 스타일링
+ * - 헤더, 메인, 푸터 구조
+ * - 반응형 디자인
+ * - 다크 모드 지원
+ */
+
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #ffffff;
+  color: #000000;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 다크 모드 */
+@media (prefers-color-scheme: dark) {
+  .app-layout {
+    background-color: #0f0f0f;
+    color: #ffffff;
+  }
+}
+
+/* 헤더 */
+.app-header {
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 1rem 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background-color: #1a1a1a;
+    border-bottom-color: #333333;
+  }
+}
+
+.app-header-content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* 로고 */
+.app-header-logo h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+/* 헤더 우측 컨텐츠 */
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+/* 메인 컨텐츠 */
+.app-main {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  container-type: inline-size;
+}
+
+@media (max-width: 768px) {
+  .app-main {
+    padding: 1rem 0.75rem;
+  }
+}
+
+/* 푸터 */
+.app-footer {
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.875rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  .app-footer {
+    background-color: #1a1a1a;
+    border-top-color: #333333;
+    color: #9ca3af;
+  }
+}
+
+.app-footer p {
+  margin: 0;
+}
+
+/* 반응형 레이아웃 */
+@media (max-width: 640px) {
+  .app-header-logo h1 {
+    font-size: 1.25rem;
+  }
+
+  .app-main {
+    padding: 1rem 0.5rem;
+  }
+
+  .app-footer {
+    padding: 1.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+}
