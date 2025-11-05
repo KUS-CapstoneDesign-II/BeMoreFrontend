@@ -247,7 +247,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[400, 800, 1200]}
         />
       );
 
@@ -260,7 +260,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[400, 800, 1200]}
         />
       );
 
@@ -278,7 +278,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[400, 800, 1200]}
         />
       );
 
@@ -300,7 +300,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Descriptive alt text"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[320, 640, 1280]}
         />
       );
 
@@ -333,7 +333,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[320, 640, 1280]}
           aria-label="Custom label"
         />
       );
@@ -349,7 +349,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[320, 640, 1280]}
         />
       );
 
@@ -365,7 +365,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[320, 640, 1280]}
         />
       );
 
@@ -383,7 +383,7 @@ describe('OptimizedImage Component', () => {
         <OptimizedImage
           src="/test.jpg"
           alt="Test"
-          imageSizes={{ width: 800, height: 600 }}
+          imageSizes={[320, 640, 1280]}
           onError={onError}
         />
       );

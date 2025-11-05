@@ -99,7 +99,7 @@ export function OptimizedImage({
       });
 
       // Responsive srcset 생성
-      const srcsets = generateResponsiveSrcsets(src, originalFormat, imageSizes);
+      const srcsets = generateResponsiveSrcsets(src, originalFormat, imageSizes || [320, 640, 1024, 1280]);
 
       if (imgRef.current) {
         metricsRef.current.startMeasure(src);
@@ -163,7 +163,7 @@ export function OptimizedImage({
       {/* AVIF 포맷 (최고 효율) */}
       {formatSupport.avif && (
         <source
-          srcSet={generateResponsiveSrcsets(src, originalFormat, imageSizes).avif}
+          srcSet={generateResponsiveSrcsets(src, originalFormat, imageSizes || [320, 640, 1024, 1280]).avif}
           type="image/avif"
         />
       )}
@@ -171,7 +171,7 @@ export function OptimizedImage({
       {/* WebP 포맷 (좋은 효율) */}
       {formatSupport.webp && (
         <source
-          srcSet={generateResponsiveSrcsets(src, originalFormat, imageSizes).webp}
+          srcSet={generateResponsiveSrcsets(src, originalFormat, imageSizes || [320, 640, 1024, 1280]).webp}
           type="image/webp"
         />
       )}
@@ -210,7 +210,7 @@ export function ResponsiveImage({
   return (
     <img
       src={src}
-      srcSet={generateSrcset(src, 'jpg', imageSizes)}
+      srcSet={generateSrcset(src, 'jpg', imageSizes || [320, 640, 1024, 1280])}
       alt={alt}
       className={`responsive-image ${className || ''}`}
       {...imgProps}
