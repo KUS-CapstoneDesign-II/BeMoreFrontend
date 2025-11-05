@@ -1,0 +1,243 @@
+/**
+ * Optimized Image Styling
+ *
+ * 반응형 이미지 컴포넌트의 스타일
+ * - 이미지 로딩 상태 표시
+ * - 반응형 레이아웃
+ * - 성능 최적화
+ */
+
+/* Picture 요소 (컨테이너) */
+picture {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 기본 이미지 스타일 */
+.optimized-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: opacity 0.3s ease;
+  background-color: #f3f4f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .optimized-image {
+    background-color: #1f2937;
+  }
+}
+
+/* 로딩 상태 */
+.optimized-image.loading {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in-out 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 로드 완료 상태 */
+.optimized-image.loaded {
+  opacity: 1;
+}
+
+/* 반응형 이미지 */
+.responsive-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* 이미지 컨테이너 (aspect ratio 유지) */
+.image-container {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* 4:3 비율 이미지 컨테이너 */
+.image-container--4-3 {
+  aspect-ratio: 4 / 3;
+}
+
+/* 16:9 비율 이미지 컨테이너 */
+.image-container--16-9 {
+  aspect-ratio: 16 / 9;
+}
+
+/* 1:1 비율 이미지 컨테이너 */
+.image-container--1-1 {
+  aspect-ratio: 1 / 1;
+}
+
+/* 로딩 상태 스켈레톤 */
+.image-skeleton {
+  width: 100%;
+  height: auto;
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e0e0e0 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .image-skeleton {
+    background: linear-gradient(
+      90deg,
+      #1f2937 25%,
+      #374151 50%,
+      #1f2937 75%
+    );
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 이미지 갤러리 레이아웃 */
+.image-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  width: 100%;
+}
+
+.image-gallery__item {
+  width: 100%;
+  height: auto;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.image-gallery__item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.15);
+}
+
+/* 메인 이미지 (Hero) */
+.image-hero {
+  width: 100%;
+  height: auto;
+  max-height: 500px;
+  object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .image-hero {
+    max-height: 300px;
+  }
+}
+
+/* 썸네일 이미지 */
+.image-thumbnail {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.image-thumbnail:hover {
+  opacity: 0.8;
+}
+
+.image-thumbnail--small {
+  width: 50px;
+  height: 50px;
+}
+
+.image-thumbnail--large {
+  width: 150px;
+  height: 150px;
+}
+
+/* 이미지 에러 상태 */
+.image-error {
+  width: 100%;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .image-error {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #9ca3af;
+  }
+}
+
+/* 접근성: 포커스 스타일 */
+picture img:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* 접근성: 감소된 모션 설정 */
+@media (prefers-reduced-motion: reduce) {
+  .optimized-image,
+  .image-gallery__item,
+  .image-thumbnail,
+  .image-skeleton {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* 성능 최적화: will-change */
+.optimized-image.loading {
+  will-change: opacity;
+}
+
+.image-gallery__item {
+  will-change: transform;
+}
+
+/* Print 스타일 */
+@media print {
+  .optimized-image,
+  .responsive-image {
+    max-width: 100%;
+    page-break-inside: avoid;
+  }
+
+  .image-skeleton {
+    display: none;
+  }
+}
