@@ -10,6 +10,7 @@ import { ToastProvider } from './contexts/ToastContext'
 import { ErrorBoundary } from './components/Common/ErrorBoundary'
 import { AccessibilityProvider } from './contexts/AccessibilityContext'
 import { ModalManagerProvider } from './contexts/ModalManagerContext'
+import { SessionContextProvider } from './contexts/SessionContext'
 import { registerServiceWorker, initPWAInstall } from './utils/registerSW'
 import { initA11y } from './utils/a11y'
 
@@ -34,7 +35,9 @@ createRoot(document.getElementById('root')!).render(
               <ErrorBoundary>
                 <ToastProvider>
                   <ModalManagerProvider>
-                    <AppRouter />
+                    <SessionContextProvider>
+                      <AppRouter />
+                    </SessionContextProvider>
                   </ModalManagerProvider>
                 </ToastProvider>
               </ErrorBoundary>
