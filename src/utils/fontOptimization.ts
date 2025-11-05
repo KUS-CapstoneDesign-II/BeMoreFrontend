@@ -176,8 +176,8 @@ export async function waitForFontLoad(fontName: string): Promise<void> {
   try {
     fontLoadingTracker.startTracking(fontName);
 
-    // @ts-expect-error - FontFaceSet API not fully typed
-    await document.fonts.load(`1em '${fontName}'`);
+    // FontFaceSet API works at runtime (fonts.load returns Promise)
+    await (document.fonts as any).load(`1em '${fontName}'`);
 
     fontLoadingTracker.recordLoad(fontName);
   } catch (error) {
