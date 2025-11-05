@@ -169,6 +169,82 @@ export function sanitizeUrlForLogging(url: string): string {
   }
 }
 
+/**
+ * CSRF 토큰 관리
+ */
+let cachedCsrfToken: string | null = null;
+const CSRF_STORAGE_KEY = 'bemore_csrf_token';
+const CSRF_COOKIE_NAME = 'csrf-token';
+
+export function generateCsrfToken(): string {
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+export function getCsrfToken(): string {
+  if (cachedCsrfToken) {
+    return cachedCsrfToken;
+  }
+
+  try {
+    // localStorage에서 CSRF 토큰 읽기
+    const stored = localStorage.getItem(CSRF_STORAGE_KEY);
+    if (stored) {
+      cachedCsrfToken = stored;
+      return stored;
+    }
+
+    // 쿠키에서 읽기 시도
+    const cookieValue = getCookie(CSRF_COOKIE_NAME);
+    if (cookieValue) {
+      localStorage.setItem(CSRF_STORAGE_KEY, cookieValue);
+      cachedCsrfToken = cookieValue;
+      return cookieValue;
+    }
+
+    // 새 토큰 생성
+    const newToken = generateCsrfToken();
+    localStorage.setItem(CSRF_STORAGE_KEY, newToken);
+    cachedCsrfToken = newToken;
+    return newToken;
+  } catch {
+    // localStorage 사용 불가능시 메모리 기반
+    if (!cachedCsrfToken) {
+      cachedCsrfToken = generateCsrfToken();
+    }
+    return cachedCsrfToken;
+  }
+}
+
+export function setCsrfToken(token: string): void {
+  cachedCsrfToken = token;
+  try {
+    localStorage.setItem(CSRF_STORAGE_KEY, token);
+  } catch {}
+}
+
+/**
+ * 쿠키에서 값 읽기
+ */
+export function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') {
+    return null;
+  }
+
+  const nameEQ = name + '=';
+  const cookies = document.cookie.split(';');
+
+  for (const cookie of cookies) {
+    const trimmed = cookie.trim();
+    if (trimmed.startsWith(nameEQ)) {
+      return decodeURIComponent(trimmed.substring(nameEQ.length));
+    }
+  }
+
+  return null;
+}
+
 export default {
   generateRequestId,
   getClientVersion,
@@ -177,4 +253,8 @@ export default {
   timestampTracker,
   generateSecurityHeaders,
   sanitizeUrlForLogging,
+  generateCsrfToken,
+  getCsrfToken,
+  setCsrfToken,
+  getCookie,
 };

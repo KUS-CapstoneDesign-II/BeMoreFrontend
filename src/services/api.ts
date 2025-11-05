@@ -7,6 +7,7 @@ import {
   getDeviceId,
   parseRateLimitHeaders,
   timestampTracker,
+  getCsrfToken,
 } from '../utils/requestTracking';
 import type {
   ApiResponse,
@@ -61,6 +62,15 @@ api.interceptors.request.use(
         (config.headers as any)['Authorization'] = `Bearer ${token}`;
       }
     } catch {}
+
+    // CSRF 토큰 추가 (POST, PUT, DELETE, PATCH 요청)
+    const method = config.method?.toUpperCase();
+    if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+      try {
+        const csrfToken = getCsrfToken();
+        (config.headers as any)['X-CSRF-Token'] = csrfToken;
+      } catch {}
+    }
 
     // 개발 환경 로깅
     if (import.meta.env.DEV) {
