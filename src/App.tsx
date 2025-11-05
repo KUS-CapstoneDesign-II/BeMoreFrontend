@@ -4,23 +4,15 @@ import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard, EmotionTimeline } from './components/Emotion';
 import { SessionControls } from './components/Session';
-import { Onboarding } from './components/Onboarding';
 // import { Landing } from './components/Landing/Landing';
-import { SessionSummaryModal } from './components/Session/SessionSummaryModal';
-import { SessionResult } from './components/Session/SessionResult';
-import { Dashboard } from './pages/Home/Dashboard';
-import { ResumePromptModal } from './components/Session/ResumePromptModal';
-import { PrivacyPolicyModal, TermsOfServiceModal } from './components/Common/LegalModals';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConsentDialog } from './components/Common/ConsentDialog';
 import { NetworkStatusBanner } from './components/Common/NetworkStatusBanner';
 import { SessionTimer } from './components/Common/SessionTimer';
-import { IdleTimeoutModal } from './components/Common/IdleTimeoutModal';
 import { useIdleTimeout } from './hooks/useIdleTimeout';
 import { useConsent } from './contexts/ConsentContext';
 import { useKeepAlive } from './utils/keepAlive';
 import { SettingsPanel } from './components/Settings/SettingsPanel';
-import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
 import { sessionAPI } from './services/api';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -39,6 +31,15 @@ import { Logger } from './config/env';
 // Lazy load non-critical components
 const AIChat = lazy(() => import('./components/AIChat').then(module => ({ default: module.AIChat })));
 const VADMonitor = lazy(() => import('./components/VAD').then(module => ({ default: module.VADMonitor })));
+const Onboarding = lazy(() => import('./components/Onboarding').then(module => ({ default: module.Onboarding })));
+const SessionSummaryModal = lazy(() => import('./components/Session/SessionSummaryModal').then(module => ({ default: module.SessionSummaryModal })));
+const SessionResult = lazy(() => import('./components/Session/SessionResult').then(module => ({ default: module.SessionResult })));
+const ResumePromptModal = lazy(() => import('./components/Session/ResumePromptModal').then(module => ({ default: module.ResumePromptModal })));
+const PrivacyPolicyModal = lazy(() => import('./components/Common/LegalModals').then(module => ({ default: module.PrivacyPolicyModal })));
+const TermsOfServiceModal = lazy(() => import('./components/Common/LegalModals').then(module => ({ default: module.TermsOfServiceModal })));
+const IdleTimeoutModal = lazy(() => import('./components/Common/IdleTimeoutModal').then(module => ({ default: module.IdleTimeoutModal })));
+const KeyboardShortcutsHelp = lazy(() => import('./components/KeyboardShortcutsHelp').then(module => ({ default: module.KeyboardShortcutsHelp })));
+const Dashboard = lazy(() => import('./pages/Home/Dashboard').then(module => ({ default: module.Dashboard })));
 
 const ONBOARDING_KEY = 'bemore_onboarding_completed';
 
@@ -687,24 +688,30 @@ function App() {
       {/* 랜딩 */}
       {!sessionId && !showOnboarding && (
         <div className="mb-4">
-          <Dashboard />
+          <Suspense fallback={<div className="flex items-center justify-center h-96"><span className="text-gray-400">로딩중...</span></div>}>
+            <Dashboard />
+          </Suspense>
         </div>
       )}
 
       {/* 온보딩 플로우 */}
       {showOnboarding && (
-        <Onboarding
-          onComplete={handleOnboardingComplete}
-          onSkip={handleOnboardingSkip}
-        />
+        <Suspense fallback={<div className="fixed inset-0 bg-white dark:bg-gray-950" />}>
+          <Onboarding
+            onComplete={handleOnboardingComplete}
+            onSkip={handleOnboardingSkip}
+          />
+        </Suspense>
       )}
 
       {/* 키보드 단축키 도움말 */}
-      <KeyboardShortcutsHelp
-        shortcuts={shortcuts}
-        isOpen={showShortcutsHelp}
-        onClose={() => setShowShortcutsHelp(false)}
-      />
+      <Suspense fallback={null}>
+        <KeyboardShortcutsHelp
+          shortcuts={shortcuts}
+          isOpen={showShortcutsHelp}
+          onClose={() => setShowShortcutsHelp(false)}
+        />
+      </Suspense>
 
       {/* 네트워크 상태 */}
       <NetworkStatusBanner />
@@ -777,6 +784,17 @@ function App() {
                   aria-label="세션 시작"
                 >
                   {isLoading ? '시작 중...' : '세션 시작'}
+                </button>
+              )}
+              {/* 세션 히스토리 버튼 */}
+              {!sessionId && (
+                <button
+                  onClick={() => navigate('/history')}
+                  className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-colors"
+                  aria-label="세션 히스토리 보기"
+                  title="이전 세션 목록 보기"
+                >
+                  📋 히스토리
                 </button>
               )}
               {/* 세션 ID */}
@@ -930,11 +948,13 @@ function App() {
 
             {sidebarTab === 'result' && (
               <div className="animate-slide-in-left" style={{animationDelay: '0.05s'}}>
-                <SessionResult
-                  sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''}
-                  onLoadingChange={handleSessionResultLoading}
-                  vadMetrics={vadMetrics}
-                />
+                <Suspense fallback={<div className="flex items-center justify-center h-96"><span className="text-gray-400">로딩중...</span></div>}>
+                  <SessionResult
+                    sessionId={(JSON.parse(localStorage.getItem('bemore_last_session')||'{}')?.sessionId) || sessionId || ''}
+                    onLoadingChange={handleSessionResultLoading}
+                    vadMetrics={vadMetrics}
+                  />
+                </Suspense>
               </div>
             )}
           </div>
@@ -981,67 +1001,77 @@ function App() {
 
       <ConsentDialog isOpen={isDialogOpen} onClose={() => { /* handled by context */ }} />
       <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
-      <IdleTimeoutModal
-        isOpen={idlePromptOpen}
-        onContinue={() => setIdlePromptOpen(false)}
-        onEnd={() => { if (sessionId) handleEndSession(); setIdlePromptOpen(false); }}
-        secondsRemaining={idleSecondsRemaining}
-      />
-      <SessionSummaryModal
-        isOpen={showSummary}
-        onClose={() => {
-          setShowSummary(false);
-          setUserClosedSummary(true);
-        }}
-        onSubmitFeedback={async (rating, note) => {
-          // 🔧 FIX: Get sessionId from prop or localStorage fallback
-          // When session ends and sessionId state becomes null, we still need it for feedback submission
-          let effectiveSessionId = sessionId;
-          if (!effectiveSessionId) {
-            try {
-              const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
-              effectiveSessionId = lastSession.sessionId;
-              if (import.meta.env.DEV) {
-                console.log('📋 Loaded sessionId from localStorage for feedback:', effectiveSessionId);
+      <Suspense fallback={null}>
+        <IdleTimeoutModal
+          isOpen={idlePromptOpen}
+          onContinue={() => setIdlePromptOpen(false)}
+          onEnd={() => { if (sessionId) handleEndSession(); setIdlePromptOpen(false); }}
+          secondsRemaining={idleSecondsRemaining}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <SessionSummaryModal
+          isOpen={showSummary}
+          onClose={() => {
+            setShowSummary(false);
+            setUserClosedSummary(true);
+          }}
+          onSubmitFeedback={async (rating, note) => {
+            // 🔧 FIX: Get sessionId from prop or localStorage fallback
+            // When session ends and sessionId state becomes null, we still need it for feedback submission
+            let effectiveSessionId = sessionId;
+            if (!effectiveSessionId) {
+              try {
+                const lastSession = JSON.parse(localStorage.getItem('bemore_last_session') || '{}');
+                effectiveSessionId = lastSession.sessionId;
+                if (import.meta.env.DEV) {
+                  console.log('📋 Loaded sessionId from localStorage for feedback:', effectiveSessionId);
+                }
+              } catch (error) {
+                Logger.warn('Failed to load sessionId from localStorage', { error });
               }
-            } catch (error) {
-              Logger.warn('Failed to load sessionId from localStorage', { error });
             }
-          }
 
-          if (!effectiveSessionId) {
-            throw new Error('세션 ID가 없습니다. 세션을 다시 시작해주세요.');
-          }
-          try {
-            await sessionAPI.submitFeedback(effectiveSessionId, { rating, note });
-            Logger.info('Feedback submitted successfully');
-
-            // 🔧 FIX: Clean up localStorage after successful feedback submission
-            // Remove sessionId and VAD metrics as the session is now complete
+            if (!effectiveSessionId) {
+              throw new Error('세션 ID가 없습니다. 세션을 다시 시작해주세요.');
+            }
             try {
-              localStorage.removeItem('bemore_last_session');
-              Logger.info('Cleaned up session data from localStorage after feedback');
-            } catch (cleanupError) {
-              Logger.warn('Failed to clean up localStorage after feedback', { cleanupError });
+              await sessionAPI.submitFeedback(effectiveSessionId, { rating, note });
+              Logger.info('Feedback submitted successfully');
+
+              // 🔧 FIX: Clean up localStorage after successful feedback submission
+              // Remove sessionId and VAD metrics as the session is now complete
+              try {
+                localStorage.removeItem('bemore_last_session');
+                Logger.info('Cleaned up session data from localStorage after feedback');
+              } catch (cleanupError) {
+                Logger.warn('Failed to clean up localStorage after feedback', { cleanupError });
+              }
+            } catch (err) {
+              Logger.error('Failed to submit feedback', { error: err instanceof Error ? err.message : String(err) });
+              throw err instanceof Error ? err : new Error('피드백 제출에 실패했습니다.');
             }
-          } catch (err) {
-            Logger.error('Failed to submit feedback', { error: err instanceof Error ? err.message : String(err) });
-            throw err instanceof Error ? err : new Error('피드백 제출에 실패했습니다.');
-          }
-        }}
-        durationLabel={sessionStartAt ? (() => {
-          const ms = Date.now() - sessionStartAt;
-          const s = Math.floor(ms / 1000);
-          const m = Math.floor(s / 60);
-          const h = Math.floor(m / 60);
-          const mm = String(m % 60).padStart(2, '0');
-          const ss = String(s % 60).padStart(2, '0');
-          return h > 0 ? `${String(h).padStart(2,'0')}:${mm}:${ss}` : `${mm}:${ss}`;
-        })() : '00:00'}
-      />
-      <ResumePromptModal isOpen={showResumePrompt} onResume={resumeLastSession} onDiscard={discardLastSession} sessionStartedAt={resumeSessionStartedAt} />
-      <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
-      <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+          }}
+          durationLabel={sessionStartAt ? (() => {
+            const ms = Date.now() - sessionStartAt;
+            const s = Math.floor(ms / 1000);
+            const m = Math.floor(s / 60);
+            const h = Math.floor(m / 60);
+            const mm = String(m % 60).padStart(2, '0');
+            const ss = String(s % 60).padStart(2, '0');
+            return h > 0 ? `${String(h).padStart(2,'0')}:${mm}:${ss}` : `${mm}:${ss}`;
+          })() : '00:00'}
+        />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ResumePromptModal isOpen={showResumePrompt} onResume={resumeLastSession} onDiscard={discardLastSession} sessionStartedAt={resumeSessionStartedAt} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PrivacyPolicyModal isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+      </Suspense>
+      <Suspense fallback={null}>
+        <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
+      </Suspense>
 
       {/* 🎬 세션 종료 후 결과 로딩 모달 - 끝에 배치하여 다른 요소의 영향을 받지 않도록 */}
       {isWaitingForSessionEnd && (
