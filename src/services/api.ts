@@ -26,7 +26,7 @@ const runtimeEnv = (typeof window !== 'undefined' ? (window as unknown as { __EN
 const API_BASE_URL: string =
   (import.meta.env.VITE_API_URL as string) ||
   (runtimeEnv.API_URL as string) ||
-  'http://localhost:8000';
+  (import.meta.env.PROD ? 'https://bemorebackend.onrender.com' : 'http://localhost:8000');
 
 // Axios 인스턴스 생성
 const api = axios.create({

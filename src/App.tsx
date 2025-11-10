@@ -49,7 +49,7 @@ const API_URL = (
   (runtimeEnv.API_URL as string) ||
   (import.meta.env.VITE_API_URL as string) ||
   (import.meta.env.VITE_API_BASE_URL as string) ||
-  'http://localhost:8000'
+  (import.meta.env.PROD ? 'https://bemorebackend.onrender.com' : 'http://localhost:8000')
 ) as string;
 const WS_URL = (() => {
   let url = (runtimeEnv.WS_URL as string) || (import.meta.env.VITE_WS_URL as string);

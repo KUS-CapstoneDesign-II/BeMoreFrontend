@@ -48,7 +48,7 @@ export function useSessionManager(): UseSessionManagerReturn {
   const apiUrlRef = useRef(
     (import.meta.env.VITE_API_URL as string) ||
     (import.meta.env.VITE_API_BASE_URL as string) ||
-    'http://localhost:8000'
+    (import.meta.env.PROD ? 'https://bemorebackend.onrender.com' : 'http://localhost:8000')
   );
 
   /**
