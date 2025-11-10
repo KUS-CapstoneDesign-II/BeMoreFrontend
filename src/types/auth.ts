@@ -10,9 +10,9 @@ export interface LoginRequest {
 }
 
 export interface SignupRequest {
+  username: string;
   email: string;
   password: string;
-  name: string;
 }
 
 export interface RefreshTokenRequest {
@@ -20,7 +20,7 @@ export interface RefreshTokenRequest {
 }
 
 export interface UpdateProfileRequest {
-  name?: string;
+  username?: string;
   profileImage?: string;
 }
 

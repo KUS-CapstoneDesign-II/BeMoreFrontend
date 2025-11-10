@@ -846,22 +846,20 @@ export const authAPI = {
     accessToken: string;
     refreshToken: string;
     user: {
-      id: string;
+      id: number;
+      username: string;
       email: string;
-      name: string;
       profileImage?: string;
-      createdAt: string;
     };
   }> => {
     const response = await api.post<ApiResponse<{
       accessToken: string;
       refreshToken: string;
       user: {
-        id: string;
+        id: number;
+        username: string;
         email: string;
-        name: string;
         profileImage?: string;
-        createdAt: string;
       };
     }>>('/api/auth/login', { email, password });
 
@@ -875,24 +873,22 @@ export const authAPI = {
   /**
    * 회원가입
    */
-  signup: async (email: string, password: string, name: string): Promise<{
+  signup: async (email: string, password: string, username: string): Promise<{
     user: {
-      id: string;
+      id: number;
+      username: string;
       email: string;
-      name: string;
       profileImage?: string;
-      createdAt: string;
     };
   }> => {
     const response = await api.post<ApiResponse<{
       user: {
-        id: string;
+        id: number;
+        username: string;
         email: string;
-        name: string;
         profileImage?: string;
-        createdAt: string;
       };
-    }>>('/api/auth/signup', { email, password, name });
+    }>>('/api/auth/signup', { username, email, password });
 
     if (!response.data.success || !response.data.data) {
       throw new Error(response.data.error?.message || '회원가입에 실패했습니다');
@@ -915,22 +911,20 @@ export const authAPI = {
   /**
    * 프로필 업데이트
    */
-  updateProfile: async (data: { name?: string; profileImage?: string }): Promise<{
+  updateProfile: async (data: { username?: string; profileImage?: string }): Promise<{
     user: {
-      id: string;
+      id: number;
+      username: string;
       email: string;
-      name: string;
       profileImage?: string;
-      createdAt: string;
     };
   }> => {
     const response = await api.put<ApiResponse<{
       user: {
-        id: string;
+        id: number;
+        username: string;
         email: string;
-        name: string;
         profileImage?: string;
-        createdAt: string;
       };
     }>>('/api/auth/profile', data);
 
@@ -965,20 +959,18 @@ export const authAPI = {
    */
   me: async (): Promise<{
     user: {
-      id: string;
+      id: number;
+      username: string;
       email: string;
-      name: string;
       profileImage?: string;
-      createdAt: string;
     };
   }> => {
     const response = await api.get<ApiResponse<{
       user: {
-        id: string;
+        id: number;
+        username: string;
         email: string;
-        name: string;
         profileImage?: string;
-        createdAt: string;
       };
     }>>('/api/auth/me');
 

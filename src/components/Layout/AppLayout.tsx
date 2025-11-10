@@ -55,7 +55,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             {user && (
               <div className="user-info" style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem' }}>
                 <span className="user-name" style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-                  {user.name}
+                  {user.username}
                 </span>
                 <button
                   onClick={handleLogout}

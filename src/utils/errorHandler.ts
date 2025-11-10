@@ -16,7 +16,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   // Validation Errors
   INVALID_EMAIL: '유효하지 않은 이메일 형식입니다.',
   INVALID_PASSWORD: '비밀번호는 최소 8자 이상이어야 합니다.',
-  INVALID_NAME: '이름을 입력해주세요.',
+  INVALID_USERNAME: '사용자명을 입력해주세요.',
   PASSWORD_TOO_WEAK: '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.',
 
   // Server Errors
@@ -164,17 +164,25 @@ export function validatePassword(password: string): string | null {
 }
 
 /**
- * 이름 유효성 검사
+ * 사용자명 유효성 검사
  */
-export function validateName(name: string): string | null {
-  if (!name || name.trim().length === 0) {
-    return ERROR_MESSAGES.INVALID_NAME;
+export function validateUsername(username: string): string | null {
+  if (!username || username.trim().length === 0) {
+    return ERROR_MESSAGES.INVALID_USERNAME;
   }
-  if (name.trim().length < 2) {
-    return '이름은 최소 2자 이상이어야 합니다.';
+  if (username.trim().length < 2) {
+    return '사용자명은 최소 2자 이상이어야 합니다.';
   }
-  if (name.trim().length > 50) {
-    return '이름은 최대 50자까지 입력 가능합니다.';
+  if (username.trim().length > 50) {
+    return '사용자명은 최대 50자까지 입력 가능합니다.';
   }
   return null;
+}
+
+/**
+ * 이름 유효성 검사 (하위 호환성을 위해 유지)
+ * @deprecated validateUsername을 사용하세요
+ */
+export function validateName(name: string): string | null {
+  return validateUsername(name);
 }

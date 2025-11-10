@@ -4,11 +4,10 @@ import { authAPI } from '../services/api';
 import { logError } from '../utils/errorHandler';
 
 export interface User {
-  id: string;
+  id: number;
+  username: string;
   email: string;
-  name: string;
   profileImage?: string;
-  createdAt: string;
 }
 
 interface AuthContextType {
@@ -16,7 +15,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string) => Promise<void>;
+  signup: (email: string, password: string, username: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<void>;
   refreshAuth: () => Promise<void>;
@@ -77,9 +76,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // 회원가입
-  const signup = async (email: string, password: string, name: string) => {
+  const signup = async (email: string, password: string, username: string) => {
     try {
-      await authAPI.signup(email, password, name);
+      await authAPI.signup(email, password, username);
       // 회원가입 성공 후 자동 로그인하지 않음 (이메일 인증 등을 고려)
     } catch (error) {
       logError(error, 'Signup');

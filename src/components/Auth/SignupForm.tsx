@@ -6,7 +6,7 @@ import {
   getErrorMessage,
   validateEmail,
   validatePassword,
-  validateName,
+  validateUsername,
 } from '../../utils/errorHandler';
 
 export function SignupForm() {
@@ -14,14 +14,14 @@ export function SignupForm() {
   const { signup } = useAuth();
 
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
   });
 
   const [errors, setErrors] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -50,17 +50,17 @@ export function SignupForm() {
   // 폼 유효성 검사
   const validateForm = (): boolean => {
     const newErrors = {
-      name: '',
+      username: '',
       email: '',
       password: '',
       confirmPassword: '',
       general: '',
     };
 
-    // 이름 검증
-    const nameError = validateName(formData.name);
-    if (nameError) {
-      newErrors.name = nameError;
+    // 사용자명 검증
+    const usernameError = validateUsername(formData.username);
+    if (usernameError) {
+      newErrors.username = usernameError;
     }
 
     // 이메일 검증
@@ -100,7 +100,7 @@ export function SignupForm() {
     setIsSubmitting(true);
 
     try {
-      await signup(formData.email, formData.password, formData.name);
+      await signup(formData.email, formData.password, formData.username);
 
       // 회원가입 성공
       setIsSuccess(true);
@@ -168,28 +168,28 @@ export function SignupForm() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* 이름 입력 */}
+          {/* 사용자명 입력 */}
           <div className="mb-4">
             <label
-              htmlFor="name"
+              htmlFor="username"
               className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2"
             >
-              이름
+              사용자명
             </label>
             <input
-              id="name"
+              id="username"
               type="text"
-              name="name"
-              value={formData.name}
+              name="username"
+              value={formData.username}
               onChange={handleChange}
               className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                errors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
               }`}
-              placeholder="홍길동"
+              placeholder="user123"
               disabled={isSubmitting}
-              autoComplete="name"
+              autoComplete="username"
             />
-            {errors.name && <p className="text-red-500 text-xs italic mt-1">{errors.name}</p>}
+            {errors.username && <p className="text-red-500 text-xs italic mt-1">{errors.username}</p>}
           </div>
 
           {/* 이메일 입력 */}
