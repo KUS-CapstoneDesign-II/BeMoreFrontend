@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { authAPI } from '../services/api';
+import { logError } from '../utils/errorHandler';
 
 export interface User {
   id: string;
@@ -65,22 +67,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 로그인
   const login = async (email: string, password: string) => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error('로그인에 실패했습니다');
-      }
-
-      const data = await response.json();
+      const data = await authAPI.login(email, password);
       saveTokens(data.accessToken, data.refreshToken);
       saveUser(data.user);
     } catch (error) {
-      console.error('Login error:', error);
+      logError(error, 'Login');
       throw error;
     }
   };
@@ -88,20 +79,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // 회원가입
   const signup = async (email: string, password: string, name: string) => {
     try {
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name }),
-      });
-
-      if (!response.ok) {
-        throw new Error('회원가입에 실패했습니다');
-      }
-
+      await authAPI.signup(email, password, name);
       // 회원가입 성공 후 자동 로그인하지 않음 (이메일 인증 등을 고려)
     } catch (error) {
-      console.error('Signup error:', error);
+      logError(error, 'Signup');
       throw error;
     }
   };
@@ -111,16 +92,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const token = getAccessToken();
       if (token) {
-        // TODO: Replace with actual API call
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        await authAPI.logout();
       }
     } catch (error) {
-      console.error('Logout error:', error);
+      logError(error, 'Logout');
     } finally {
       clearTokens();
       setUser(null);
@@ -135,24 +110,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('인증이 필요합니다');
       }
 
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('프로필 업데이트에 실패했습니다');
-      }
-
-      const updatedUser = await response.json();
-      saveUser(updatedUser.user);
+      const result = await authAPI.updateProfile(data);
+      saveUser(result.user);
     } catch (error) {
-      console.error('Update profile error:', error);
+      logError(error, 'Update profile');
       throw error;
     }
   };
@@ -165,21 +126,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Refresh token not found');
       }
 
-      // TODO: Replace with actual API call
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
-
-      const data = await response.json();
+      const data = await authAPI.refreshToken(refreshToken);
       saveTokens(data.accessToken, data.refreshToken);
     } catch (error) {
-      console.error('Refresh token error:', error);
+      logError(error, 'Refresh token');
       // 토큰 갱신 실패 시 로그아웃
       clearTokens();
       setUser(null);
@@ -195,17 +145,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (token && savedUser) {
         try {
-          // TODO: 서버에 토큰 유효성 검증
-          // const response = await fetch('/api/auth/me', {
-          //   headers: { 'Authorization': `Bearer ${token}` }
-          // });
-          // const userData = await response.json();
-          // saveUser(userData.user);
-
-          // 임시: LocalStorage의 사용자 정보 사용
-          setUser(JSON.parse(savedUser));
+          // 서버에 토큰 유효성 검증
+          const userData = await authAPI.me();
+          saveUser(userData.user);
         } catch (error) {
-          console.error('Auth init error:', error);
+          logError(error, 'Auth init');
+          // 토큰이 유효하지 않으면 로그아웃
           clearTokens();
           setUser(null);
         }
@@ -225,7 +170,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         await refreshAuth();
       } catch (error) {
-        console.error('Auto refresh failed:', error);
+        logError(error, 'Auto refresh');
       }
     }, 30 * 60 * 1000); // 30분
 

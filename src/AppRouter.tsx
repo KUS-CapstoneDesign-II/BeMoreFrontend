@@ -1,7 +1,14 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import { AppLayout } from './components/Layout/AppLayout';
+import { AuthGuard } from './components/Auth/AuthGuard';
+import { PublicRoute } from './components/Auth/PublicRoute';
 
+// Lazy loaded pages
+const LandingPage = lazy(() => import('./pages/Landing/LandingPage'));
+const LoginPage = lazy(() => import('./pages/Auth/LoginPage'));
+const SignupPage = lazy(() => import('./pages/Auth/SignupPage'));
 const SessionApp = lazy(() => import('./App'));
 const Dashboard = lazy(() => import('./pages/Home/Dashboard').then(m => ({ default: m.Dashboard })));
 const HistoryPage = lazy(() => import('./pages/History/History'));
@@ -18,17 +25,82 @@ function Fallback() {
 export default function AppRouter() {
   return (
     <BrowserRouter>
-      <AppLayout>
+      <AuthProvider>
         <Suspense fallback={<Fallback />}>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/session" element={<SessionApp />} />
-            <Route path="/history" element={<HistoryPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            {/* Public Routes */}
+            <Route
+              path="/"
+              element={
+                <PublicRoute>
+                  <LandingPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/auth/login"
+              element={
+                <PublicRoute>
+                  <LoginPage />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/auth/signup"
+              element={
+                <PublicRoute>
+                  <SignupPage />
+                </PublicRoute>
+              }
+            />
+
+            {/* Protected Routes */}
+            <Route
+              path="/app"
+              element={
+                <AuthGuard>
+                  <AppLayout>
+                    <Dashboard />
+                  </AppLayout>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/app/session"
+              element={
+                <AuthGuard>
+                  <AppLayout>
+                    <SessionApp />
+                  </AppLayout>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/app/history"
+              element={
+                <AuthGuard>
+                  <AppLayout>
+                    <HistoryPage />
+                  </AppLayout>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/app/settings"
+              element={
+                <AuthGuard>
+                  <AppLayout>
+                    <SettingsPage />
+                  </AppLayout>
+                </AuthGuard>
+              }
+            />
+
+            {/* Catch all - redirect to landing page */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
-      </AppLayout>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
