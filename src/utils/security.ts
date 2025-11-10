@@ -101,7 +101,7 @@ export function setXFrameOptions(): void {
  * - HttpOnly: JavaScript 접근 불가 (XSS 방지)
  * - SameSite=Strict: CSRF 공격 방지
  */
-export function getSecureCookieOptions(): Record<string, any> {
+export function getSecureCookieOptions(): Record<string, unknown> {
   return {
     secure: import.meta.env.PROD, // 프로덕션에서만 HTTPS 강제
     httpOnly: true, // JavaScript 접근 불가
@@ -491,7 +491,7 @@ export function generateCsrfToken(): string {
  * @param data - 로깅 객체
  * @returns 정제된 로깅 객체
  */
-export function sanitizeLogData(data: Record<string, any>): Record<string, any> {
+export function sanitizeLogData(data: Record<string, unknown>): Record<string, unknown> {
   const sensitiveKeys = ['password', 'token', 'secret', 'apiKey', 'sessionId', 'ssn', 'creditCard'];
   const sanitized = { ...data };
 
