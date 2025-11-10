@@ -11,7 +11,7 @@ export const dashboardAPI = {
   /**
    * 대시보드 요약 조회 (자동 재시도 포함)
    */
-  summary: async (): Promise<any> => {
+  summary: async (): Promise<unknown> => {
     const retryResult = await retryWithBackoff(
       async () => {
         const response = await apiClient.get<ApiResponse>('/api/dashboard/summary');

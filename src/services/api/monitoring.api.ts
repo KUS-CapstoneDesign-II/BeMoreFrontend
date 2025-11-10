@@ -10,7 +10,7 @@ export const monitoringAPI = {
   /**
    * 에러 통계 조회
    */
-  getErrorStats: async (): Promise<any> => {
+  getErrorStats: async (): Promise<unknown> => {
     const response = await apiClient.get<ApiResponse>('/api/monitoring/error-stats');
 
     if (!response.data.success || !response.data.data) {
@@ -23,7 +23,7 @@ export const monitoringAPI = {
   /**
    * 헬스 체크
    */
-  healthCheck: async (): Promise<any> => {
+  healthCheck: async (): Promise<unknown> => {
     const response = await apiClient.get<ApiResponse>('/api/monitoring/health');
 
     if (!response.data.success || !response.data.data) {

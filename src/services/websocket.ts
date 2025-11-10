@@ -144,7 +144,8 @@ export class ReconnectingWebSocket {
    */
   private processIncomingMessage(message: WSMessage): boolean {
     // Check if message has sequence number
-    const seq = (message as any).seq;
+    const messageWithSeq = message as WSMessage & { seq?: number };
+    const seq = messageWithSeq.seq;
 
     if (seq !== undefined && typeof seq === 'number') {
       // Duplicate detection: check if we've seen this seq before
@@ -340,7 +341,7 @@ export class ReconnectingWebSocket {
   /**
    * 메시지 전송
    */
-  send(data: any): void {
+  send(data: unknown): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       const message = typeof data === 'string' ? data : JSON.stringify(data);
       this.ws.send(message);
