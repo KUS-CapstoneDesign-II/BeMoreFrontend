@@ -88,15 +88,20 @@ export function getHttpErrorMessage(status: number): string {
  * ApiError 타입 가드
  */
 export function isApiError(error: unknown): error is ApiError {
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
+  if (!('success' in error) || error.success !== false || !('error' in error)) {
+    return false;
+  }
+
+  const errorObj = (error as { error: unknown }).error;
   return (
-    typeof error === 'object' &&
-    error !== null &&
-    'success' in error &&
-    error.success === false &&
-    'error' in error &&
-    typeof (error as any).error === 'object' &&
-    'code' in (error as any).error &&
-    'message' in (error as any).error
+    typeof errorObj === 'object' &&
+    errorObj !== null &&
+    'code' in errorObj &&
+    'message' in errorObj
   );
 }
 
@@ -119,10 +124,13 @@ export interface ValidationError {
 
 export function getValidationErrors(error: ApiError): ValidationError[] {
   if (error.error.details && Array.isArray(error.error.details)) {
-    return error.error.details.map((detail: any) => ({
-      field: detail.field || 'unknown',
-      message: detail.message || ERROR_MESSAGES.UNKNOWN_ERROR,
-    }));
+    return error.error.details.map((detail: unknown) => {
+      const detailObj = detail as { field?: string; message?: string };
+      return {
+        field: detailObj.field || 'unknown',
+        message: detailObj.message || ERROR_MESSAGES.UNKNOWN_ERROR,
+      };
+    });
   }
   return [];
 }

@@ -11,7 +11,7 @@ export const userAPI = {
   /**
    * 사용자 설정 조회 (자동 재시도 포함)
    */
-  getPreferences: async (): Promise<any> => {
+  getPreferences: async (): Promise<unknown> => {
     const retryResult = await retryWithBackoff(
       async () => {
         const response = await apiClient.get<ApiResponse>('/api/user/preferences');
@@ -37,7 +37,7 @@ export const userAPI = {
   /**
    * 사용자 설정 저장 (자동 재시도 포함)
    */
-  setPreferences: async (preferences: any): Promise<any> => {
+  setPreferences: async (preferences: unknown): Promise<unknown> => {
     const retryResult = await retryWithBackoff(
       async () => {
         const response = await apiClient.put<ApiResponse>('/api/user/preferences', {
