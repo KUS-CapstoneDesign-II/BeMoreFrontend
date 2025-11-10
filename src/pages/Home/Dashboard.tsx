@@ -17,6 +17,13 @@ export function Dashboard({ onResumeSession, onStartSession }: DashboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [hasLastSession, setHasLastSession] = useState(false);
 
+  // Debug: Log props on mount and changes
+  useEffect(() => {
+    console.log('[Dashboard] Component mounted/updated');
+    console.log('[Dashboard] onStartSession prop:', onStartSession);
+    console.log('[Dashboard] onResumeSession prop:', onResumeSession);
+  }, [onStartSession, onResumeSession]);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -105,7 +112,19 @@ export function Dashboard({ onResumeSession, onStartSession }: DashboardProps) {
         <h2 className="text-2xl font-bold mb-2">심리 상담 세션 시작하기</h2>
         <p className="text-sm opacity-90 mb-4">AI 심리 상담사와 함께 당신의 감정을 나누어 보세요</p>
         <button
-          onClick={onStartSession || (() => navigate('/session'))}
+          onClick={() => {
+            console.log('[Dashboard] 세션 시작 버튼 클릭됨');
+            console.log('[Dashboard] onStartSession prop:', onStartSession);
+            console.log('[Dashboard] Type of onStartSession:', typeof onStartSession);
+            if (onStartSession) {
+              console.log('[Dashboard] onStartSession 함수 호출 시작');
+              onStartSession();
+              console.log('[Dashboard] onStartSession 함수 호출 완료');
+            } else {
+              console.log('[Dashboard] onStartSession이 없어서 navigate 호출');
+              navigate('/session');
+            }
+          }}
           className="px-6 py-2 bg-white text-teal-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
         >
           세션 시작 →
