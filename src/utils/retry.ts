@@ -8,7 +8,7 @@ export interface RetryOptions {
   initialDelayMs?: number;
   maxDelayMs?: number;
   backoffMultiplier?: number;
-  shouldRetry?: (error: any, attempt: number) => boolean;
+  shouldRetry?: (error: unknown, attempt: number) => boolean;
 }
 
 /**
@@ -17,7 +17,7 @@ export interface RetryOptions {
 export interface RetryResult<T> {
   success: boolean;
   data?: T;
-  error?: any;
+  error?: unknown;
   attempts: number;
   lastError?: string;
 }
@@ -45,7 +45,7 @@ export async function retryWithBackoff<T>(
     shouldRetry = isRetryableError,
   } = options;
 
-  let lastError: any;
+  let lastError: unknown;
   let lastErrorMessage = '';
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -112,15 +112,20 @@ export async function retryWithBackoff<T>(
  * 네트워크 오류 판별 함수
  * 재시도 가능한 오류인지 확인
  */
-export function isRetryableError(error: any, attempt: number): boolean {
+export function isRetryableError(error: unknown, attempt: number): boolean {
   // 최대 시도 횟수 초과
   if (attempt >= 3) {
     return false;
   }
 
+  // Type guard for error object
+  if (typeof error !== 'object' || error === null) {
+    return false;
+  }
+
   // Axios 에러 확인
-  if (error.response) {
-    const status = error.response.status;
+  if ('response' in error && typeof error.response === 'object' && error.response !== null) {
+    const status = 'status' in error.response ? (error.response.status as number) : null;
 
     // 재시도하면 안 되는 상태 코드
     if (
@@ -146,11 +151,14 @@ export function isRetryableError(error: any, attempt: number): boolean {
   }
 
   // 네트워크 에러 (CORS, 네트워크 타임아웃 등)
+  const code = 'code' in error ? error.code : null;
+  const message = 'message' in error && typeof error.message === 'string' ? error.message : '';
+
   if (
-    error.code === 'ERR_NETWORK' ||
-    error.code === 'ECONNABORTED' ||
-    error.message === 'Network Error' ||
-    error.message?.includes('timeout')
+    code === 'ERR_NETWORK' ||
+    code === 'ECONNABORTED' ||
+    message === 'Network Error' ||
+    message.includes('timeout')
   ) {
     return true;
   }
@@ -176,7 +184,7 @@ export function getRetryMessage(
  * 같은 요청이 여러 번 전송되는 것을 방지
  */
 export class RequestDeduplicator {
-  private pendingRequests = new Map<string, Promise<any>>();
+  private pendingRequests = new Map<string, Promise<unknown>>();
 
   /**
    * 중복 제거된 요청 실행
@@ -188,7 +196,7 @@ export class RequestDeduplicator {
     // 이미 진행 중인 요청이 있으면 그것을 반환
     if (this.pendingRequests.has(requestId)) {
       Logger.debug('📌 중복 요청 제거:', { requestId });
-      return this.pendingRequests.get(requestId)!;
+      return this.pendingRequests.get(requestId)! as Promise<T>;
     }
 
     // 새로운 요청 실행

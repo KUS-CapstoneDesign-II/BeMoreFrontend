@@ -73,7 +73,7 @@ export interface ApiError {
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -83,13 +83,15 @@ export type ApiResponse<T> = T | ApiError;
 // Type Guards
 // ============================================================================
 
-export function isApiError(response: any): response is ApiError {
-  return response && response.success === false && 'error' in response;
+export function isApiError(response: unknown): response is ApiError {
+  return typeof response === 'object' && response !== null && 'success' in response && response.success === false && 'error' in response;
 }
 
-export function isLoginResponse(response: any): response is LoginResponse {
+export function isLoginResponse(response: unknown): response is LoginResponse {
   return (
-    response &&
+    typeof response === 'object' &&
+    response !== null &&
+    'success' in response &&
     response.success === true &&
     'accessToken' in response &&
     'refreshToken' in response &&
@@ -97,13 +99,15 @@ export function isLoginResponse(response: any): response is LoginResponse {
   );
 }
 
-export function isSignupResponse(response: any): response is SignupResponse {
-  return response && response.success === true && 'user' in response && !('accessToken' in response);
+export function isSignupResponse(response: unknown): response is SignupResponse {
+  return typeof response === 'object' && response !== null && 'success' in response && response.success === true && 'user' in response && !('accessToken' in response);
 }
 
-export function isRefreshTokenResponse(response: any): response is RefreshTokenResponse {
+export function isRefreshTokenResponse(response: unknown): response is RefreshTokenResponse {
   return (
-    response &&
+    typeof response === 'object' &&
+    response !== null &&
+    'success' in response &&
     response.success === true &&
     'accessToken' in response &&
     'refreshToken' in response &&
