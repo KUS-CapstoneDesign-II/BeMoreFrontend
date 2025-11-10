@@ -145,7 +145,7 @@ export class BatchManager {
       // 배치 전송 API 호출
       const result = await sessionAPI.batchTick(
         this.sessionId,
-        itemsToSend
+        itemsToSend as unknown as import('../types/session').TimelineCard[]
       );
 
       const transmissionTime = performance.now() - startTime;

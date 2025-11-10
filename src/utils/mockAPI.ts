@@ -5,9 +5,11 @@
  * Enable via: VITE_ENABLE_MOCK_API=true
  */
 
+import type { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+
 interface MockResponse {
   success: boolean;
-  data?: any;
+  data?: unknown;
   error?: {
     message: string;
     code: string;
@@ -84,7 +86,7 @@ export function getMockResponse(url: string): MockResponse | null {
 /**
  * Simulate API call with mock data
  */
-export async function mockAPICall<T = any>(
+export async function mockAPICall<T = unknown>(
   url: string,
   options?: {
     delay?: number;
@@ -116,7 +118,7 @@ export async function mockAPICall<T = any>(
  * Initialize mock API interceptor for axios
  * This patches axios to use mock responses when backend is unavailable
  */
-export function initMockAPIInterceptor(api: any): void {
+export function initMockAPIInterceptor(api: AxiosInstance): void {
   if (!isMockAPIEnabled()) {
     return;
   }
@@ -125,11 +127,12 @@ export function initMockAPIInterceptor(api: any): void {
   const originalRequest = api.request;
 
   // Patch request method to use mock data
-  api.request = async function (config: any) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  api.request = async function (config: InternalAxiosRequestConfig): Promise<any> {
     try {
       // Try real API first
       return await originalRequest.call(this, config);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If real API fails and mock is enabled, use mock response
       if (isMockAPIEnabled()) {
         const mockResponse = getMockResponse(config.url || '');

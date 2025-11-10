@@ -123,7 +123,7 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     (async () => {
       try {
         const data = await sessionAPI.getSummary(effectiveSessionId);
-        if (mounted) setSummary(data);
+        if (mounted) setSummary(data as Record<string, unknown>);
       } catch (e) {
         // 요약 데이터 실패 시 기본값으로 계속 진행
         // 개발 환경에서만 로그 출력

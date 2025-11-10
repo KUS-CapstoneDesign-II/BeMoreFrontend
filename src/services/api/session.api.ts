@@ -7,6 +7,7 @@ import type {
   SessionReport,
   SessionStats,
 } from '../../types';
+import type { TimelineCard } from '../../types/session';
 
 /**
  * Session API
@@ -138,7 +139,7 @@ export const sessionAPI = {
   /**
    * 세션 요약 조회
    */
-  getSummary: async (sessionId: string): Promise<any> => {
+  getSummary: async (sessionId: string): Promise<unknown> => {
     const response = await apiClient.get<ApiResponse>(`/api/session/${sessionId}/summary`);
 
     if (!response.data.success || !response.data.data) {
@@ -161,7 +162,7 @@ export const sessionAPI = {
   /**
    * 세션 리포트 요약 조회
    */
-  getReportSummary: async (sessionId: string): Promise<any> => {
+  getReportSummary: async (sessionId: string): Promise<unknown> => {
     const response = await apiClient.get<ApiResponse>(`/api/session/${sessionId}/report/summary`);
 
     if (!response.data.success || !response.data.data) {
@@ -207,7 +208,7 @@ export const sessionAPI = {
    */
   tick: async (
     sessionId: string,
-    timelineCard: any
+    timelineCard: TimelineCard
   ): Promise<{ success: boolean; minuteIndex: number }> => {
     const requestId = `tick_${sessionId}_${timelineCard.minuteIndex}_${Date.now()}`;
 
@@ -267,7 +268,7 @@ export const sessionAPI = {
    */
   batchTick: async (
     sessionId: string,
-    timelineCards: any[]
+    timelineCards: TimelineCard[]
   ): Promise<{ success: boolean; count: number }> => {
     const requestId = `batch_${sessionId}_${Date.now()}`;
 
