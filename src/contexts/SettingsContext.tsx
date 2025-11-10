@@ -54,6 +54,15 @@ const FONT_SCALE_VALUE: Record<FontScale, number> = {
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
+/**
+ * 인증 토큰 확인 헬퍼
+ * @returns 토큰이 있으면 true, 없으면 false
+ */
+function isAuthenticated(): boolean {
+  const token = localStorage.getItem('bemore_access_token');
+  return !!token;
+}
+
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SettingsState>(() => {
     try {
@@ -83,23 +92,34 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   /**
    * 원격 설정 로드 및 동기화
+   * 로그인한 사용자만 API 호출, 비로그인은 로컬 스토리지만 사용
    */
   const loadRemotePreferences = async () => {
+    // 비로그인 사용자는 API 호출하지 않음
+    if (!isAuthenticated()) {
+      console.debug('[Preferences] Loading from localStorage (no auth)');
+      setApiStatus('idle');
+      return;
+    }
+
+    // 로그인 사용자는 백엔드에서 로드 시도
     setApiStatus('loading');
     setApiError(null);
 
     try {
+      console.debug('[Preferences] Loading from backend (authenticated)');
       const remote = await userAPI.getPreferences();
       if (remote && typeof remote === 'object') {
         setSettings((s) => ({ ...s, ...remote }));
         setApiStatus('success');
+        console.debug('[Preferences] Backend load successful');
       }
     } catch (error) {
-      // API 에러 상태 추적
+      // API 에러 시 로컬 스토리지 사용 (이미 초기화되어 있음)
       const errorMessage = error instanceof Error ? error.message : '설정 로드 실패';
       setApiError(errorMessage);
       setApiStatus('error');
-      console.debug('Failed to load remote preferences, using local defaults', error);
+      console.debug('[Preferences] Backend load failed, using local fallback', error);
     }
   };
 
@@ -131,11 +151,22 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const setNotificationsOptIn = (optIn: boolean) => setSettings((s) => ({ ...s, notificationsOptIn: optIn }));
 
   // Sync to backend when settings change (debounced-like simple)
+  // 로그인한 사용자만 백엔드에 동기화
   useEffect(() => {
     const id = window.setTimeout(() => {
-      userAPI.setPreferences(settings).catch((error) => {
+      // 비로그인 사용자는 로컬 스토리지만 사용 (이미 위 useEffect에서 저장됨)
+      if (!isAuthenticated()) {
+        console.debug('[Preferences] Skip backend sync (no auth)');
+        return;
+      }
+
+      // 로그인 사용자는 백엔드에 동기화
+      console.debug('[Preferences] Syncing to backend');
+      userAPI.setPreferences(settings).then(() => {
+        console.debug('[Preferences] Backend sync successful');
+      }).catch((error) => {
         // Silently fail - local storage is sufficient fallback
-        console.debug('Failed to sync preferences to backend', error);
+        console.debug('[Preferences] Backend sync failed (local saved)', error);
       });
     }, 300);
     return () => window.clearTimeout(id);
