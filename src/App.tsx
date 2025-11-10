@@ -120,7 +120,7 @@ function App() {
       setIsWaitingForSessionEnd(false);
       setShowSummary(true);
     }
-  }, [userClosedSummary]);
+  }, [userClosedSummary, setIsWaitingForSessionEnd, setShowSummary]);
 
   // 데이터 상태
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType | null>(DEMO_MODE ? 'happy' : null);

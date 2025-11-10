@@ -66,27 +66,8 @@ export function AIChat({ className = '' }: AIChatProps) {
     setMessages((prev) => [...prev, msg]);
   };
 
-  const appendAIStream = (chunk: string) => {
-    if (!streamMessageId) return;
-    const safeChunk = chunk.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/javascript:/gi, '');
-    setMessages((prev) => prev.map((m) => m.id === streamMessageId ? { ...m, content: (m.content || '') + safeChunk } : m));
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-  };
-
-  const completeAIStream = () => {
-    setIsStreaming(false);
-    const final = messages.find((m) => m.id === streamMessageId)?.content || '';
-    if (final && synthRef.current) speakText(final);
-    setStreamMessageId(null);
-  };
-
-  const failAIStream = (errorMessage: string) => {
-    setIsStreaming(false);
-    setLastError(errorMessage);
-  };
-
   // TTS로 텍스트 읽기
-  const speakText = (text: string) => {
+  const speakText = useCallback((text: string) => {
     if (!synthRef.current) return;
 
     // 이전 TTS 중지
@@ -102,6 +83,25 @@ export function AIChat({ className = '' }: AIChatProps) {
     utterance.onerror = () => setIsSpeaking(false);
 
     synthRef.current.speak(utterance);
+  }, [setIsSpeaking]);
+
+  const appendAIStream = useCallback((chunk: string) => {
+    if (!streamMessageId) return;
+    const safeChunk = chunk.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/javascript:/gi, '');
+    setMessages((prev) => prev.map((m) => m.id === streamMessageId ? { ...m, content: (m.content || '') + safeChunk } : m));
+    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  }, [streamMessageId, setMessages]);
+
+  const completeAIStream = useCallback(() => {
+    setIsStreaming(false);
+    const final = messages.find((m) => m.id === streamMessageId)?.content || '';
+    if (final && synthRef.current) speakText(final);
+    setStreamMessageId(null);
+  }, [messages, streamMessageId, speakText, setIsStreaming, setStreamMessageId]);
+
+  const failAIStream = (errorMessage: string) => {
+    setIsStreaming(false);
+    setLastError(errorMessage);
   };
 
   // TTS 중지
@@ -158,7 +158,7 @@ export function AIChat({ className = '' }: AIChatProps) {
       window.removeEventListener('ai:fail', onFail as EventListener);
       window.removeEventListener('ai:userMessage', onUserMessage as EventListener);
     };
-  }, [addMessage]);
+  }, [addMessage, appendAIStream, completeAIStream]);
 
   return (
     <div
