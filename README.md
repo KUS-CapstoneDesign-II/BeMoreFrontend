@@ -17,7 +17,8 @@
 ## 🎯 핵심 가치
 
 - **실시간 감정 분석**: MediaPipe Face Mesh 기반 468개 얼굴 랜드마크 추적
-- **AI 대화 지원**: Gemini AI 기반 24시간 상담 서비스
+- **AI 음성 상담**: Gemini AI 기반 음성 대화 + TTS 자동 재생
+- **자동 대화 흐름**: 사용자 음성 → STT → AI 응답 → TTS 완전 자동화
 - **접근성 우선**: WCAG AAA (7:1) 색상 대비, axe-core 통합
 - **오프라인 지원**: PWA + Service Worker (Cache-first 전략)
 - **성능 최적화**: 코드 분할, 이미지 압축, 프레임 샘플링 (15fps → 5fps)
@@ -132,6 +133,7 @@ VITE_ENABLE_MOCK_MEDIAPIPE=false
 |----------|------|------|
 | [@mediapipe/face_mesh](https://developers.google.com/mediapipe/solutions/vision/face_landmarker) | 0.4.1633559619 | 얼굴 랜드마크 추적 (468점) |
 | [@mediapipe/camera_utils](https://developers.google.com/mediapipe) | 0.3.1675466862 | 카메라 유틸리티 |
+| Web Speech API | - | 음성 인식 (STT) & 음성 합성 (TTS) |
 
 ### 모니터링 & 접근성
 
@@ -149,7 +151,9 @@ VITE_ENABLE_MOCK_MEDIAPIPE=false
 - [x] **실시간 얼굴 감정 인식**: MediaPipe Face Mesh 468개 랜드마크
 - [x] **음성 활동 감지 (VAD)**: 실시간 음성 분석 및 시각화
 - [x] **실시간 자막 (STT)**: 음성-텍스트 변환
-- [x] **AI 대화 (Gemini)**: 24시간 AI 상담 서비스
+- [x] **AI 음성 상담**: 자동 대화 흐름 (음성 입력 → AI 응답 → TTS 재생)
+- [x] **감정 기반 AI 응답**: 현재 감정 상태를 고려한 맥락 인식 상담
+- [x] **AI 응답 스트리밍**: 실시간 청크 단위 응답 표시
 - [x] **세션 타임라인 차트**: 감정/VAD 데이터 시각화
 - [x] **PWA 오프라인 지원**: Service Worker v1.2.0
 - [x] **다크 모드**: class-based 테마 전환
@@ -402,12 +406,15 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 - [x] 배포 준비 (빌드 최적화)
 - [x] 성능 최적화 (배치 API, 프레임 샘플링, 이미지 압축)
 
-### 🚧 Phase 10: 품질 개선 (진행 중)
+### 🚧 Phase 10: AI 음성 상담 & 품질 개선 (진행 중)
 
 - [x] SUMMARY.md 생성
 - [x] README.md 개편
 - [x] Prettier 설정 추가
 - [x] Node.js 버전 명시 (package.json engines)
+- [x] **AI 음성 상담 구현**: 음성 입력 → AI 응답 자동화
+- [x] **감정 기반 프롬프트**: 현재 감정을 AI 요청에 포함
+- [x] **스트리밍 응답**: 실시간 AI 응답 표시 + TTS 재생
 - [ ] ESLint `any` 타입 50% 감소
 - [ ] React Hooks 의존성 배열 수정
 - [ ] 테스트 커버리지 목표 설정
@@ -441,6 +448,11 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - **[Compatibility Handoff](./docs/integration/FRONTEND_BACKEND_COMPATIBILITY_HANDOFF.md)** - Phase 9 완료 상태
 - **[Detailed API Reference](./docs/integration/FRONTEND_BACKEND_API_COMPATIBILITY_DETAILED.md)** - 전체 API 스펙
 - **[Implementation Compatibility Validation](./docs/integration/IMPLEMENTATION_COMPATIBILITY_VALIDATION.md)** - 호환성 검증 (100% 달성)
+
+#### 🎙️ AI 음성 상담 통합 (Phase 10)
+
+- **[AI Voice Counseling Backend Request](./BACKEND_AI_VOICE_REQUEST.md)** - AI 음성 상담 WebSocket 엔드포인트 스펙
+- **[Analytics Endpoint Request](./BACKEND_ANALYTICS_ENDPOINT_REQUEST.md)** - 성능 모니터링 엔드포인트 스펙 (선택)
 
 ### Phase 9 성과
 
@@ -482,6 +494,7 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - **2024-11-05**: Phase 9 완료 (성능 최적화, Backend 통합 100%)
 - **2024-10-24**: Phase 1-8 완료 (핵심 기능 구현)
 - **2025-11-06**: SUMMARY.md 추가, README 개편, Prettier 설정
+- **2025-01-10**: Phase 10 AI 음성 상담 구현 완료 (음성 대화 자동화)
 
 자세한 변경 내역은 Git 커밋 로그를 참고하세요.
 

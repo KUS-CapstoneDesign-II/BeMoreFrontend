@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface Message {
   id: string;
@@ -34,7 +34,7 @@ export function AIChat({ className = '' }: AIChatProps) {
   }, []);
 
   // 메시지 추가
-  const addMessage = (role: 'user' | 'ai', content: string) => {
+  const addMessage = useCallback((role: 'user' | 'ai', content: string) => {
     // Basic sanitization: strip script tags
     const safeContent = content.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '').replace(/javascript:/gi, '');
     const newMessage: Message = {
@@ -54,7 +54,7 @@ export function AIChat({ className = '' }: AIChatProps) {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
-  };
+  }, []);
 
   // Streaming helpers
   const beginAIStream = () => {
@@ -139,17 +139,26 @@ export function AIChat({ className = '' }: AIChatProps) {
       const detail = (e as CustomEvent).detail as { error?: string };
       failAIStream(detail?.error || 'AI stream failed');
     };
+    // 🎤 Voice Input → Chat: Listen for user messages from voice input
+    const onUserMessage = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { message?: string; timestamp?: number };
+      if (detail?.message) {
+        addMessage('user', detail.message);
+      }
+    };
     window.addEventListener('ai:begin', onBegin);
     window.addEventListener('ai:append', onAppend as EventListener);
     window.addEventListener('ai:complete', onComplete);
     window.addEventListener('ai:fail', onFail as EventListener);
+    window.addEventListener('ai:userMessage', onUserMessage as EventListener);
     return () => {
       window.removeEventListener('ai:begin', onBegin);
       window.removeEventListener('ai:append', onAppend as EventListener);
       window.removeEventListener('ai:complete', onComplete);
       window.removeEventListener('ai:fail', onFail as EventListener);
+      window.removeEventListener('ai:userMessage', onUserMessage as EventListener);
     };
-  }, []);
+  }, [addMessage]);
 
   return (
     <div

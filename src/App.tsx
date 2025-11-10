@@ -142,7 +142,7 @@ function App() {
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
 
   // WebSocket 연결
-  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs } = useWebSocket({
+  const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs, sendToSession } = useWebSocket({
     onVoiceMessage: (message) => {
       Logger.debug('🎤 Voice message received', {
         type: message.type,
@@ -154,6 +154,31 @@ function App() {
         const text = d?.text ?? '';
         setSttText(text);
         Logger.debug('📝 STT text updated', { textLength: text.length });
+
+        // 🎤 Voice Input → Chat: Dispatch CustomEvent for user message
+        if (text.trim()) {
+          window.dispatchEvent(new CustomEvent('ai:userMessage', {
+            detail: {
+              message: text,
+              timestamp: Date.now()
+            }
+          }));
+          Logger.debug('🗣️ User message dispatched to chat', { text });
+
+          // 🤖 Auto-trigger AI response after user speech
+          sendToSession({
+            type: 'request_ai_response',
+            data: {
+              userMessage: text,
+              emotion: currentEmotion,
+              timestamp: Date.now()
+            }
+          });
+          Logger.debug('🤖 AI response requested', {
+            userMessage: text,
+            emotion: currentEmotion
+          });
+        }
       }
 
       if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {

@@ -150,7 +150,9 @@ export type WSMessageType =
   | 'ai_stream_begin'
   | 'ai_stream_chunk'
   | 'ai_stream_complete'
-  | 'ai_stream_error';
+  | 'ai_stream_error'
+  // request types (frontend-sent)
+  | 'request_ai_response';
 
 export interface WSMessage<T = unknown> {
   type: WSMessageType;
