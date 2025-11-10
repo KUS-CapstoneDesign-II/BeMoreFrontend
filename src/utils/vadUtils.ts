@@ -37,7 +37,7 @@ export interface VADMetrics {
  * Possible Backend VAD Data Format (flexible input)
  */
 export interface BackendVADData {
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -260,9 +260,9 @@ export function convertTimeUnits(
  * @returns Data with derived fields filled in
  */
 function deriveVADFields(
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   originalBackendData: BackendVADData,
-): Record<string, any> {
+): Record<string, unknown> {
   const derived = { ...data };
 
   Logger.debug('🔍 deriveVADFields processing', {
@@ -272,13 +272,13 @@ function deriveVADFields(
 
   // Derive longestPause from timeSeries if not available
   if (!('longestPause' in derived) && Array.isArray(originalBackendData.timeSeries)) {
-    const timeSeries = originalBackendData.timeSeries as Array<any>;
+    const timeSeries = originalBackendData.timeSeries as Array<Record<string, unknown>>;
 
     if (timeSeries.length > 0) {
       // Extract pause durations from timeSeries events
       const pauseDurations = timeSeries
-        .filter((event: any) => event.type === 'pause' || event.duration)
-        .map((event: any) => event.duration || event.durationMs || 0)
+        .filter((event) => event.type === 'pause' || event.duration)
+        .map((event) => (event.duration as number) || (event.durationMs as number) || 0)
         .filter((d: number) => d > 0);
 
       if (pauseDurations.length > 0) {
@@ -361,7 +361,7 @@ export function transformVADData(
       validateOutput = true,
     } = options;
 
-    let result: Record<string, any> = { ...backendData };
+    let result: Record<string, unknown> = { ...backendData };
 
     // Step 1: Map field names
     if (mapFields) {
@@ -383,7 +383,7 @@ export function transformVADData(
 
     // Step 4: Validate output
     if (validateOutput) {
-      const validation = validateVADMetrics(result as VADMetrics);
+      const validation = validateVADMetrics(result as unknown as VADMetrics);
       if (!validation.valid) {
         Logger.warn('⚠️ VAD metrics validation failed', {
           errors: validation.errors,
@@ -395,7 +395,7 @@ export function transformVADData(
       }
     }
 
-    return result as VADMetrics;
+    return result as unknown as VADMetrics;
   } catch (error) {
     Logger.error('❌ VAD data transformation failed', {
       error: error instanceof Error ? error.message : String(error),
@@ -649,9 +649,9 @@ export function extractNestedMetrics(data: BackendVADData): BackendVADData {
   // Extract from 'metrics' nested object (highest priority)
   if (data.metrics && typeof data.metrics === 'object' && !Array.isArray(data.metrics)) {
     Logger.debug('  ✓ Extracting from metrics object', {
-      metricsKeys: Object.keys(data.metrics as Record<string, any>),
+      metricsKeys: Object.keys(data.metrics as Record<string, unknown>),
     });
-    Object.assign(extracted, data.metrics as Record<string, any>);
+    Object.assign(extracted, data.metrics as Record<string, unknown>);
   }
 
   // Extract from 'psychological' nested object
@@ -661,11 +661,11 @@ export function extractNestedMetrics(data: BackendVADData): BackendVADData {
     !Array.isArray(data.psychological)
   ) {
     Logger.debug('  ✓ Extracting from psychological object', {
-      psychologicalKeys: Object.keys(data.psychological as Record<string, any>),
+      psychologicalKeys: Object.keys(data.psychological as Record<string, unknown>),
     });
     // Only merge fields that don't already exist (lower priority than metrics)
     for (const [key, value] of Object.entries(
-      data.psychological as Record<string, any>,
+      data.psychological as Record<string, unknown>,
     )) {
       if (!(key in extracted)) {
         extracted[key] = value;
@@ -678,9 +678,9 @@ export function extractNestedMetrics(data: BackendVADData): BackendVADData {
     const firstTimeSeries = data.timeSeries[0];
     if (typeof firstTimeSeries === 'object') {
       Logger.debug('  ✓ Extracting from timeSeries[0]', {
-        timeSeriesKeys: Object.keys(firstTimeSeries as Record<string, any>),
+        timeSeriesKeys: Object.keys(firstTimeSeries as Record<string, unknown>),
       });
-      for (const [key, value] of Object.entries(firstTimeSeries as Record<string, any>)) {
+      for (const [key, value] of Object.entries(firstTimeSeries as Record<string, unknown>)) {
         if (!(key in extracted)) {
           extracted[key] = value;
         }
