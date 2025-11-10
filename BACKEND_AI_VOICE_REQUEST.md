@@ -37,7 +37,7 @@ wss://bemorebackend.onrender.com/ws/session/{session_id}
 {
   type: 'request_ai_response',
   data: {
-    userMessage: string,      // 사용자 메시지 (STT 결과)
+    message: string,          // 사용자 메시지 (STT 결과)
     emotion: string | null,   // 현재 감정 ('happy', 'sad', 'angry', 'anxious', 'neutral', etc.)
     timestamp: number         // 요청 시간 (밀리초)
   }
@@ -49,7 +49,7 @@ wss://bemorebackend.onrender.com/ws/session/{session_id}
 {
   "type": "request_ai_response",
   "data": {
-    "userMessage": "요즘 회사에서 스트레스를 많이 받아요",
+    "message": "요즘 회사에서 스트레스를 많이 받아요",
     "emotion": "anxious",
     "timestamp": 1704902400000
   }
@@ -75,7 +75,7 @@ AI 응답은 **3단계 스트리밍**으로 전송됩니다:
 {
   type: 'ai_stream_chunk',
   data: {
-    text: string  // AI 응답 조각 (예: "스트레스", "를 받고", " 계시는군요...")
+    chunk: string  // AI 응답 조각 (예: "스트레스", "를 받고", " 계시는군요...")
   }
 }
 ```
@@ -197,7 +197,7 @@ async def websocket_session_endpoint(websocket: WebSocket, session_id: str):
             # AI 응답 요청 처리
             if message.get("type") == "request_ai_response":
                 data = message.get("data", {})
-                user_message = data.get("userMessage", "")
+                user_message = data.get("message", "")
                 emotion = data.get("emotion")
                 timestamp = data.get("timestamp")
 
@@ -259,7 +259,7 @@ async def websocket_session_endpoint(websocket: WebSocket, session_id: str):
   conversations: [
     {
       timestamp: 1704902400000,
-      userMessage: "요즘 회사에서 스트레스를 많이 받아요",
+      message: "요즘 회사에서 스트레스를 많이 받아요",
       aiResponse: "스트레스를 받고 계시는군요. 어떤 상황에서 특히 힘드신가요?",
       emotion: "anxious",
       createdAt: ISODate("2025-01-10T12:00:00Z")
@@ -327,7 +327,7 @@ AI 응답 요청을 전송하는 코드:
 sendToSession({
   type: 'request_ai_response',
   data: {
-    userMessage: text,
+    message: text,
     emotion: currentEmotion,
     timestamp: Date.now()
   }
@@ -344,8 +344,8 @@ if (message.type === 'ai_stream_begin') {
   window.dispatchEvent(new CustomEvent('ai:begin'));
 }
 if (message.type === 'ai_stream_chunk') {
-  const d = message.data as { text?: string };
-  window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: d?.text ?? '' } }));
+  const d = message.data as { chunk?: string };
+  window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: d?.chunk ?? '' } }));
 }
 if (message.type === 'ai_stream_complete') {
   window.dispatchEvent(new CustomEvent('ai:complete'));
@@ -373,7 +373,7 @@ async def test_ai_response():
         await websocket.send(json.dumps({
             "type": "request_ai_response",
             "data": {
-                "userMessage": "안녕하세요",
+                "message": "안녕하세요",
                 "emotion": "neutral",
                 "timestamp": 1704902400000
             }

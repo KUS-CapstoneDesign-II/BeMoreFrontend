@@ -169,13 +169,13 @@ function App() {
           sendToSession({
             type: 'request_ai_response',
             data: {
-              userMessage: text,
+              message: text,
               emotion: currentEmotion,
               timestamp: Date.now()
             }
           });
           Logger.debug('🤖 AI response requested', {
-            userMessage: text,
+            message: text,
             emotion: currentEmotion
           });
         }
@@ -299,8 +299,8 @@ function App() {
         window.dispatchEvent(new CustomEvent('ai:begin'));
       }
       if (message.type === 'ai_stream_chunk') {
-        const d = message.data as { text?: string };
-        window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: d?.text ?? '' } }));
+        const d = message.data as { chunk?: string };
+        window.dispatchEvent(new CustomEvent('ai:append', { detail: { chunk: d?.chunk ?? '' } }));
       }
       if (message.type === 'ai_stream_complete') {
         window.dispatchEvent(new CustomEvent('ai:complete'));
