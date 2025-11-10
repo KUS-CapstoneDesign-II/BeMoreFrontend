@@ -6,15 +6,29 @@
 import type { EnvironmentConfig } from '../types/session';
 
 /**
+ * Type guards for environment config
+ */
+function isValidStage(value: unknown): value is 'dev' | 'staging' | 'prod' {
+  return value === 'dev' || value === 'staging' || value === 'prod';
+}
+
+function isValidLogLevel(value: unknown): value is 'debug' | 'info' | 'warn' | 'error' {
+  return value === 'debug' || value === 'info' || value === 'warn' || value === 'error';
+}
+
+/**
  * 환경변수 검증 및 로드
  * 프로덕션 배포에서 필수
  */
 export function validateEnvironment(): EnvironmentConfig {
+  const stage = import.meta.env.VITE_STAGE;
+  const logLevel = import.meta.env.VITE_LOG_LEVEL;
+
   const config: EnvironmentConfig = {
-    stage: (import.meta.env.VITE_STAGE as any) || 'dev',
+    stage: isValidStage(stage) ? stage : 'dev',
     apiUrl: import.meta.env.VITE_API_URL as string,
     wsUrl: import.meta.env.VITE_WS_URL as string,
-    logLevel: (import.meta.env.VITE_LOG_LEVEL as any) || 'info',
+    logLevel: isValidLogLevel(logLevel) ? logLevel : 'info',
     enableMockStt: import.meta.env.VITE_ENABLE_MOCK_STT === 'true',
     enableMockMediapipe: import.meta.env.VITE_ENABLE_MOCK_MEDIAPIPE === 'true',
   };
@@ -130,17 +144,22 @@ export function checkBrowserCapabilities(): {
 } {
   const navigator_ = typeof navigator !== 'undefined' ? navigator : null;
 
+  // Legacy webkit API support
+  interface NavigatorWithWebkit extends Navigator {
+    webkitGetUserMedia?: unknown;
+  }
+
   return {
     camera:
       !!navigator_?.mediaDevices?.getUserMedia ||
-      !!(navigator_ as any)?.webkitGetUserMedia,
+      !!(navigator_ as NavigatorWithWebkit | null)?.webkitGetUserMedia,
     microphone:
       !!navigator_?.mediaDevices?.getUserMedia ||
-      !!(navigator_ as any)?.webkitGetUserMedia,
+      !!(navigator_ as NavigatorWithWebkit | null)?.webkitGetUserMedia,
     mediaRecorder: typeof MediaRecorder !== 'undefined',
     webWorkers: typeof Worker !== 'undefined',
     requestAnimationFrame: typeof requestAnimationFrame !== 'undefined',
-    indexedDb: typeof (globalThis as any).indexedDB !== 'undefined',
+    indexedDb: typeof indexedDB !== 'undefined',
   };
 }
 
