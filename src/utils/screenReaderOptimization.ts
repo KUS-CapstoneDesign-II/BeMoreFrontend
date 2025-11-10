@@ -163,6 +163,7 @@ export function useScreenReaderAnnouncement(
     if (message) {
       announceToScreenReader(message, politeness);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Custom deps array pattern for flexible caller dependencies
   }, [message, politeness, ...deps]);
 }
 

@@ -90,22 +90,26 @@ export function FocusTrap({ isActive, children }: FocusTrapProps) {
       return;
     }
 
+    // Capture ref value at effect time to avoid stale closure in cleanup
+    const container = containerRef.current;
+
     // Apply aria-hidden to siblings (excluding modal)
     const bodyChildren = Array.from(document.body.children) as HTMLElement[];
 
     bodyChildren.forEach((child) => {
-      if (!containerRef.current?.contains(child)) {
+      if (!container?.contains(child)) {
         child.setAttribute('aria-hidden', 'true');
       }
     });
 
     return () => {
       bodyChildren.forEach((child) => {
-        if (!containerRef.current?.contains(child)) {
+        if (!container?.contains(child)) {
           child.removeAttribute('aria-hidden');
         }
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Refs are intentionally excluded from dependencies (stable)
   }, [isActive]);
 
   return (

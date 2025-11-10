@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 export interface ConsentState {
@@ -56,13 +56,13 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     }
   }, [consent]);
 
-  const openDialog = () => setIsDialogOpen(true);
-  const closeDialog = () => setIsDialogOpen(false);
+  const openDialog = useCallback(() => setIsDialogOpen(true), []);
+  const closeDialog = useCallback(() => setIsDialogOpen(false), []);
 
-  const setConsent = (next: ConsentState) => {
+  const setConsent = useCallback((next: ConsentState) => {
     setConsentState({ ...next, givenAt: Date.now() });
     closeDialog();
-  };
+  }, [closeDialog]);
 
   const value: ConsentContextType = useMemo(() => ({
     consent,
@@ -71,7 +71,7 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
     openDialog,
     closeDialog,
     shouldRespectDNT,
-  }), [consent, isDialogOpen, shouldRespectDNT]);
+  }), [consent, setConsent, isDialogOpen, openDialog, closeDialog, shouldRespectDNT]);
 
   return (
     <ConsentContext.Provider value={value}>
