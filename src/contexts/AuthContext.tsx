@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { authAPI } from '../services/api';
 import { logError } from '../utils/errorHandler';
@@ -118,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   // 토큰 갱신
-  const refreshAuth = async () => {
+  const refreshAuth = useCallback(async () => {
     try {
       const refreshToken = getRefreshToken();
       if (!refreshToken) {
@@ -134,7 +134,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       throw error;
     }
-  };
+  }, []);
 
   // 초기 인증 확인
   useEffect(() => {

@@ -33,6 +33,25 @@ export function AIChat({ className = '' }: AIChatProps) {
     }
   }, []);
 
+  // TTS로 텍스트 읽기
+  const speakText = useCallback((text: string) => {
+    if (!synthRef.current) return;
+
+    // 이전 TTS 중지
+    synthRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ko-KR';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    synthRef.current.speak(utterance);
+  }, [setIsSpeaking]);
+
   // 메시지 추가
   const addMessage = useCallback((role: 'user' | 'ai', content: string) => {
     // Basic sanitization: strip script tags
@@ -54,7 +73,7 @@ export function AIChat({ className = '' }: AIChatProps) {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
-  }, []);
+  }, [speakText]);
 
   // Streaming helpers
   const beginAIStream = () => {
@@ -65,25 +84,6 @@ export function AIChat({ className = '' }: AIChatProps) {
     const msg: Message = { id, role: 'ai', content: '', timestamp: Date.now() };
     setMessages((prev) => [...prev, msg]);
   };
-
-  // TTS로 텍스트 읽기
-  const speakText = useCallback((text: string) => {
-    if (!synthRef.current) return;
-
-    // 이전 TTS 중지
-    synthRef.current.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'ko-KR';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    synthRef.current.speak(utterance);
-  }, [setIsSpeaking]);
 
   const appendAIStream = useCallback((chunk: string) => {
     if (!streamMessageId) return;

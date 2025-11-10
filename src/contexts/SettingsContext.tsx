@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import { z } from 'zod';
 import { userAPI } from '../services/api';
 import type { ReactNode } from 'react';
@@ -126,9 +126,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   /**
    * 수동 재시도 함수 (UI에서 호출)
    */
-  const retryApiSync = async () => {
+  const retryApiSync = useCallback(async () => {
     await loadRemotePreferences();
-  };
+  }, []);
 
   // Load backend preferences on mount (merge into local)
   useEffect(() => {
@@ -145,10 +145,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     root.setAttribute('lang', settings.language);
   }, [settings.fontScale, settings.layoutDensity, settings.language]);
 
-  const setFontScale = (scale: FontScale) => setSettings((s) => ({ ...s, fontScale: scale }));
-  const setLayoutDensity = (density: LayoutDensity) => setSettings((s) => ({ ...s, layoutDensity: density }));
-  const setLanguage = (lang: LanguageCode) => setSettings((s) => ({ ...s, language: lang }));
-  const setNotificationsOptIn = (optIn: boolean) => setSettings((s) => ({ ...s, notificationsOptIn: optIn }));
+  const setFontScale = useCallback((scale: FontScale) => setSettings((s) => ({ ...s, fontScale: scale })), []);
+  const setLayoutDensity = useCallback((density: LayoutDensity) => setSettings((s) => ({ ...s, layoutDensity: density })), []);
+  const setLanguage = useCallback((lang: LanguageCode) => setSettings((s) => ({ ...s, language: lang })), []);
+  const setNotificationsOptIn = useCallback((optIn: boolean) => setSettings((s) => ({ ...s, notificationsOptIn: optIn })), []);
 
   // Sync to backend when settings change (debounced-like simple)
   // 로그인한 사용자만 백엔드에 동기화
@@ -172,7 +172,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return () => window.clearTimeout(id);
   }, [settings]);
 
-  const requestNotificationPermission = async (): Promise<NotificationPermission> => {
+  const requestNotificationPermission = useCallback(async (): Promise<NotificationPermission> => {
     if (!('Notification' in window)) {
       return 'denied';
     }
@@ -184,7 +184,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       setNotificationsOptIn(false);
       return 'denied';
     }
-  };
+  }, [setNotificationsOptIn]);
 
   const value: SettingsContextType = useMemo(() => ({
     ...settings,
@@ -197,7 +197,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     apiStatus,
     apiError,
     retryApiSync,
-  }), [settings, setFontScale, setLayoutDensity, setLanguage, setNotificationsOptIn, requestNotificationPermission, apiStatus, apiError, retryApiSync]);
+  }), [settings, apiStatus, apiError, setFontScale, setLayoutDensity, setLanguage, setNotificationsOptIn, requestNotificationPermission, retryApiSync]);
 
   return (
     <SettingsContext.Provider value={value}>

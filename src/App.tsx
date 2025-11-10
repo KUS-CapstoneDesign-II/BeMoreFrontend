@@ -666,6 +666,7 @@ function App() {
     return () => {
       disconnectWS();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array - only run on mount/unmount
 
   // Idle timeout: show modal after inactivity; countdown to auto-end
@@ -693,6 +694,7 @@ function App() {
       });
     }, 1000);
     return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idlePromptOpen]);
 
   // 성능 메트릭 수집 (개발 모드)
