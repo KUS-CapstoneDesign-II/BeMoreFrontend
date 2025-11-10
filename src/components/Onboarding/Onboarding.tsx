@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
+import { Button } from '../primitives';
 import { DeviceTestStep } from './DeviceTestStep';
 import { PermissionHelpModal } from './PermissionHelpModal';
 

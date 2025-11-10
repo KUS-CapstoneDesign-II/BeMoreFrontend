@@ -1,30 +1,9 @@
 import React from 'react';
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  noBorder?: boolean;
-  noShadow?: boolean;
-}
-
 /**
- * 🎨 Base Card component - Unified styling
- * Used as building block for all card-based UI elements
+ * This file now only contains MetricCard and StatBox.
+ * Card has been moved to ../primitives/Card.tsx
  */
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className = '', noBorder = false, noShadow = false, ...props }, ref) => {
-    const borderClass = noBorder ? '' : 'border border-gray-200 dark:border-gray-700';
-    const shadowClass = noShadow ? '' : 'shadow-soft';
-
-    return (
-      <div
-        ref={ref}
-        className={`bg-white dark:bg-gray-900 rounded-xl ${borderClass} ${shadowClass} ${className}`}
-        {...props}
-      />
-    );
-  }
-);
-
-Card.displayName = 'Card';
 
 // ─────────────────────────────────────
 

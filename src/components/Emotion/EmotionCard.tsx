@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card } from '../ui/Card';
+import { Card } from '../primitives';
 import type { EmotionType } from '../../types';
 
 interface EmotionCardProps {

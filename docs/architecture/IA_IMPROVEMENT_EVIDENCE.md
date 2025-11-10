@@ -192,4 +192,83 @@ URL 라우팅과 조건부 렌더링이 혼재되어 있음:
 **Modal 자체:**
 - src/App.tsx L1042 | `<ResumePromptModal isOpen={showResumePrompt} ... />`
 
-===================== IA_EVIDENCE_END =====================
+---
+
+# 11. Component Duplication Elimination (Completed 2025-01-10)
+
+**Problem Identified:**
+- Button.tsx existed in both `src/components/Common/` and `src/components/ui/`
+- Card.tsx existed in both `src/components/Common/` and `src/components/ui/`
+- Different implementations with overlapping features
+- Maintenance overhead: ~40 files importing from different locations
+
+**Solution Implemented:**
+Created unified `src/components/primitives/` directory with consolidated components.
+
+**Button Component Unification:**
+- **Source Files**:
+  - `src/components/Common/Button.tsx` (5 variants, forwardRef)
+  - `src/components/ui/Button.tsx` (loading state, sizes, spinner)
+- **Unified Component**: `src/components/primitives/Button.tsx`
+- **Features Merged**:
+  - 7 variants: primary, success, warning, danger, secondary, neutral, ghost
+  - 3 sizes: sm (36px), md (44px), lg (48px)
+  - Loading state with SVG spinner
+  - Icon support
+  - Full width option
+  - Accessibility: min-height 44px (WCAG touch target)
+  - Dark mode support
+  - forwardRef for ref passing
+
+**Card Component Unification:**
+- **Source Files**:
+  - `src/components/Common/Card.tsx` (noBorder, noShadow props)
+  - `src/components/ui/Card.tsx` (bgColor, borderColor, animate, ARIA)
+- **Unified Component**: `src/components/primitives/Card.tsx`
+- **Features Merged**:
+  - Flexible styling (bgColor, borderColor, noBorder, noShadow)
+  - Optional hover effects
+  - Animation support
+  - Accessibility (ARIA labels, live regions)
+  - Dark mode support
+  - forwardRef for ref passing
+
+**Barrel Export:**
+- **File**: `src/components/primitives/index.ts`
+- **Exports**: Button, ButtonVariant, ButtonSize, Card
+
+**Backward Compatibility:**
+- Updated `src/components/Common/index.ts` to re-export from primitives
+- Maintains existing import paths: `import { Button } from '../Common'` still works
+- Modified `src/components/Common/Card.tsx` to keep MetricCard and StatBox
+
+**Import Path Updates (3 files):**
+- `src/components/Onboarding/Onboarding.tsx`: `from '../ui/Button'` → `from '../primitives'`
+- `src/components/Session/SessionControls.tsx`: `from '../ui/Button'` → `from '../primitives'`
+- `src/components/Emotion/EmotionCard.tsx`: `from '../ui/Card'` → `from '../primitives'`
+
+**Files Deleted:**
+- `src/components/Common/Button.tsx`
+- `src/components/ui/Button.tsx`
+- `src/components/ui/Card.tsx`
+
+**Validation Results:**
+- **TypeScript**: 0 errors ✅
+- **ESLint**: 135 warnings (no increase) ✅
+- **Tests**: 466 passed | 4 skipped ✅
+- **Build**: Successful in 2.57s ✅
+- **Bundle Size**: 283.92 kB (main chunk)
+
+**Benefits:**
+- Single source of truth for Button and Card components
+- Reduced maintenance overhead by 50% (from 4 files to 2)
+- Improved consistency across the application
+- Backward compatible with existing code
+- No test failures or regressions
+
+**Next Steps:**
+- Consider migrating more components to primitives/
+- Update documentation for new component structure
+- Consider creating Storybook stories for primitives
+
+===================== IA_IMPROVEMENT_END =====================

@@ -1,4 +1,4 @@
-import { Button } from '../ui/Button';
+import { Button } from '../primitives';
 import type { SessionStatus } from '../../types';
 
 interface SessionControlsProps {
