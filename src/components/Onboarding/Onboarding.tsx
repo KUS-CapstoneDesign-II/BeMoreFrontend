@@ -60,6 +60,11 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
   const step = onboardingSteps[currentStep];
   const isLastStep = currentStep === onboardingSteps.length - 1;
 
+  // Guard against undefined step
+  if (!step) {
+    return null;
+  }
+
   const handleNext = () => {
     if (isLastStep) {
       onComplete();

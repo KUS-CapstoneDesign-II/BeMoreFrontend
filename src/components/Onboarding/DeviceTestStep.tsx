@@ -43,8 +43,11 @@ export function DeviceTestStep({ onOpenHelp }: DeviceTestStepProps) {
         analyser.getByteTimeDomainData(data);
         let sum = 0;
         for (let i = 0; i < data.length; i++) {
-          const v = (data[i] - 128) / 128;
-          sum += v * v;
+          const value = data[i];
+          if (value !== undefined) {
+            const v = (value - 128) / 128;
+            sum += v * v;
+          }
         }
         const rms = Math.sqrt(sum / data.length);
         if (rms > 0.02) setHasAudio(true);
