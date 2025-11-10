@@ -79,7 +79,8 @@ export function LoginForm() {
       await login(formData.email, formData.password);
 
       // 로그인 성공 시 이전 페이지로 이동하거나 대시보드로 이동
-      const from = (location.state as any)?.from?.pathname || '/app';
+      const locationState = location.state as { from?: { pathname?: string } } | null;
+      const from = locationState?.from?.pathname || '/app';
       navigate(from, { replace: true });
     } catch (error) {
       // 로그인 실패 시 에러 메시지 표시

@@ -104,7 +104,15 @@ export default function MicrophoneCheck({
 
   const startMonitoring = (stream: MediaStream) => {
     try {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      // Extended interface for webkit AudioContext (Safari support)
+      interface WindowWithWebkit extends Window {
+        webkitAudioContext?: typeof AudioContext;
+      }
+      const AudioContextClass = window.AudioContext || (window as WindowWithWebkit).webkitAudioContext;
+      if (!AudioContextClass) {
+        throw new Error('AudioContext not supported');
+      }
+      const audioContext = new AudioContextClass();
       const analyser = audioContext.createAnalyser();
       const source = audioContext.createMediaStreamSource(stream);
 

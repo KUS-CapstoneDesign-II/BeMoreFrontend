@@ -40,7 +40,13 @@ export default function OnboardingPanel({
   const resetMetrics = useMetricsStore((s) => s.reset);
   const addError = useMetricsStore((s) => s.addError);
 
-  const handleDeviceCheckComplete = async (deviceState: any) => {
+  interface DeviceCheckState {
+    camera: { permission: string };
+    microphone: { permission: string };
+    network?: { isGood: boolean };
+  }
+
+  const handleDeviceCheckComplete = async (deviceState: DeviceCheckState) => {
     Logger.info('✅ Device check completed, initializing session', {
       camera: deviceState.camera.permission,
       microphone: deviceState.microphone.permission,

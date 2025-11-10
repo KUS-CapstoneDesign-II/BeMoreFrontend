@@ -137,7 +137,7 @@ export default function TimelineGrid({ onCardSelected }: TimelineGridProps) {
             </label>
             <select
               value={filterSentiment}
-              onChange={(e) => setFilterSentiment(e.target.value as any)}
+              onChange={(e) => setFilterSentiment(e.target.value as 'all' | 'positive' | 'negative' | 'neutral')}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-600 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="all">모두 보기</option>
