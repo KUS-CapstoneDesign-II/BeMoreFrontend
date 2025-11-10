@@ -187,7 +187,7 @@ export class PerformanceReportingManager {
   /**
    * 성능 요약 통계
    */
-  getSummary(): Record<string, any> {
+  getSummary(): Record<string, unknown> {
     const metricsArray = Array.from(this.metrics.values());
 
     return {
@@ -279,7 +279,10 @@ export const performanceReporting = new PerformanceReportingManager();
 export function initPerformanceReporting(): void {
   if (import.meta.env.DEV) {
     // 개발 환경: 콘솔에서 접근 가능
-    (window as any).__performance = performanceReporting;
+    interface WindowWithPerf extends Window {
+      __performance?: typeof performanceReporting;
+    }
+    (window as WindowWithPerf).__performance = performanceReporting;
 
     console.log(
       '%c📊 Performance Reporting Ready',

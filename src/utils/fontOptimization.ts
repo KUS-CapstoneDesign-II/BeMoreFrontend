@@ -272,7 +272,7 @@ export async function waitForFontLoad(
     fontLoadingTracker.startTracking(fontName, weight);
 
     // 타임아웃과 함께 폰트 로딩 대기
-    const loadPromise = (document.fonts as any).load(
+    const loadPromise = document.fonts.load(
       `${weight || 400} 1em '${fontName}'`
     );
 
