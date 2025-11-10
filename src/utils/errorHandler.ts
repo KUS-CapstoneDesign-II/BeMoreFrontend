@@ -42,7 +42,8 @@ export function getErrorMessage(error: ApiError | Error | unknown): string {
   // ApiError 타입인 경우
   if (isApiError(error)) {
     const code = error.error.code;
-    return ERROR_MESSAGES[code] || error.error.message || ERROR_MESSAGES.UNKNOWN_ERROR;
+    const messageFromCode = ERROR_MESSAGES[code];
+    return messageFromCode ?? error.error.message ?? ERROR_MESSAGES.UNKNOWN_ERROR;
   }
 
   // Error 객체인 경우
@@ -66,7 +67,7 @@ export function getHttpErrorMessage(status: number): string {
     case 400:
       return '잘못된 요청입니다.';
     case 401:
-      return ERROR_MESSAGES.UNAUTHORIZED;
+      return ERROR_MESSAGES.UNAUTHORIZED ?? ERROR_MESSAGES.UNKNOWN_ERROR;
     case 403:
       return '접근 권한이 없습니다.';
     case 404:
@@ -74,13 +75,13 @@ export function getHttpErrorMessage(status: number): string {
     case 409:
       return '이미 존재하는 데이터입니다.';
     case 429:
-      return ERROR_MESSAGES.TOO_MANY_REQUESTS;
+      return ERROR_MESSAGES.TOO_MANY_REQUESTS ?? ERROR_MESSAGES.UNKNOWN_ERROR;
     case 500:
-      return ERROR_MESSAGES.INTERNAL_SERVER_ERROR;
+      return ERROR_MESSAGES.INTERNAL_SERVER_ERROR ?? ERROR_MESSAGES.UNKNOWN_ERROR;
     case 503:
-      return ERROR_MESSAGES.SERVICE_UNAVAILABLE;
+      return ERROR_MESSAGES.SERVICE_UNAVAILABLE ?? ERROR_MESSAGES.UNKNOWN_ERROR;
     default:
-      return ERROR_MESSAGES.UNKNOWN_ERROR;
+      return ERROR_MESSAGES.UNKNOWN_ERROR ?? '알 수 없는 오류가 발생했습니다.';
   }
 }
 
@@ -127,8 +128,8 @@ export function getValidationErrors(error: ApiError): ValidationError[] {
     return error.error.details.map((detail: unknown) => {
       const detailObj = detail as { field?: string; message?: string };
       return {
-        field: detailObj.field || 'unknown',
-        message: detailObj.message || ERROR_MESSAGES.UNKNOWN_ERROR,
+        field: detailObj.field ?? 'unknown',
+        message: detailObj.message ?? ERROR_MESSAGES.UNKNOWN_ERROR ?? '알 수 없는 오류',
       };
     });
   }
@@ -144,7 +145,7 @@ export function validateEmail(email: string): string | null {
     return '이메일을 입력해주세요.';
   }
   if (!emailRegex.test(email)) {
-    return ERROR_MESSAGES.INVALID_EMAIL;
+    return ERROR_MESSAGES.INVALID_EMAIL ?? '유효하지 않은 이메일 형식입니다.';
   }
   return null;
 }
@@ -157,7 +158,7 @@ export function validatePassword(password: string): string | null {
     return '비밀번호를 입력해주세요.';
   }
   if (password.length < 8) {
-    return ERROR_MESSAGES.INVALID_PASSWORD;
+    return ERROR_MESSAGES.INVALID_PASSWORD ?? '비밀번호는 최소 8자 이상이어야 합니다.';
   }
   // 영문, 숫자, 특수문자 중 2가지 이상 포함
   const hasLetter = /[a-zA-Z]/.test(password);
@@ -166,7 +167,7 @@ export function validatePassword(password: string): string | null {
   const validCombinations = [hasLetter, hasNumber, hasSpecial].filter(Boolean).length;
 
   if (validCombinations < 2) {
-    return ERROR_MESSAGES.PASSWORD_TOO_WEAK;
+    return ERROR_MESSAGES.PASSWORD_TOO_WEAK ?? '비밀번호는 영문, 숫자, 특수문자를 포함해야 합니다.';
   }
   return null;
 }
@@ -176,7 +177,7 @@ export function validatePassword(password: string): string | null {
  */
 export function validateUsername(username: string): string | null {
   if (!username || username.trim().length === 0) {
-    return ERROR_MESSAGES.INVALID_USERNAME;
+    return ERROR_MESSAGES.INVALID_USERNAME ?? '사용자명을 입력해주세요.';
   }
   if (username.trim().length < 2) {
     return '사용자명은 최소 2자 이상이어야 합니다.';

@@ -87,6 +87,7 @@ export class TouchGestureDetector {
     if (event.touches.length === 2) {
       const touch1 = event.touches[0];
       const touch2 = event.touches[1];
+      if (!touch1 || !touch2) return;
       this.pinchStartDistance = this.getDistance(
         { x: touch1.clientX, y: touch1.clientY },
         { x: touch2.clientX, y: touch2.clientY }
@@ -105,6 +106,7 @@ export class TouchGestureDetector {
     if (event.touches.length === 2) {
       const touch1 = event.touches[0];
       const touch2 = event.touches[1];
+      if (!touch1 || !touch2) return;
       const currentDistance = this.getDistance(
         { x: touch1.clientX, y: touch1.clientY },
         { x: touch2.clientX, y: touch2.clientY }
@@ -126,9 +128,10 @@ export class TouchGestureDetector {
 
     if (!this.touchStartPoint) return;
 
+    const changedTouch = event.changedTouches[0];
     const endPoint: TouchPoint = {
-      x: event.changedTouches[0]?.clientX || this.touchStartPoint.x,
-      y: event.changedTouches[0]?.clientY || this.touchStartPoint.y,
+      x: changedTouch?.clientX ?? this.touchStartPoint.x,
+      y: changedTouch?.clientY ?? this.touchStartPoint.y,
       timestamp: Date.now(),
     };
 
@@ -258,7 +261,8 @@ export function triggerHaptic(pattern: 'light' | 'medium' | 'heavy' = 'medium'):
     heavy: 30,
   };
 
-  navigator.vibrate(patterns[pattern] || 20);
+  const vibrationPattern = patterns[pattern];
+  navigator.vibrate(vibrationPattern ?? 20);
 }
 
 /**

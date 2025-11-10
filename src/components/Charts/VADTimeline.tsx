@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { first } from '../../utils/typeGuards';
 
 type VADPoint = {
   [key: string]: unknown;
@@ -60,7 +61,11 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
     const linePath = (key: 'valence' | 'arousal' | 'dominance') => {
       const filtered = points.filter(p => typeof p[key] === 'number');
       if (!filtered.length) return '';
-      return filtered.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${scaleX(p.x)} ${scaleY(p[key] as number)}`).join(' ');
+      return filtered.map((p, idx) => {
+        const value = p[key];
+        if (typeof value !== 'number') return '';
+        return `${idx === 0 ? 'M' : 'L'} ${scaleX(p.x)} ${scaleY(value)}`;
+      }).join(' ');
     };
 
     return {
@@ -107,7 +112,9 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
         onClick={() => {
           if (!onSelectPoint || !hover) return;
           // pick nearest
-          let best = processed.points[0];
+          const firstPoint = first(processed.points);
+          if (!firstPoint) return;
+          let best = firstPoint;
           let bestDist = Infinity;
           for (const p of processed.points) {
             const sx = processed.scaleX(p.x);
@@ -134,7 +141,9 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
             const invX = (px: number) => {
               const { scaleX } = processed;
               // approximate inverse by scanning
-              let best = processed.points[0];
+              const firstPoint = first(processed.points);
+              if (!firstPoint) return null;
+              let best = firstPoint;
               let bestDist = Infinity;
               for (const p of processed.points) {
                 const sx = scaleX(p.x);
@@ -144,6 +153,7 @@ export function VADTimeline({ data, height = 140, markers = [], onSelectPoint }:
               return best;
             };
             const nearest = invX(hover.x);
+            if (!nearest) return null;
             const cx = processed.scaleX(nearest.x);
             const vals: Array<{label:string;color:string;value:number|null}> = [
               { label: 'V', color: '#ef4444', value: typeof nearest.valence === 'number' ? nearest.valence : null },
