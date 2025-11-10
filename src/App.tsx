@@ -298,19 +298,25 @@ function App() {
 
   // 세션 시작
   const handleStartSession = async () => {
+    console.log('[App] handleStartSession 호출됨');
+
     // 이미 진행 중인 경우 중복 실행 방지
     if (isLoading || sessionId) {
+      console.log('[App] 이미 로딩 중이거나 세션이 있음:', { isLoading, sessionId });
       return;
     }
 
     // Onboarding guard
     const completed = localStorage.getItem(ONBOARDING_KEY) === 'true';
+    console.log('[App] 온보딩 완료 여부:', completed);
     if (!completed) {
+      console.log('[App] 온보딩이 완료되지 않아 온보딩 화면으로 이동');
       setShowOnboarding(true);
       funnelEvent('onboarding_required');
       return;
     }
 
+    console.log('[App] 세션 시작 API 호출 시작');
     setIsLoading(true);
     setError(null);
 
