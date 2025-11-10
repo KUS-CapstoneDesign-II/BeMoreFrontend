@@ -197,7 +197,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     apiStatus,
     apiError,
     retryApiSync,
-  }), [settings, requestNotificationPermission, apiStatus, apiError]);
+  }), [settings, setFontScale, setLayoutDensity, setLanguage, setNotificationsOptIn, requestNotificationPermission, apiStatus, apiError, retryApiSync]);
 
   return (
     <SettingsContext.Provider value={value}>

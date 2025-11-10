@@ -174,7 +174,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, 30 * 60 * 1000); // 30분
 
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, refreshAuth]);
 
   return (
     <AuthContext.Provider

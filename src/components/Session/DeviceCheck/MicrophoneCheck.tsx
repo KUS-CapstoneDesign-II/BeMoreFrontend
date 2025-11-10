@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useMetricsStore } from '../../../stores/metricsStore';
 import { Logger } from '../../../config/env';
 
@@ -44,6 +44,18 @@ export default function MicrophoneCheck({
     setPermissionStatus(permission);
   }, [permission]);
 
+  const stopMonitoring = useCallback(() => {
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    analyserRef.current = null;
+    setIsMonitoring(false);
+    setAudioLevel(0);
+    setAudioLevelMetric(0);
+    Logger.info('📹 Microphone monitoring stopped');
+  }, [setAudioLevelMetric]);
+
   // Cleanup audio monitoring
   useEffect(() => {
     return () => {
@@ -51,7 +63,7 @@ export default function MicrophoneCheck({
         stopMonitoring();
       }
     };
-  }, [isMonitoring]);
+  }, [isMonitoring, stopMonitoring]);
 
   const requestPermission = async () => {
     try {
@@ -134,18 +146,6 @@ export default function MicrophoneCheck({
       Logger.error('❌ Audio monitoring setup failed', error);
       setIsMonitoring(false);
     }
-  };
-
-  const stopMonitoring = () => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    analyserRef.current = null;
-    setIsMonitoring(false);
-    setAudioLevel(0);
-    setAudioLevelMetric(0);
-    Logger.info('📹 Microphone monitoring stopped');
   };
 
   const getStatusIcon = () => {

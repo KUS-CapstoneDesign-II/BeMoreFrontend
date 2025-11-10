@@ -58,10 +58,11 @@ export function useFocusTrap(isActive: boolean) {
       }
     };
 
-    containerRef.current?.addEventListener('keydown', handleKeyDown);
+    const container = containerRef.current;
+    container?.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      containerRef.current?.removeEventListener('keydown', handleKeyDown);
+      container?.removeEventListener('keydown', handleKeyDown);
 
       // Restore focus to previously focused element
       if (previouslyFocusedElementRef.current?.focus) {

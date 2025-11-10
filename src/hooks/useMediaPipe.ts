@@ -177,7 +177,7 @@ export function useMediaPipe(options: UseMediaPipeOptions): UseMediaPipeReturn {
         faceMeshRef.current = null;
       }
     };
-  }, []);
+  }, [onResults]);
 
   // 옵션 변경 감지 (FaceMesh가 이미 초기화된 후 옵션 업데이트)
   useEffect(() => {

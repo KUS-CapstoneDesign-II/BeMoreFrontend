@@ -31,7 +31,7 @@ export function SessionTimer({ running, resetKey, initialElapsedMs = 0, classNam
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
-  }, [resetKey]);
+  }, [resetKey, running]);
 
   // Handle running state changes
   useEffect(() => {

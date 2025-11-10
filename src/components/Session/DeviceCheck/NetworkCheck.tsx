@@ -78,7 +78,7 @@ export default function NetworkCheck({ latency, bandwidth, isGood }: NetworkChec
     if (latency === 0 && bandwidth === 0) {
       runNetworkTest();
     }
-  }, []);
+  }, [latency, bandwidth]);
 
   const displayLatency = testResults.latency || latency;
   const displayBandwidth = testResults.bandwidth || bandwidth;
