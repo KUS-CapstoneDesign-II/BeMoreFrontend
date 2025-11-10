@@ -78,11 +78,11 @@ export interface RateLimitInfo {
   reset: number | null;
 }
 
-export function parseRateLimitHeaders(headers: Record<string, any>): RateLimitInfo {
+export function parseRateLimitHeaders(headers: Record<string, unknown>): RateLimitInfo {
   return {
-    limit: headers['x-ratelimit-limit'] ? parseInt(headers['x-ratelimit-limit'], 10) : null,
-    remaining: headers['x-ratelimit-remaining'] ? parseInt(headers['x-ratelimit-remaining'], 10) : null,
-    reset: headers['x-ratelimit-reset'] ? parseInt(headers['x-ratelimit-reset'], 10) : null,
+    limit: headers['x-ratelimit-limit'] ? parseInt(String(headers['x-ratelimit-limit']), 10) : null,
+    remaining: headers['x-ratelimit-remaining'] ? parseInt(String(headers['x-ratelimit-remaining']), 10) : null,
+    reset: headers['x-ratelimit-reset'] ? parseInt(String(headers['x-ratelimit-reset']), 10) : null,
   };
 }
 
@@ -191,9 +191,9 @@ export function sanitizeUrlForLogging(url: string): string {
  * @returns 마스킹된 데이터
  */
 export function maskSensitiveDataInObject(
-  data: Record<string, any>,
+  data: Record<string, unknown>,
   depth: number = 0
-): Record<string, any> {
+): Record<string, unknown> {
   if (depth > 3) return data; // 깊은 중첩 방지
 
   const sensitiveKeyPatterns = [
@@ -233,7 +233,7 @@ export function maskSensitiveDataInObject(
       }
     } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
       // 재귀적으로 중첩 객체 처리
-      masked[key] = maskSensitiveDataInObject(value, depth + 1);
+      masked[key] = maskSensitiveDataInObject(value as Record<string, unknown>, depth + 1);
     }
   }
 
