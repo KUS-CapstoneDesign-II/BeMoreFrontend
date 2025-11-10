@@ -23,22 +23,24 @@ export function enforceHttps(): void {
  *
  * 정책:
  * - default-src 'self': 자체 출처에서만 로드
- * - script-src 'self' 'unsafe-eval': 스크립트 (eval 허용 - React DevTools용)
+ * - script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net: 스크립트 (eval 허용 - React DevTools용, MediaPipe CDN)
  * - style-src 'self' 'unsafe-inline': 스타일 (인라인 허용 - CSS-in-JS용)
  * - img-src 'self' data: https:: 이미지 (데이터 URI, HTTPS 허용)
  * - font-src 'self' data:: 폰트 (데이터 URI 허용)
  * - connect-src 'self' https:: 네트워크 요청 (HTTPS만)
+ * - worker-src 'self' blob:: Web Workers (MediaPipe 지원)
  * - frame-ancestors 'none': iframe 로드 차단
  * - upgrade-insecure-requests: HTTP 자동 업그레이드
  */
 export function setContentSecurityPolicy(): void {
   const cspContent = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval'", // React, HMR용
+    "script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net", // React, HMR, MediaPipe CDN
     "style-src 'self' 'unsafe-inline'", // CSS-in-JS용
     "img-src 'self' data: https:",
     "font-src 'self' data:",
     "connect-src 'self' https:",
+    "worker-src 'self' blob:", // MediaPipe Web Worker 지원
     "frame-ancestors 'none'",
     "upgrade-insecure-requests",
   ].join('; ');
