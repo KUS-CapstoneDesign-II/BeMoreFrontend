@@ -4,6 +4,7 @@ import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard, EmotionTimeline } from './components/Emotion';
 import { SessionControls } from './components/Session';
+import { AIMessageOverlay } from './components/AIChat/AIMessageOverlay';
 // import { Landing } from './components/Landing/Landing';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConsentDialog } from './components/Common/ConsentDialog';
@@ -20,7 +21,7 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './contexts/ThemeContext';
 import type { EmotionType, VADMetrics } from './types';
 import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
-import { AIChatSkeleton, VADMonitorSkeleton } from './components/Skeleton/Skeleton';
+import { VADMonitorSkeleton } from './components/Skeleton/Skeleton';
 import { collectWebVitals, logPerformanceMetrics } from './utils/performance';
 import { funnelEvent, markAndMeasure } from './utils/analytics_extra';
 import { trackWebVitals } from './utils/analytics';
@@ -30,7 +31,7 @@ import { transformVADData, analyzeVADFormat, extractNestedMetrics } from './util
 import { Logger } from './config/env';
 
 // Lazy load non-critical components
-const AIChat = lazy(() => import('./components/AIChat').then(module => ({ default: module.AIChat })));
+// const AIChat = lazy(() => import('./components/AIChat').then(module => ({ default: module.AIChat }))); // 주석: 오버레이로 대체
 const VADMonitor = lazy(() => import('./components/VAD').then(module => ({ default: module.VADMonitor })));
 const Onboarding = lazy(() => import('./components/Onboarding').then(module => ({ default: module.Onboarding })));
 const SessionSummaryModal = lazy(() => import('./components/Session/SessionSummaryModal').then(module => ({ default: module.SessionSummaryModal })));
@@ -140,6 +141,13 @@ function App() {
 
   const [sttText, setSttText] = useState(DEMO_MODE ? '안녕하세요! BeMore 심리 상담 시스템입니다.' : '');
   const [vadMetrics, setVadMetrics] = useState<VADMetrics | null>(null);
+
+  // 🎬 AI 메시지 오버레이 상태
+  const [overlayMessage, setOverlayMessage] = useState('');
+  const [overlayRole, setOverlayRole] = useState<'user' | 'ai'>('ai');
+  const [isOverlayVisible, setIsOverlayVisible] = useState(false);
+  const [isOverlayStreaming, setIsOverlayStreaming] = useState(false);
+  const [isTTSSpeaking, setIsTTSSpeaking] = useState(false);
 
   // WebSocket 연결
   const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs, sendToSession } = useWebSocket({
@@ -320,6 +328,104 @@ function App() {
   useEffect(() => {
     connectionStatusRef.current = connectionStatus;
   }, [connectionStatus]);
+
+  // 🎬 AI 메시지 오버레이 이벤트 리스너
+  useEffect(() => {
+    let userMessageTimeout: ReturnType<typeof setTimeout> | null = null;
+    let ttsCompleteTimeout: ReturnType<typeof setTimeout> | null = null;
+
+    // 사용자 메시지 표시 (3초 후 자동 사라짐)
+    const handleUserMessage = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message: string; timestamp: number }>;
+      const { message } = customEvent.detail;
+
+      setOverlayMessage(message);
+      setOverlayRole('user');
+      setIsOverlayVisible(true);
+      setIsOverlayStreaming(false);
+
+      // 3초 후 자동 사라짐
+      if (userMessageTimeout) clearTimeout(userMessageTimeout);
+      userMessageTimeout = setTimeout(() => {
+        setIsOverlayVisible(false);
+      }, 3000);
+    };
+
+    // AI 스트리밍 시작
+    const handleAIBegin = () => {
+      setOverlayMessage('');
+      setOverlayRole('ai');
+      setIsOverlayVisible(true);
+      setIsOverlayStreaming(true);
+      setIsTTSSpeaking(false);
+    };
+
+    // AI 청크 추가 (스트리밍)
+    const handleAIAppend = (event: Event) => {
+      const customEvent = event as CustomEvent<{ chunk: string }>;
+      const { chunk } = customEvent.detail;
+
+      setOverlayMessage((prev) => prev + chunk);
+    };
+
+    // AI 스트리밍 완료 → TTS 시작
+    const handleAIComplete = () => {
+      setIsOverlayStreaming(false);
+      setIsTTSSpeaking(true); // TTS 재생 시작으로 가정
+    };
+
+    // AI 에러
+    const handleAIFail = (event: Event) => {
+      const customEvent = event as CustomEvent<{ error: string }>;
+      const { error } = customEvent.detail;
+
+      setOverlayMessage(`오류: ${error}`);
+      setOverlayRole('ai');
+      setIsOverlayVisible(true);
+      setIsOverlayStreaming(false);
+
+      // 5초 후 자동 사라짐
+      setTimeout(() => {
+        setIsOverlayVisible(false);
+      }, 5000);
+    };
+
+    // TTS 재생 종료 감지 (speechSynthesis 이벤트)
+    const handleTTSEnd = () => {
+      // TTS 종료 후 1초 대기 후 오버레이 사라짐
+      if (ttsCompleteTimeout) clearTimeout(ttsCompleteTimeout);
+      ttsCompleteTimeout = setTimeout(() => {
+        setIsTTSSpeaking(false);
+        setIsOverlayVisible(false);
+      }, 1000);
+    };
+
+    window.addEventListener('ai:userMessage', handleUserMessage);
+    window.addEventListener('ai:begin', handleAIBegin);
+    window.addEventListener('ai:append', handleAIAppend);
+    window.addEventListener('ai:complete', handleAIComplete);
+    window.addEventListener('ai:fail', handleAIFail);
+
+    // TTS 종료 이벤트 리스닝
+    if (window.speechSynthesis) {
+      window.speechSynthesis.addEventListener('end', handleTTSEnd);
+    }
+
+    return () => {
+      window.removeEventListener('ai:userMessage', handleUserMessage);
+      window.removeEventListener('ai:begin', handleAIBegin);
+      window.removeEventListener('ai:append', handleAIAppend);
+      window.removeEventListener('ai:complete', handleAIComplete);
+      window.removeEventListener('ai:fail', handleAIFail);
+
+      if (window.speechSynthesis) {
+        window.speechSynthesis.removeEventListener('end', handleTTSEnd);
+      }
+
+      if (userMessageTimeout) clearTimeout(userMessageTimeout);
+      if (ttsCompleteTimeout) clearTimeout(ttsCompleteTimeout);
+    };
+  }, []);
 
   // 세션 시작
   const handleStartSession = async () => {
@@ -879,7 +985,7 @@ function App() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* 왼쪽: 비디오 피드 */}
           <div className="lg:col-span-2 space-y-4">
-            {/* 비디오 */}
+            {/* 비디오 with AI 메시지 오버레이 */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-fade-in-up">
               <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">실시간 영상</h2>
               <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
@@ -894,16 +1000,15 @@ function App() {
                   }}
                 />
                 {sttText && <STTSubtitle text={sttText} />}
-              </div>
-            </div>
 
-            {/* AI 채팅 - 모바일에서 숨김 */}
-            <div className="hidden sm:block bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-              <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">AI 대화</h2>
-              <div className="h-80 sm:h-96">
-                <Suspense fallback={<AIChatSkeleton />}>
-                  <AIChat />
-                </Suspense>
+                {/* AI 메시지 오버레이 */}
+                <AIMessageOverlay
+                  message={overlayMessage}
+                  role={overlayRole}
+                  isStreaming={isOverlayStreaming}
+                  isVisible={isOverlayVisible}
+                  isSpeaking={isTTSSpeaking}
+                />
               </div>
             </div>
           </div>
