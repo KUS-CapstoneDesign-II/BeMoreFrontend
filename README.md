@@ -456,6 +456,7 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - **[AI Voice Counseling Backend Request](./BACKEND_AI_VOICE_REQUEST.md)** - AI 음성 상담 WebSocket 엔드포인트 스펙
 - **[Backend Emotion Support Check](./BACKEND_EMOTION_CHECK.md)** - 백엔드 8개 감정 지원 범위 점검 (✅ 확인 완료)
 - **[Analytics Endpoint Request](./BACKEND_ANALYTICS_ENDPOINT_REQUEST.md)** - 성능 모니터링 엔드포인트 스펙 (선택)
+- **[Frontend Code Quality Update (2025-11-11)](./FRONTEND_CODE_QUALITY_UPDATE_2025_11_11.md)** - 코드 품질 개선 완료 보고서 (ESLint 0, TypeScript 0, 백엔드 영향 없음)
 
 ### Phase 9 성과
 
@@ -487,6 +488,7 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - [SUMMARY.md](./SUMMARY.md) - 프로젝트 현황 요약 (2025-11-06)
 - [Phase 9 Completion Report](./PHASE_9_COMPLETION_REPORT.md)
 - [Backend Integration Docs](./docs/integration/)
+- [Frontend Code Quality Update (2025-11-11)](./FRONTEND_CODE_QUALITY_UPDATE_2025_11_11.md) - ESLint/TypeScript 품질 개선 완료
 
 ---
 
