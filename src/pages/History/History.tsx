@@ -17,15 +17,20 @@ export default function HistoryPage() {
       try {
         setLoading(true);
         // Placeholder: replace with real endpoint when backend ready
-        const stats: any = await sessionAPI.getStats();
-        const recent: RecentSessionSummary[] = (stats?.recentSessions || stats?.recent || []).map((s: any) => ({
-          id: s.id,
-          startedAt: s.startedAt,
-          durationMs: s.durationMs,
-        }));
+        const stats: unknown = await sessionAPI.getStats();
+        const statsData = stats as { recentSessions?: unknown[]; recent?: unknown[] };
+        const recent: RecentSessionSummary[] = (statsData?.recentSessions || statsData?.recent || []).map((s: unknown) => {
+          const session = s as { id?: string; startedAt?: string; durationMs?: number };
+          return {
+            id: session.id || '',
+            startedAt: session.startedAt || '',
+            durationMs: session.durationMs || 0,
+          };
+        });
         setItems(recent);
-      } catch (e: any) {
-        setError(e?.message || '히스토리를 불러오지 못했습니다');
+      } catch (e: unknown) {
+        const error = e as { message?: string };
+        setError(error?.message || '히스토리를 불러오지 못했습니다');
       } finally {
         setLoading(false);
       }

@@ -12,7 +12,7 @@ interface DashboardProps {
 export function Dashboard({ onResumeSession, onStartSession }: DashboardProps) {
   const navigate = useNavigate();
   const { apiStatus, apiError, retryApiSync } = useSettings();
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<unknown>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasLastSession, setHasLastSession] = useState(false);
@@ -50,10 +50,35 @@ export function Dashboard({ onResumeSession, onStartSession }: DashboardProps) {
   if (loading) return <LoadingState text="대시보드를 불러오는 중..." />;
   if (error) return <ErrorState message={error} onRetry={() => window.location.reload()} />;
 
-  const today = data?.todayAvg || {};
-  const trend = data?.trend?.dayOverDay || {};
-  const recs: any[] = data?.recommendations || [];
-  const recent: any[] = data?.recentSessions || [];
+  const dashboardData = data as {
+    todayAvg?: {
+      valence?: number;
+      arousal?: number;
+      dominance?: number;
+    };
+    trend?: {
+      dayOverDay?: {
+        valence?: number;
+        arousal?: number;
+        dominance?: number;
+      };
+    };
+    recommendations?: Array<{
+      id: string;
+      title: string;
+      desc: string;
+      cta?: string;
+    }>;
+    recentSessions?: Array<{
+      reportId: string;
+      sessionId: string;
+      createdAt: string;
+    }>;
+  };
+  const today = dashboardData?.todayAvg || {};
+  const trend = dashboardData?.trend?.dayOverDay || {};
+  const recs = dashboardData?.recommendations || [];
+  const recent = dashboardData?.recentSessions || [];
 
   return (
     <div className="space-y-4">
@@ -135,15 +160,15 @@ export function Dashboard({ onResumeSession, onStartSession }: DashboardProps) {
           <div className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div>
               <div className="text-[10px] text-gray-500">ΔV</div>
-              <div className={`text-lg font-semibold ${trend.valence > 0 ? 'text-green-600' : trend.valence < 0 ? 'text-red-600' : ''}`}>{trend.valence?.toFixed?.(2) ?? '-'}</div>
+              <div className={`text-lg font-semibold ${trend.valence !== undefined && trend.valence > 0 ? 'text-green-600' : trend.valence !== undefined && trend.valence < 0 ? 'text-red-600' : ''}`}>{trend.valence?.toFixed?.(2) ?? '-'}</div>
             </div>
             <div>
               <div className="text-[10px] text-gray-500">ΔA</div>
-              <div className={`text-lg font-semibold ${trend.arousal > 0 ? 'text-green-600' : trend.arousal < 0 ? 'text-red-600' : ''}`}>{trend.arousal?.toFixed?.(2) ?? '-'}</div>
+              <div className={`text-lg font-semibold ${trend.arousal !== undefined && trend.arousal > 0 ? 'text-green-600' : trend.arousal !== undefined && trend.arousal < 0 ? 'text-red-600' : ''}`}>{trend.arousal?.toFixed?.(2) ?? '-'}</div>
             </div>
             <div>
               <div className="text-[10px] text-gray-500">ΔD</div>
-              <div className={`text-lg font-semibold ${trend.dominance > 0 ? 'text-green-600' : trend.dominance < 0 ? 'text-red-600' : ''}`}>{trend.dominance?.toFixed?.(2) ?? '-'}</div>
+              <div className={`text-lg font-semibold ${trend.dominance !== undefined && trend.dominance > 0 ? 'text-green-600' : trend.dominance !== undefined && trend.dominance < 0 ? 'text-red-600' : ''}`}>{trend.dominance?.toFixed?.(2) ?? '-'}</div>
             </div>
           </div>
         </div>

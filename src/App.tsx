@@ -183,7 +183,7 @@ function App() {
 
       if (message.type === 'vad_analysis' || message.type === 'vad_realtime') {
         // 1. Cast data from unknown type (WebSocket message)
-        let data = message.data as any;
+        let data = message.data as Record<string, unknown>;
 
         // DEBUG: Log raw data BEFORE any transformation (using Logger.warn for Production visibility)
         Logger.warn('🔴 RAW DATA FROM BACKEND', {
@@ -707,7 +707,16 @@ function App() {
 
   // Initialize analytics & sentry when consent available (respect DNT)
   useEffect(() => {
-    const respectDNT = navigator.doNotTrack === '1' || (window as any).doNotTrack === '1' || (navigator as any).msDoNotTrack === '1';
+    // Extended interface for Do Not Track support across browsers
+    interface NavigatorWithDNT extends Navigator {
+      msDoNotTrack?: string | number | null;
+    }
+    interface WindowWithDNT extends Window {
+      doNotTrack?: string | null;
+    }
+    const nav = navigator as NavigatorWithDNT;
+    const win = window as WindowWithDNT;
+    const respectDNT = navigator.doNotTrack === '1' || win.doNotTrack === '1' || nav.msDoNotTrack === '1';
     initAnalytics(consent, respectDNT);
     initSentry(consent, respectDNT);
     trackPageView(location.pathname + location.search);

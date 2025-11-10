@@ -20,8 +20,19 @@ const STORAGE_KEY = 'bemore_consent_v1';
 
 const ConsentContext = createContext<ConsentContextType | undefined>(undefined);
 
+// Extended interface for Do Not Track support across browsers
+interface NavigatorWithDNT extends Navigator {
+  msDoNotTrack?: string | number | null;
+}
+
+interface WindowWithDNT extends Window {
+  doNotTrack?: string | null;
+}
+
 function readDNT(): boolean {
-  const dnt = (navigator as any).doNotTrack || (window as any).doNotTrack || (navigator as any).msDoNotTrack;
+  const nav = navigator as NavigatorWithDNT;
+  const win = window as WindowWithDNT;
+  const dnt = nav.doNotTrack || win.doNotTrack || nav.msDoNotTrack;
   return dnt === '1' || dnt === 1;
 }
 
