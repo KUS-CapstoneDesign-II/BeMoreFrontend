@@ -6,9 +6,10 @@ import { LoadingState, ErrorState, EmptyState } from '../../components/Common/St
 
 interface DashboardProps {
   onResumeSession?: () => void;
+  onStartSession?: () => void;
 }
 
-export function Dashboard({ onResumeSession }: DashboardProps) {
+export function Dashboard({ onResumeSession, onStartSession }: DashboardProps) {
   const navigate = useNavigate();
   const { apiStatus, apiError, retryApiSync } = useSettings();
   const [data, setData] = useState<any>(null);
@@ -104,7 +105,7 @@ export function Dashboard({ onResumeSession }: DashboardProps) {
         <h2 className="text-2xl font-bold mb-2">심리 상담 세션 시작하기</h2>
         <p className="text-sm opacity-90 mb-4">AI 심리 상담사와 함께 당신의 감정을 나누어 보세요</p>
         <button
-          onClick={() => navigate('/session')}
+          onClick={onStartSession || (() => navigate('/session'))}
           className="px-6 py-2 bg-white text-teal-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200"
         >
           세션 시작 →

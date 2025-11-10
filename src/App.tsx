@@ -700,7 +700,10 @@ function App() {
       {!sessionId && !showOnboarding && (
         <div className="mb-4">
           <Suspense fallback={<div className="flex items-center justify-center h-96"><span className="text-gray-400">로딩중...</span></div>}>
-            <Dashboard onResumeSession={resumeLastSession} />
+            <Dashboard
+              onResumeSession={resumeLastSession}
+              onStartSession={handleStartSession}
+            />
           </Suspense>
         </div>
       )}
