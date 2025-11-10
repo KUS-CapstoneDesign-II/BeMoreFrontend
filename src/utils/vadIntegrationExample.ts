@@ -223,12 +223,12 @@ export function transformVADDataCustom(
   timeConverter?: (value: number) => number,
 ): VADMetrics | null {
   try {
-    const transformed: Record<string, any> = {};
+    const transformed: Record<string, unknown> = {};
 
     // Apply custom field mapping
     for (const [backendField, frontendField] of Object.entries(fieldMapping)) {
       if (backendField in backendData) {
-        let value: any = backendData[backendField];
+        let value: unknown = backendData[backendField];
 
         // Apply range scaling if provided
         if (
@@ -252,7 +252,7 @@ export function transformVADDataCustom(
       }
     }
 
-    return transformed as any as VADMetrics;
+    return transformed as unknown as VADMetrics;
   } catch (error) {
     Logger.error('❌ Custom VAD transformation failed', {
       error: error instanceof Error ? error.message : String(error),
