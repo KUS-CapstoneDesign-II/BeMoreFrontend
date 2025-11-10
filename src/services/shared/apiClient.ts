@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance } from 'axios';
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosError } from 'axios';
 import { apiMonitoring } from '../../utils/apiMonitoring';
 import { initMockAPIInterceptor } from '../../utils/mockAPI';
 import {
@@ -13,6 +13,12 @@ import {
 } from '../../utils/requestTracking';
 import { logApiError } from './errorHandler';
 import type { ApiResponse } from './types';
+
+// Extend Axios config to include custom properties
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  __requestId?: string;
+  __monitoring?: ReturnType<typeof apiMonitoring.startRequest>;
+}
 
 // 런타임 주입 환경변수 지원 (on‑prem 대비)
 const runtimeEnv =
@@ -45,7 +51,7 @@ apiClient.interceptors.request.use(
   (config) => {
     // 요청 ID 생성
     const requestId = generateRequestId();
-    (config as any).__requestId = requestId;
+    (config as CustomAxiosRequestConfig).__requestId = requestId;
 
     // 요청 타임스탬프 추적 시작
     timestampTracker.startRequest(requestId);
@@ -65,7 +71,7 @@ apiClient.interceptors.request.use(
     try {
       const token = localStorage.getItem('bemore_access_token');
       if (token) {
-        (config.headers as any)['Authorization'] = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token}`;
       }
     } catch {}
 
@@ -74,7 +80,7 @@ apiClient.interceptors.request.use(
     if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
       try {
         const csrfToken = getCsrfToken();
-        (config.headers as any)['X-CSRF-Token'] = csrfToken;
+        config.headers['X-CSRF-Token'] = csrfToken;
       } catch {}
     }
 
@@ -86,7 +92,7 @@ apiClient.interceptors.request.use(
 
     // API 모니터링 시작
     const monitoring = apiMonitoring.startRequest(config.url || '', config.method?.toUpperCase());
-    (config as any).__monitoring = monitoring;
+    (config as CustomAxiosRequestConfig).__monitoring = monitoring;
 
     return config;
   },
@@ -102,7 +108,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => {
     // 요청 ID 추적 종료
-    const requestId = (response.config as any).__requestId;
+    const requestId = (response.config as CustomAxiosRequestConfig).__requestId;
     if (requestId) {
       timestampTracker.endRequest(requestId);
     }
@@ -119,7 +125,7 @@ apiClient.interceptors.response.use(
       const sanitizedUrl = sanitizeUrlForLogging(response.config.url || '');
       const maskedData =
         typeof response.data === 'object' && response.data
-          ? maskSensitiveDataInObject(response.data as Record<string, any>)
+          ? maskSensitiveDataInObject(response.data as Record<string, unknown>)
           : response.data;
 
       console.log(`✅ API Response [${requestId}]: ${sanitizedUrl} (${response.status})`, {
@@ -129,31 +135,31 @@ apiClient.interceptors.response.use(
     }
 
     // 성공한 요청 모니터링 기록
-    const monitoring = (response.config as any).__monitoring;
+    const monitoring = (response.config as CustomAxiosRequestConfig).__monitoring;
     if (monitoring) {
       apiMonitoring.recordRequest(monitoring, true, response.status);
     }
 
     return response;
   },
-  (error) => {
+  (error: AxiosError) => {
     // 요청 ID 추적 종료
-    const requestId = (error.config as any)?.__requestId;
+    const requestId = (error.config as CustomAxiosRequestConfig | undefined)?.__requestId;
     if (requestId) {
       timestampTracker.endRequest(requestId);
     }
 
     // 서버 또는 요청에서 제공한 요청 ID 추출
     const serverReqId =
-      error?.response?.data?.error?.requestId ||
-      (error?.response?.headers && (error.response.headers as any)['x-request-id']);
+      (error?.response?.data as { error?: { requestId?: string } } | undefined)?.error?.requestId ||
+      (error?.response?.headers && error.response.headers['x-request-id']);
 
     // 에러 로깅
     logApiError(error, requestId, serverReqId);
 
     // 실패한 요청 모니터링 기록
-    const monitoring = (error.config as any)?.__monitoring;
-    const statusCode = error?.response?.status || 'unknown';
+    const monitoring = (error.config as CustomAxiosRequestConfig | undefined)?.__monitoring;
+    const statusCode = error?.response?.status;
     const isTimeout = error.code === 'ECONNABORTED' || error.message.includes('timeout');
     if (monitoring) {
       apiMonitoring.recordRequest(monitoring, false, statusCode, isTimeout);
@@ -169,11 +175,11 @@ apiClient.interceptors.response.use(
 
 let isRefreshing = false;
 let failedQueue: Array<{
-  resolve: (value: any) => void;
-  reject: (error: any) => void;
+  resolve: (value: string | null) => void;
+  reject: (error: Error) => void;
 }> = [];
 
-const processQueue = (error: any = null, token: string | null = null) => {
+const processQueue = (error: Error | null = null, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -251,7 +257,7 @@ apiClient.interceptors.response.use(
           localStorage.removeItem('bemore_access_token');
           localStorage.removeItem('bemore_refresh_token');
           localStorage.removeItem('bemore_user');
-          processQueue(refreshError, null);
+          processQueue(refreshError instanceof Error ? refreshError : new Error('Token refresh failed'), null);
           window.location.href = '/auth/login';
           return Promise.reject(refreshError);
         } finally {
@@ -281,6 +287,7 @@ export { API_BASE_URL };
 
 // Export monitoring API for developer console debugging
 if (import.meta.env.DEV && typeof window !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (window as any).__apiMonitoring = apiMonitoring;
   console.log('🔍 API Monitoring available at window.__apiMonitoring');
   console.log('  __apiMonitoring.getStats() - Overall statistics');
