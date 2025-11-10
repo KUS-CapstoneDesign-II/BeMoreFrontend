@@ -1,6 +1,20 @@
 import { Logger } from '../config/env';
 
 /**
+ * Chrome's non-standard performance.memory API
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Performance/memory
+ */
+interface MemoryInfo {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+interface PerformanceWithMemory extends Performance {
+  memory?: MemoryInfo;
+}
+
+/**
  * 메모리 최적화 유틸리티 (Phase 9-6)
  *
  * 목표: 메모리 효율성 극대화
@@ -230,15 +244,12 @@ export class MemoryTracker {
     totalJSHeapSize: number;
     jsHeapSizeLimit: number;
   } {
-    if (
-      (performance as any).memory &&
-      typeof (performance as any).memory === 'object' &&
-      'usedJSHeapSize' in (performance as any).memory
-    ) {
+    const perf = performance as PerformanceWithMemory;
+    if (perf.memory && typeof perf.memory === 'object' && 'usedJSHeapSize' in perf.memory) {
       return {
-        usedJSHeapSize: (performance as any).memory.usedJSHeapSize,
-        totalJSHeapSize: (performance as any).memory.totalJSHeapSize,
-        jsHeapSizeLimit: (performance as any).memory.jsHeapSizeLimit,
+        usedJSHeapSize: perf.memory.usedJSHeapSize,
+        totalJSHeapSize: perf.memory.totalJSHeapSize,
+        jsHeapSizeLimit: perf.memory.jsHeapSizeLimit,
       };
     }
 

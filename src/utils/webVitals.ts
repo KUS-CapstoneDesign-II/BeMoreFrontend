@@ -9,6 +9,23 @@
  * - FCP (First Contentful Paint): 첫 번째 콘텐츠 표시
  */
 
+/**
+ * Performance API Extended Types for Web Vitals
+ */
+interface PerformancePaintTiming extends PerformanceEntry {
+  renderTime?: number;
+  loadTime?: number;
+}
+
+interface PerformanceEventTiming extends PerformanceEntry {
+  processingStart: number;
+}
+
+interface LayoutShiftEntry extends PerformanceEntry {
+  value: number;
+  hadRecentInput: boolean;
+}
+
 export interface VitalsMetric {
   name: 'LCP' | 'FID' | 'CLS' | 'TTFB' | 'FCP' | 'INP';
   value: number;
@@ -60,12 +77,12 @@ export function measureLCP(callback: (metric: VitalsMetric) => void): void {
   try {
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1] as any;
+      const lastEntry = entries[entries.length - 1] as PerformancePaintTiming;
 
       const metric: VitalsMetric = {
         name: 'LCP',
-        value: Math.round(lastEntry.renderTime || lastEntry.loadTime),
-        rating: getRating('LCP', lastEntry.renderTime || lastEntry.loadTime),
+        value: Math.round(lastEntry.renderTime || lastEntry.loadTime || 0),
+        rating: getRating('LCP', lastEntry.renderTime || lastEntry.loadTime || 0),
         delta: 0,
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         navigationType: performance.navigation.type === 0 ? 'navigation' : 'reload',
@@ -93,7 +110,7 @@ export function measureFID(callback: (metric: VitalsMetric) => void): void {
   try {
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const firstEntry = entries[0] as any;
+      const firstEntry = entries[0] as PerformanceEventTiming;
 
       const metric: VitalsMetric = {
         name: 'FID',
@@ -128,15 +145,16 @@ export function measureCLS(callback: (metric: VitalsMetric) => void): void {
   try {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
-        if (!(entry as any).hadRecentInput) {
-          clsValue += (entry as any).value;
+        const layoutShift = entry as LayoutShiftEntry;
+        if (!layoutShift.hadRecentInput) {
+          clsValue += layoutShift.value;
           clsEntries.push(entry);
 
           const metric: VitalsMetric = {
             name: 'CLS',
             value: Math.round(clsValue * 10000) / 10000,
             rating: getRating('CLS', clsValue),
-            delta: (entry as any).value,
+            delta: layoutShift.value,
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
             entries: clsEntries
           };
@@ -164,7 +182,7 @@ export function measureFCP(callback: (metric: VitalsMetric) => void): void {
   try {
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1] as any;
+      const lastEntry = entries[entries.length - 1] as PerformanceEntry;
 
       const metric: VitalsMetric = {
         name: 'FCP',
