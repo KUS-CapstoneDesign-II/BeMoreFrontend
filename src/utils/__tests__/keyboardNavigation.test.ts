@@ -15,6 +15,12 @@ import {
   KEYBOARD_KEYS,
 } from '../keyboardNavigation';
 
+// Mock keyboard event interface for testing
+interface MockKeyboardEvent {
+  key: string;
+  preventDefault: () => void;
+}
+
 describe('Keyboard Navigation (A-02)', () => {
   let container: HTMLDivElement;
 
@@ -158,10 +164,10 @@ describe('Keyboard Navigation (A-02)', () => {
         document.createElement('button'),
       ];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: KEYBOARD_KEYS.ARROW_DOWN,
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,
@@ -179,10 +185,10 @@ describe('Keyboard Navigation (A-02)', () => {
         document.createElement('button'),
       ];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: KEYBOARD_KEYS.ARROW_UP,
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,
@@ -200,10 +206,10 @@ describe('Keyboard Navigation (A-02)', () => {
         document.createElement('button'),
       ];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: KEYBOARD_KEYS.HOME,
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,
@@ -220,10 +226,10 @@ describe('Keyboard Navigation (A-02)', () => {
         document.createElement('button'),
       ];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: KEYBOARD_KEYS.END,
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,
@@ -239,10 +245,10 @@ describe('Keyboard Navigation (A-02)', () => {
         document.createElement('button'),
       ];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: KEYBOARD_KEYS.ARROW_DOWN,
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,
@@ -259,10 +265,10 @@ describe('Keyboard Navigation (A-02)', () => {
         document.createElement('button'),
       ];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: KEYBOARD_KEYS.ARROW_DOWN,
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,
@@ -276,10 +282,10 @@ describe('Keyboard Navigation (A-02)', () => {
     it('should return null for unhandled keys', () => {
       const items = [document.createElement('button')];
 
-      const event = {
+      const event: MockKeyboardEvent = {
         key: 'a',
         preventDefault: vi.fn(),
-      } as any;
+      };
 
       const nextIndex = getNextItemIndex(event, {
         items,

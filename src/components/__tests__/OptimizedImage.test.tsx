@@ -153,7 +153,7 @@ describe('OptimizedImage Component', () => {
 
       // Call the error handler
       if (img?.onerror) {
-        img.onerror(new Event('error') as any);
+        img.onerror(new Event('error') as unknown as OnErrorEventHandlerNonNull);
       }
 
       // Check that image-error class was added by handleImageError()
@@ -389,7 +389,7 @@ describe('OptimizedImage Component', () => {
 
       // Trigger the error via onerror handler
       if (img?.onerror) {
-        img.onerror(new Event('error') as any);
+        img.onerror(new Event('error') as unknown as OnErrorEventHandlerNonNull);
       }
 
       const imageContainer = container.querySelector('.optimized-image');
