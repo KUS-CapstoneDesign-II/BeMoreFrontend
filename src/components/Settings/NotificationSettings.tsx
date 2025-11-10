@@ -54,13 +54,21 @@ export function NotificationSettings() {
     setPreferences((prev) => {
       const keys = path.split('.');
       const newPrefs = JSON.parse(JSON.stringify(prev));
-      let current = newPrefs;
+      let current: Record<string, unknown> = newPrefs;
 
       for (let i = 0; i < keys.length - 1; i++) {
-        current = current[keys[i]];
+        const key = keys[i];
+        if (!key) continue;
+        const next = current[key];
+        if (typeof next === 'object' && next !== null) {
+          current = next as Record<string, unknown>;
+        }
       }
 
-      current[keys[keys.length - 1]] = !current[keys[keys.length - 1]];
+      const lastKey = keys[keys.length - 1];
+      if (lastKey && typeof current[lastKey] === 'boolean') {
+        current[lastKey] = !current[lastKey];
+      }
       return newPrefs;
     });
   };

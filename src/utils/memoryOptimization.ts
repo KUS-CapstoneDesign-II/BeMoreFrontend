@@ -280,17 +280,19 @@ export class MemoryTracker {
     const maxUsedHeap = Math.max(...usedHeaps);
     const avgUsedHeap =
       usedHeaps.reduce((a, b) => a + b, 0) / usedHeaps.length;
-    const currentUsedHeap = usedHeaps[usedHeaps.length - 1];
+    const currentUsedHeap = usedHeaps[usedHeaps.length - 1] ?? 0;
 
+    const firstSnapshot = this.snapshots[0];
     const memoryGrowth =
-      this.snapshots.length > 1
-        ? currentUsedHeap - this.snapshots[0].usedJSHeapSize
+      this.snapshots.length > 1 && firstSnapshot
+        ? currentUsedHeap - firstSnapshot.usedJSHeapSize
         : 0;
 
     // 메모리 누수 감지: 지속적인 증가
+    const tenthFromLastSnapshot = this.snapshots[this.snapshots.length - 10];
     const recentGrowth =
-      this.snapshots.length > 10
-        ? currentUsedHeap - this.snapshots[this.snapshots.length - 10].usedJSHeapSize
+      this.snapshots.length > 10 && tenthFromLastSnapshot
+        ? currentUsedHeap - tenthFromLastSnapshot.usedJSHeapSize
         : 0;
 
     const isHealthy = recentGrowth < 5_000_000; // 5MB 미만 증가는 정상
@@ -357,8 +359,9 @@ export function formatBytes(bytes: number, decimals: number = 2): string {
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const sizeLabel = sizes[i] ?? 'GB';
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizeLabel;
 }
 
 /**

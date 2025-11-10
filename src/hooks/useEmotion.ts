@@ -160,8 +160,12 @@ export function useEmotion(options: UseEmotionOptions = {}): UseEmotionReturn {
     emotionCounts: { ...emotionCountsRef.current },
     averageDuration:
       emotionHistory.length > 1
-        ? (emotionHistory[emotionHistory.length - 1].timestamp - emotionHistory[0].timestamp) /
-          emotionHistory.length
+        ? (() => {
+            const lastEmotion = emotionHistory[emotionHistory.length - 1];
+            const firstEmotion = emotionHistory[0];
+            if (!lastEmotion || !firstEmotion) return 0;
+            return (lastEmotion.timestamp - firstEmotion.timestamp) / emotionHistory.length;
+          })()
         : 0,
     totalChanges: emotionHistory.length,
   };

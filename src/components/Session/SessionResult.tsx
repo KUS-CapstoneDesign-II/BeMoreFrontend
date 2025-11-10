@@ -159,12 +159,14 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
           for (let i = 1; i < tl.length; i++) {
             const prev = tl[i-1];
             const cur = tl[i];
+            if (!prev || !cur) continue;
+
             const t = typeof cur.t === 'number' ? cur.t : (typeof cur.timestamp === 'number' ? cur.timestamp : i);
-            if (typeof prev?.valence === 'number' && typeof cur?.valence === 'number') {
+            if (typeof prev.valence === 'number' && typeof cur.valence === 'number') {
               const dv = Math.abs(cur.valence - prev.valence);
               if (dv > 0.5) mks.push({ x: t, label: '급변', color: '#ef4444', type: 'spike' });
             }
-            if (typeof cur?.arousal === 'number' && cur.arousal < -0.5) {
+            if (typeof cur.arousal === 'number' && cur.arousal < -0.5) {
               mks.push({ x: t, label: '저각성', color: '#3b82f6', type: 'low' });
             }
           }
@@ -419,7 +421,9 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
                   variant="neutral"
                   onClick={() => {
                     const last = timeline[timeline.length - 1];
-                    const t = typeof last?.t === 'number' ? last.t : (typeof last?.timestamp === 'number' ? last.timestamp : timeline.length);
+                    if (!last) return;
+
+                    const t = typeof last.t === 'number' ? last.t : (typeof last.timestamp === 'number' ? last.timestamp : timeline.length);
                     setBookmarks((b) => [...b, { x: t, label: '북마크', color: '#10b981' }]);
                   }}
                   className="text-xs"

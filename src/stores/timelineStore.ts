@@ -78,7 +78,12 @@ export const useTimelineStore = create<TimelineState>()(
         }
 
         const updatedCards = [...state.cards];
-        updatedCards[cardIndex] = { ...updatedCards[cardIndex], ...updates };
+        const existingCard = updatedCards[cardIndex];
+        if (!existingCard) {
+          Logger.warn('❌ Card at index not found', { cardIndex });
+          return state;
+        }
+        updatedCards[cardIndex] = { ...existingCard, ...updates };
 
         const newAverageScore =
           updatedCards.reduce((sum, c) => sum + c.combinedScore, 0) / updatedCards.length;

@@ -36,8 +36,10 @@ export function MetricCard({
   className = '',
   ariaLabel
 }: MetricCardProps) {
-  const { bg, text } = colorConfig[color] || colorConfig.blue;
-  const { label: labelSize, value: valueSize, padding } = sizeConfig[size];
+  const colorStyle = colorConfig[color] ?? colorConfig.blue;
+  const { bg, text } = colorStyle ?? { bg: '', text: '' };
+  const sizeStyle = sizeConfig[size] ?? sizeConfig.md;
+  const { label: labelSize, value: valueSize, padding } = sizeStyle;
 
   return (
     <div

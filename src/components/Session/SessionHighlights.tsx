@@ -31,12 +31,16 @@ export default function SessionHighlights() {
     // Turnarounds (big score changes)
     const turnarounds = [];
     for (let i = 1; i < cards.length; i++) {
-      const change = Math.abs(cards[i].combinedScore - cards[i - 1].combinedScore);
+      const currentCard = cards[i];
+      const previousCard = cards[i - 1];
+      if (!currentCard || !previousCard) continue;
+
+      const change = Math.abs(currentCard.combinedScore - previousCard.combinedScore);
       if (change > 20) {
         turnarounds.push({
-          minute: cards[i].minuteIndex,
-          from: cards[i - 1].combinedScore,
-          to: cards[i].combinedScore,
+          minute: currentCard.minuteIndex,
+          from: previousCard.combinedScore,
+          to: currentCard.combinedScore,
           change,
         });
       }
@@ -45,8 +49,12 @@ export default function SessionHighlights() {
     // Trends (improving or declining)
     const firstHalf = cards.slice(0, Math.floor(cards.length / 2));
     const secondHalf = cards.slice(Math.floor(cards.length / 2));
-    const firstHalfAvg = firstHalf.reduce((a, b) => a + b.combinedScore, 0) / firstHalf.length;
-    const secondHalfAvg = secondHalf.reduce((a, b) => a + b.combinedScore, 0) / secondHalf.length;
+    const firstHalfAvg = firstHalf.length > 0
+      ? firstHalf.reduce((a, b) => a + b.combinedScore, 0) / firstHalf.length
+      : 0;
+    const secondHalfAvg = secondHalf.length > 0
+      ? secondHalf.reduce((a, b) => a + b.combinedScore, 0) / secondHalf.length
+      : 0;
     const trend = secondHalfAvg > firstHalfAvg ? 'improving' : 'declining';
 
     return { peak: peakCard, valley: valleyCard, turnarounds, trend };

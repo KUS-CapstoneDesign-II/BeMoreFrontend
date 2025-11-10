@@ -134,7 +134,10 @@ export default function MicrophoneCheck({
         // Calculate RMS (Root Mean Square) for audio level
         let sum = 0;
         for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i] * dataArray[i];
+          const value = dataArray[i];
+          if (value !== undefined) {
+            sum += value * value;
+          }
         }
         const rms = Math.sqrt(sum / dataArray.length);
 

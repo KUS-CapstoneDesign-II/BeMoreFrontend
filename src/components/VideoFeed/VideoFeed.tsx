@@ -77,6 +77,8 @@ export function VideoFeed({
         ctx.fillStyle = '#00FF00';
         for (let i = 0; i < points.length; i++) {
           const p = points[i];
+          if (!p) continue;
+
           const x = p.x * width;
           const y = p.y * height;
           ctx.beginPath();
@@ -89,6 +91,8 @@ export function VideoFeed({
         ctx.beginPath();
         for (let i = 0; i < faceOval.length; i++) {
           const idx = faceOval[i];
+          if (idx === undefined) continue;
+
           const p = points[idx];
           if (!p) continue;
           const x = p.x * width;

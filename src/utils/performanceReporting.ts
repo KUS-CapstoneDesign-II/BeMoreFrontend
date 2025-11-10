@@ -223,7 +223,9 @@ export class PerformanceReportingManager {
     }
 
     const average = values.reduce((a, b) => a + b, 0) / values.length;
-    const trend = values[values.length - 1] < values[0];
+    const lastValue = values[values.length - 1];
+    const firstValue = values[0];
+    const trend = lastValue !== undefined && firstValue !== undefined && lastValue < firstValue;
 
     return { improving: trend, average };
   }

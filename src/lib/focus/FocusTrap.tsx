@@ -44,6 +44,11 @@ export function useFocusTrap(isActive: boolean) {
 
       const firstEl = focusableEls[0];
       const lastEl = focusableEls[focusableEls.length - 1];
+      if (!firstEl || !lastEl) {
+        event.preventDefault();
+        return;
+      }
+
       const activeEl = document.activeElement as HTMLElement;
 
       // Shift + Tab on first element → focus last element
