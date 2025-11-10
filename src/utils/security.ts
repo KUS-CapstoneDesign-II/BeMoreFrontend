@@ -27,7 +27,7 @@ export function enforceHttps(): void {
  * - style-src 'self' 'unsafe-inline': 스타일 (인라인 허용 - CSS-in-JS용)
  * - img-src 'self' data: https:: 이미지 (데이터 URI, HTTPS 허용)
  * - font-src 'self' data:: 폰트 (데이터 URI 허용)
- * - connect-src 'self' https:: 네트워크 요청 (HTTPS만)
+ * - connect-src 'self' https: wss:: 네트워크 요청 (HTTPS, WebSocket)
  * - worker-src 'self' blob:: Web Workers (MediaPipe 지원)
  * - frame-ancestors 'none': iframe 로드 차단
  * - upgrade-insecure-requests: HTTP 자동 업그레이드
@@ -39,7 +39,7 @@ export function setContentSecurityPolicy(): void {
     "style-src 'self' 'unsafe-inline'", // CSS-in-JS용
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https:",
+    "connect-src 'self' https: wss:", // HTTPS + WebSocket
     "worker-src 'self' blob:", // MediaPipe Web Worker 지원
     "frame-ancestors 'none'",
     "upgrade-insecure-requests",
