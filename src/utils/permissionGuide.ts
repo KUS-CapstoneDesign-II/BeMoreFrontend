@@ -136,12 +136,20 @@ export function detectBrowser(): string {
  */
 export function getCameraGuideForBrowser(browser?: string): PermissionGuide {
   const b = browser || detectBrowser();
-  return cameraPermissionGuides[b] || cameraPermissionGuides.Chrome;
+  const guide = cameraPermissionGuides[b] ?? cameraPermissionGuides.Chrome;
+  if (!guide) {
+    throw new Error('Camera permission guide not found');
+  }
+  return guide;
 }
 
 export function getMicrophoneGuideForBrowser(browser?: string): PermissionGuide {
   const b = browser || detectBrowser();
-  return microphonePermissionGuides[b] || microphonePermissionGuides.Chrome;
+  const guide = microphonePermissionGuides[b] ?? microphonePermissionGuides.Chrome;
+  if (!guide) {
+    throw new Error('Microphone permission guide not found');
+  }
+  return guide;
 }
 
 /**

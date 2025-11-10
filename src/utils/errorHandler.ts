@@ -4,7 +4,7 @@ import type { ApiError } from '../types/auth';
 // Error Message Mapping
 // ============================================================================
 
-const ERROR_MESSAGES: Record<string, string> = {
+const ERROR_MESSAGES = {
   // Authentication Errors
   INVALID_CREDENTIALS: '이메일 또는 비밀번호가 올바르지 않습니다.',
   USER_NOT_FOUND: '사용자를 찾을 수 없습니다.',
@@ -29,7 +29,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 
   // Default
   UNKNOWN_ERROR: '알 수 없는 오류가 발생했습니다.',
-};
+} as const;
 
 // ============================================================================
 // Error Handler Functions
@@ -42,7 +42,7 @@ export function getErrorMessage(error: ApiError | Error | unknown): string {
   // ApiError 타입인 경우
   if (isApiError(error)) {
     const code = error.error.code;
-    const messageFromCode = ERROR_MESSAGES[code];
+    const messageFromCode = (ERROR_MESSAGES as Record<string, string>)[code];
     return messageFromCode ?? error.error.message ?? ERROR_MESSAGES.UNKNOWN_ERROR;
   }
 
@@ -50,13 +50,13 @@ export function getErrorMessage(error: ApiError | Error | unknown): string {
   if (error instanceof Error) {
     // 네트워크 오류
     if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
-      return ERROR_MESSAGES.NETWORK_ERROR;
+      return ERROR_MESSAGES.NETWORK_ERROR ?? '네트워크 연결을 확인해주세요.';
     }
     return error.message;
   }
 
   // 알 수 없는 오류
-  return ERROR_MESSAGES.UNKNOWN_ERROR;
+  return ERROR_MESSAGES.UNKNOWN_ERROR ?? '알 수 없는 오류가 발생했습니다.';
 }
 
 /**

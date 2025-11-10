@@ -166,8 +166,8 @@ export function sanitizeUrlForLogging(url: string): string {
             params.set(key, value.slice(0, 3) + '***' + value.slice(-3));
           } else if (key.toLowerCase().includes('email')) {
             const [local, domain] = value.split('@');
-            if (domain) {
-              params.set(key, local[0] + '***@' + domain);
+            if (domain && local) {
+              params.set(key, (local[0] ?? '') + '***@' + domain);
             }
           } else {
             params.set(key, '[REDACTED]');
@@ -219,7 +219,7 @@ export function maskSensitiveDataInObject(
           masked[key] = value.slice(0, 3) + '***' + value.slice(-3);
         } else if (keyLower.includes('email')) {
           const [local, domain] = value.split('@');
-          masked[key] = domain ? `${local[0]}***@${domain}` : '[REDACTED]';
+          masked[key] = (domain && local) ? `${local[0] ?? ''}***@${domain}` : '[REDACTED]';
         } else if (keyLower.includes('phone')) {
           const digits = value.replace(/\D/g, '');
           if (digits.length >= 8) {

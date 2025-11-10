@@ -11,7 +11,7 @@
  */
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) {
+  if (!result || !result[1] || !result[2] || !result[3]) {
     throw new Error(`Invalid hex color: ${hex}`);
   }
   return {
@@ -29,10 +29,14 @@ function getLuminance(hex: string): number {
   const { r, g, b } = hexToRgb(hex);
 
   // Convert to sRGB
-  const [rs, gs, bs] = [r, g, b].map((val) => {
+  const srgb = [r, g, b].map((val) => {
     const v = val / 255;
     return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
   });
+
+  const rs = srgb[0] ?? 0;
+  const gs = srgb[1] ?? 0;
+  const bs = srgb[2] ?? 0;
 
   // Calculate luminance
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;

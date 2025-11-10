@@ -172,9 +172,10 @@ export function maskSessionId(sessionId: string): string {
  */
 export function maskEmail(email: string): string {
   const [localPart, domain] = email.split('@');
-  if (!domain) return email;
+  if (!domain || !localPart) return email;
 
-  const maskedLocal = localPart[0] + '*'.repeat(Math.max(1, localPart.length - 1));
+  const firstChar = localPart[0] ?? '';
+  const maskedLocal = firstChar + '*'.repeat(Math.max(1, localPart.length - 1));
   return `${maskedLocal}@${domain}`;
 }
 
