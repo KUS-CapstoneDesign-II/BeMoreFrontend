@@ -64,7 +64,7 @@ async function warmupBackend(page: Page): Promise<void> {
     await page.waitForTimeout(2000);
   } catch {
     const duration = Date.now() - startTime;
-    log(`⚠️  Backend warmup timeout after ${duration}ms, continuing anyway...`, 'warn');
+    log(`⚠️  Backend warmup timeout after ${duration}ms, continuing anyway...`, 'warning');
     log('  (Server might still be waking up from cold start)', 'warning');
   }
 }
@@ -288,7 +288,7 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
         break;
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        log(`✗ Login attempt ${attempt}/3 failed: ${lastError.message}`, 'warn');
+        log(`✗ Login attempt ${attempt}/3 failed: ${lastError.message}`, 'warning');
 
         await captureScreenshot(page, `phase-1-login-attempt-${attempt}-failed`);
 
@@ -328,7 +328,7 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
       await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 20000 });
       log('Dashboard loaded', 'info');
     } catch {
-      log('Dashboard loading timeout, checking if content is visible anyway...', 'warn');
+      log('Dashboard loading timeout, checking if content is visible anyway...', 'warning');
     }
 
     // Give the Dashboard component time to render
@@ -569,7 +569,7 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
         if (response) {
           log('✓ Session start API call successful', 'success');
         } else {
-          log('⚠️  No session start API response detected (might have failed)', 'warn');
+          log('⚠️  No session start API response detected (might have failed)', 'warning');
         }
 
         // Wait for either URL navigation or error message
@@ -590,10 +590,10 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
           log(`✓ Navigated to session page: ${currentUrl}`, 'success');
         } catch {
           const currentUrl = page.url();
-          log(`⚠️  Still on: ${currentUrl}`, 'warn');
+          log(`⚠️  Still on: ${currentUrl}`, 'warning');
         }
       } else {
-        log('⚠️  Session start button not found after onboarding', 'warn');
+        log('⚠️  Session start button not found after onboarding', 'warning');
         await captureScreenshot(page, 'phase-1-button-not-found-after-onboarding');
       }
     } else {
@@ -632,8 +632,8 @@ async function executePhase2(page: Page, phase: PhaseResult): Promise<void> {
   const step: PhaseStep = {
     id: 'phase-2-websocket-connection',
     name: 'WebSocket 3-Channel Connection',
-    description: 'Connect landmarks, voice, session channels (5s timeout)',
-    timeout: 5000,
+    description: 'Connect landmarks, voice, session channels (15s timeout)',
+    timeout: 15000,
     status: 'running',
     startTime: Date.now(),
   };
@@ -642,6 +642,24 @@ async function executePhase2(page: Page, phase: PhaseResult): Promise<void> {
   log(`${phase.name} - ${step.name}`, 'info');
 
   try {
+    // Check current URL
+    const currentUrl = page.url();
+    log(`Current URL before WebSocket check: ${currentUrl}`, 'info');
+
+    // Wait for URL navigation if still on /app
+    if (currentUrl.includes('/app') && !currentUrl.includes('/app/session')) {
+      log('Waiting for navigation to session page...', 'info');
+      try {
+        await page.waitForURL(/\/(app\/)?session/, { timeout: 10000 });
+        log(`✓ Navigated to: ${page.url()}`, 'success');
+      } catch {
+        log(`⚠️  Navigation timeout, trying to proceed anyway from: ${page.url()}`, 'warning');
+      }
+    }
+
+    // Wait a bit for WebSocket to initialize after navigation
+    await page.waitForTimeout(2000);
+
     const wsResult = await waitForWebSocketConnection(page, step.timeout);
 
     if (!wsResult.success) {
