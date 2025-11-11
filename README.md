@@ -277,6 +277,47 @@ npm run e2e:ui
 
 # 빌드 + 번들 분석
 npm run build:analyze
+
+# 🔍 프로젝트 검증 (빠른 검증, 1-2분)
+npm run verify
+
+# 전체 검증 (E2E 포함, 5-10분)
+npm run verify:full
+
+# CI/CD 검증 (빌드 + E2E)
+npm run verify:ci
+```
+
+### 검증 시스템 (Phase 12 - 2025-01-11) ✅
+
+프로젝트 전체를 자동/수동으로 검증하는 종합 시스템:
+
+**1. 자동화된 검증 스크립트** (`npm run verify`):
+- ✅ 환경 변수 확인
+- ✅ 파일 구조 검증
+- ✅ TypeScript 컴파일
+- ✅ ESLint 검사
+- ✅ 프로덕션 빌드
+- ✅ API 헬스 체크
+- 📊 리포트 생성: 콘솔 + JSON + HTML
+
+**2. 개발자 검증 대시보드** (`/dev-tools`):
+```bash
+npm run dev
+# → http://localhost:5173/dev-tools
+```
+- 시스템 상태 체크 (API, WebSocket, 인증, Feature Flags)
+- 라우트 네비게이션 테스트 (모든 페이지 빠른 이동)
+- API 테스트 도구 (각 엔드포인트 테스트)
+- 수동 검증 체크리스트 (진행 상황 추적)
+
+**3. E2E 테스트 강화**:
+- `tests/e2e/comprehensive/user-journey.spec.ts` - 전체 사용자 경로
+- `tests/e2e/comprehensive/auth-flow.spec.ts` - 인증 흐름
+- `tests/e2e/comprehensive/error-handling.spec.ts` - 에러 처리
+- Mock API 지원 (`VITE_TEST_MODE=mock`)
+
+**📚 상세 문서**: [VERIFICATION_SYSTEM.md](./VERIFICATION_SYSTEM.md)
 ```
 
 ### 현재 품질 상태 (2025-11-11)

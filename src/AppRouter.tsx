@@ -14,6 +14,9 @@ const Dashboard = lazy(() => import('./pages/Home/Dashboard').then(m => ({ defau
 const HistoryPage = lazy(() => import('./pages/History/History'));
 const SettingsPage = lazy(() => import('./pages/Settings/SettingsPage'));
 
+// DevTools (개발 환경 전용)
+const DevTools = lazy(() => import('./pages/DevTools'));
+
 function Fallback() {
   return (
     <div className="min-h-screen flex items-center justify-center text-sm text-gray-500 dark:text-gray-300">
@@ -95,6 +98,14 @@ export default function AppRouter() {
                 </AuthGuard>
               }
             />
+
+            {/* DevTools (개발 환경 전용) */}
+            {import.meta.env.DEV && (
+              <Route
+                path="/dev-tools"
+                element={<DevTools />}
+              />
+            )}
 
             {/* Catch all - redirect to landing page */}
             <Route path="*" element={<Navigate to="/" replace />} />
