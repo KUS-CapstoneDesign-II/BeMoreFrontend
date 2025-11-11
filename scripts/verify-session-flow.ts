@@ -6,6 +6,7 @@ import { join } from 'path';
 // ==================== Configuration ====================
 
 const BASE_URL = process.env.VITE_APP_URL || 'http://localhost:5173';
+const BACKEND_URL = process.env.VITE_API_URL || 'https://bemorebackend.onrender.com';
 const TEST_EMAIL = process.env.TEST_EMAIL || 'test@example.com';
 const TEST_PASSWORD = process.env.TEST_PASSWORD || 'password123';
 const SCREENSHOTS_DIR = join(process.cwd(), 'flow-screenshots');
@@ -31,6 +32,41 @@ function log(message: string, level: LogLevel = 'info') {
   };
 
   console.log(`${colors[level]}${icon[level]} ${message}${reset}`);
+}
+
+// ==================== Backend Warmup ====================
+
+async function warmupBackend(page: Page): Promise<void> {
+  log('🔥 Warming up backend server (preventing cold start)...', 'info');
+  const startTime = Date.now();
+
+  try {
+    // Health check로 서버를 깨웁니다
+    await page.evaluate(async (backendUrl) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 90000); // 90초 타임아웃
+
+      try {
+        const response = await fetch(`${backendUrl}/api/health`, {
+          method: 'GET',
+          signal: controller.signal,
+        });
+        return { ok: response.ok, status: response.status };
+      } finally {
+        clearTimeout(timeout);
+      }
+    }, BACKEND_URL);
+
+    const duration = Date.now() - startTime;
+    log(`✓ Backend ready (${duration}ms)`, 'success');
+
+    // 서버가 완전히 준비될 때까지 추가 대기
+    await page.waitForTimeout(2000);
+  } catch {
+    const duration = Date.now() - startTime;
+    log(`⚠️  Backend warmup timeout after ${duration}ms, continuing anyway...`, 'warn');
+    log('  (Server might still be waking up from cold start)', 'warning');
+  }
 }
 
 // ==================== Types ====================
@@ -210,6 +246,9 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
   log(`${phase.name} - ${step.name}`, 'info');
 
   try {
+    // Step 0: Warmup backend server (콜드 스타트 방지)
+    await warmupBackend(page);
+
     // Step 1: Navigate to login page
     log('Navigating to login page...', 'info');
     await page.goto(`${BASE_URL}/auth/login`, { waitUntil: 'networkidle', timeout: step.timeout });
@@ -220,29 +259,60 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     await page.fill('input[type="email"]', TEST_EMAIL);
     await page.fill('input[type="password"]', TEST_PASSWORD);
 
-    // Step 3: Submit login form and wait for network response
+    // Step 3: Submit login form with retry logic (콜드 스타트 대응)
     log('Submitting login form...', 'info');
 
-    // Wait for the login API call to complete
-    const loginPromise = page.waitForResponse(
-      response => response.url().includes('/api/auth/login') && response.status() === 200,
-      { timeout: 30000 } // Render free tier can be slow on cold start
-    );
+    let loginSuccess = false;
+    let lastError: Error | null = null;
 
-    await page.click('button[type="submit"]');
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        if (attempt > 1) {
+          log(`Login attempt ${attempt}/3 (backend might still be waking up)...`, 'info');
+          // 재시도 전에 폼을 다시 채웁니다
+          await page.fill('input[type="email"]', TEST_EMAIL);
+          await page.fill('input[type="password"]', TEST_PASSWORD);
+        }
 
-    try {
-      await loginPromise;
-      log('Login API response received', 'info');
-    } catch {
-      log('Login API timeout or failed, checking for error messages...', 'warn');
-      await captureScreenshot(page, 'phase-1-login-api-timeout');
+        // Wait for the login API call to complete
+        const loginPromise = page.waitForResponse(
+          response => response.url().includes('/api/auth/login') && response.status() === 200,
+          { timeout: 45000 } // 첫 시도는 더 긴 타임아웃 (콜드 스타트 대응)
+        );
 
-      // Check if there's an error message
-      const errorMessage = await page.locator('.text-red-500, [role="alert"]').textContent({ timeout: 1000 }).catch(() => null);
-      if (errorMessage) {
-        throw new Error(`Login failed: ${errorMessage}`);
+        await page.click('button[type="submit"]');
+        await loginPromise;
+
+        log(`✓ Login successful on attempt ${attempt}`, 'success');
+        loginSuccess = true;
+        break;
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        log(`✗ Login attempt ${attempt}/3 failed: ${lastError.message}`, 'warn');
+
+        await captureScreenshot(page, `phase-1-login-attempt-${attempt}-failed`);
+
+        // 에러 메시지 확인
+        const errorMessage = await page.locator('.text-red-500, [role="alert"]').textContent({ timeout: 1000 }).catch(() => null);
+        if (errorMessage && !errorMessage.includes('연결') && !errorMessage.includes('시간')) {
+          // 연결/타임아웃 에러가 아닌 실제 인증 실패면 재시도하지 않음
+          throw new Error(`Login failed: ${errorMessage}`);
+        }
+
+        // 마지막 시도가 아니면 대기 후 재시도
+        if (attempt < 3) {
+          const waitTime = attempt * 3000; // 3초, 6초로 점진적 증가
+          log(`Waiting ${waitTime}ms before retry...`, 'info');
+          await page.waitForTimeout(waitTime);
+
+          // 페이지를 다시 로드합니다
+          await page.goto(`${BASE_URL}/auth/login`, { waitUntil: 'networkidle', timeout: 15000 });
+        }
       }
+    }
+
+    if (!loginSuccess) {
+      throw new Error(`Login failed after 3 attempts. Last error: ${lastError?.message}`);
     }
 
     // Step 4: Wait for navigation to /app
