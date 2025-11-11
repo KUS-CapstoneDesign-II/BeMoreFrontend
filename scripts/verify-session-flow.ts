@@ -38,34 +38,84 @@ function log(message: string, level: LogLevel = 'info') {
 
 async function warmupBackend(page: Page): Promise<void> {
   log('🔥 Warming up backend server (preventing cold start)...', 'info');
+  log('  This may take up to 60 seconds if server is sleeping...', 'info');
   const startTime = Date.now();
 
-  try {
-    // Health check로 서버를 깨웁니다
-    await page.evaluate(async (backendUrl) => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 90000); // 90초 타임아웃
+  const maxAttempts = 6; // 6번 시도 (총 60초)
+  let attempt = 0;
+  let backendReady = false;
 
-      try {
-        const response = await fetch(`${backendUrl}/api/health`, {
-          method: 'GET',
-          signal: controller.signal,
-        });
-        return { ok: response.ok, status: response.status };
-      } finally {
-        clearTimeout(timeout);
+  while (attempt < maxAttempts && !backendReady) {
+    attempt++;
+    const attemptStart = Date.now();
+
+    try {
+      log(`  Attempt ${attempt}/${maxAttempts}: Checking backend health...`, 'info');
+
+      const result = await page.evaluate(async (backendUrl) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000); // 15초 타임아웃
+
+        try {
+          const response = await fetch(`${backendUrl}/api/health`, {
+            method: 'GET',
+            signal: controller.signal,
+          });
+          return {
+            ok: response.ok,
+            status: response.status,
+            success: true
+          };
+        } catch (error) {
+          return {
+            ok: false,
+            status: 0,
+            success: false,
+            error: error instanceof Error ? error.message : String(error)
+          };
+        } finally {
+          clearTimeout(timeout);
+        }
+      }, BACKEND_URL);
+
+      const attemptDuration = Date.now() - attemptStart;
+
+      if (result.success && result.ok) {
+        const totalDuration = Date.now() - startTime;
+        log(`✓ Backend ready! (attempt ${attempt}, ${attemptDuration}ms this attempt, ${totalDuration}ms total)`, 'success');
+        backendReady = true;
+
+        // 서버가 완전히 준비될 때까지 추가 대기
+        await page.waitForTimeout(3000);
+        break;
+      } else {
+        log(`  ✗ Attempt ${attempt} failed (${attemptDuration}ms): ${result.error || `HTTP ${result.status}`}`, 'warning');
+
+        if (attempt < maxAttempts) {
+          const waitTime = 5000; // 5초 대기
+          log(`  Waiting ${waitTime}ms before next attempt...`, 'info');
+          await page.waitForTimeout(waitTime);
+        }
       }
-    }, BACKEND_URL);
+    } catch (error) {
+      const attemptDuration = Date.now() - attemptStart;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      log(`  ✗ Attempt ${attempt} exception (${attemptDuration}ms): ${errorMessage}`, 'warning');
 
-    const duration = Date.now() - startTime;
-    log(`✓ Backend ready (${duration}ms)`, 'success');
+      if (attempt < maxAttempts) {
+        const waitTime = 5000;
+        log(`  Waiting ${waitTime}ms before next attempt...`, 'info');
+        await page.waitForTimeout(waitTime);
+      }
+    }
+  }
 
-    // 서버가 완전히 준비될 때까지 추가 대기
-    await page.waitForTimeout(2000);
-  } catch {
-    const duration = Date.now() - startTime;
-    log(`⚠️  Backend warmup timeout after ${duration}ms, continuing anyway...`, 'warning');
-    log('  (Server might still be waking up from cold start)', 'warning');
+  const totalDuration = Date.now() - startTime;
+
+  if (!backendReady) {
+    log(`⚠️  Backend warmup failed after ${maxAttempts} attempts (${totalDuration}ms total)`, 'warning');
+    log('  Continuing anyway, but login may fail or be slow...', 'warning');
+    log('  💡 Render free tier cold start can take 30-60 seconds on first request', 'info');
   }
 }
 
@@ -277,7 +327,7 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
         // Wait for the login API call to complete
         const loginPromise = page.waitForResponse(
           response => response.url().includes('/api/auth/login') && response.status() === 200,
-          { timeout: 45000 } // 첫 시도는 더 긴 타임아웃 (콜드 스타트 대응)
+          { timeout: 60000 } // 60초 타임아웃 (Render 콜드 스타트 대응)
         );
 
         await page.click('button[type="submit"]');
@@ -301,8 +351,9 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
 
         // 마지막 시도가 아니면 대기 후 재시도
         if (attempt < 3) {
-          const waitTime = attempt * 3000; // 3초, 6초로 점진적 증가
+          const waitTime = attempt * 10000; // 10초, 20초로 점진적 증가 (콜드 스타트 대응)
           log(`Waiting ${waitTime}ms before retry...`, 'info');
+          log(`  💡 Backend may still be waking up from Render cold start...`, 'info');
           await page.waitForTimeout(waitTime);
 
           // 페이지를 다시 로드합니다
