@@ -287,6 +287,9 @@ npm run verify:flow
 # 세션 플로우 상세 검증 (5단계)
 npm run verify:session
 
+# 배포 서버 및 커스텀 계정으로 검증
+VITE_APP_URL=https://be-more-frontend.vercel.app TEST_EMAIL=your@email.com TEST_PASSWORD=yourpass npm run verify:session
+
 # 전체 검증 (E2E 포함, 5-10분)
 npm run verify:full
 

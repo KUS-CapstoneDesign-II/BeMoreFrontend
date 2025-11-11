@@ -6,6 +6,8 @@ import { join } from 'path';
 // ==================== Configuration ====================
 
 const BASE_URL = process.env.VITE_APP_URL || 'http://localhost:5173';
+const TEST_EMAIL = process.env.TEST_EMAIL || 'test@example.com';
+const TEST_PASSWORD = process.env.TEST_PASSWORD || 'password123';
 const SCREENSHOTS_DIR = join(process.cwd(), 'flow-screenshots');
 const REPORT_PATH = join(process.cwd(), 'session-flow-report.html');
 
@@ -214,9 +216,9 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     await captureScreenshot(page, 'phase-1-login-page');
 
     // Step 2: Fill in login credentials (using test user)
-    log('Filling in login credentials...', 'info');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'password123');
+    log(`Filling in login credentials (${TEST_EMAIL})...`, 'info');
+    await page.fill('input[type="email"]', TEST_EMAIL);
+    await page.fill('input[type="password"]', TEST_PASSWORD);
 
     // Step 3: Submit login form and wait for network response
     log('Submitting login form...', 'info');
@@ -249,16 +251,30 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     await page.waitForLoadState('networkidle');
     await captureScreenshot(page, 'phase-1-after-login');
 
+    // Step 4.5: Wait for Dashboard to load (Suspense fallback to disappear)
+    log('Waiting for Dashboard to load...', 'info');
+    // Wait for the "Loading..." fallback to disappear
+    try {
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 20000 });
+      log('Dashboard loaded', 'info');
+    } catch {
+      log('Dashboard loading timeout, checking if content is visible anyway...', 'warn');
+    }
+
+    // Give the Dashboard component time to render
+    await page.waitForTimeout(2000);
+    await captureScreenshot(page, 'phase-1-dashboard-loaded');
+
     // Step 5: Look for session start button
     log('Looking for start session button...', 'info');
 
-    // Try different selectors
+    // Try different selectors with longer timeout
     let startButton = page.locator('button:has-text("세션 시작")');
-    let buttonVisible = await startButton.isVisible({ timeout: 2000 }).catch(() => false);
+    let buttonVisible = await startButton.isVisible({ timeout: 5000 }).catch(() => false);
 
     if (!buttonVisible) {
       startButton = page.getByRole('button', { name: /세션 시작|Start Session/i });
-      buttonVisible = await startButton.isVisible({ timeout: 2000 }).catch(() => false);
+      buttonVisible = await startButton.isVisible({ timeout: 5000 }).catch(() => false);
     }
 
     if (!buttonVisible) {
@@ -578,6 +594,7 @@ async function main() {
   log('BeMore Session Flow Verification', 'info');
   log('='.repeat(60), 'info');
   log(`Base URL: ${BASE_URL}`, 'info');
+  log(`Test User: ${TEST_EMAIL}`, 'info');
   log('', 'info');
 
   const report: VerificationReport = {
