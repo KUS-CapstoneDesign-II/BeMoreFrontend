@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Logger } from '../../../config/env';
 import { PermissionErrorCard } from '../../Common/PermissionErrorCard';
+import { getMessageStyle, ERROR_MESSAGES } from '../../../utils/messageHelper';
 
 interface CameraCheckProps {
   available: boolean;
@@ -36,7 +37,7 @@ export default function CameraCheck({
       Logger.info('🎥 Requesting camera permission');
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('카메라를 지원하지 않는 브라우저입니다');
+        throw new Error(ERROR_MESSAGES.CAMERA_NOT_SUPPORTED);
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -124,11 +125,16 @@ export default function CameraCheck({
       )}
 
       {/* Generic Error Message (fallback) */}
-      {errorMessage && !showPermissionError && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-300 text-sm">
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && !showPermissionError && (() => {
+        const style = getMessageStyle('error');
+        return (
+          <div className={`mb-4 p-3 ${style.bgClass} border ${style.borderClass} rounded-lg`}>
+            <p className={`${style.textClass} text-sm font-medium`}>
+              {style.icon} {errorMessage}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Video Preview */}
       {available && !showPermissionError && (
@@ -176,11 +182,16 @@ export default function CameraCheck({
         </div>
       )}
 
-      {!available && (
-        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-yellow-700 dark:text-yellow-300 text-sm">
-          ⚠️ 이 브라우저에서는 카메라를 지원하지 않습니다.
-        </div>
-      )}
+      {!available && (() => {
+        const style = getMessageStyle('warning');
+        return (
+          <div className={`p-3 ${style.bgClass} border ${style.borderClass} rounded-lg`}>
+            <p className={`${style.textClass} text-sm font-medium`}>
+              {style.icon} {ERROR_MESSAGES.CAMERA_NOT_SUPPORTED}
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }

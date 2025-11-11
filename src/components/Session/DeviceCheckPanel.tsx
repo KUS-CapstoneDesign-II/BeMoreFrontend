@@ -6,6 +6,7 @@ import CameraCheck from './DeviceCheck/CameraCheck';
 import MicrophoneCheck from './DeviceCheck/MicrophoneCheck';
 import NetworkCheck from './DeviceCheck/NetworkCheck';
 import DeviceCheckStatus from './DeviceCheck/DeviceCheckStatus';
+import { getMessageStyle, ERROR_MESSAGES } from '../../utils/messageHelper';
 
 interface DeviceCheckState {
   camera: {
@@ -73,14 +74,14 @@ export default function DeviceCheckPanel({
             permission: result.camera.permission,
             hasError: result.camera.permission === 'denied',
             errorMessage:
-              result.camera.permission === 'denied' ? '카메라 권한이 거부되었습니다' : undefined,
+              result.camera.permission === 'denied' ? ERROR_MESSAGES.CAMERA_PERMISSION_DENIED : undefined,
           },
           microphone: {
             available: result.microphone.available,
             permission: result.microphone.permission,
             hasError: result.microphone.permission === 'denied',
             errorMessage:
-              result.microphone.permission === 'denied' ? '마이크 권한이 거부되었습니다' : undefined,
+              result.microphone.permission === 'denied' ? ERROR_MESSAGES.MICROPHONE_PERMISSION_DENIED : undefined,
           },
           network: {
             latency: result.network.latency,
@@ -103,8 +104,8 @@ export default function DeviceCheckPanel({
         setState((prev) => ({
           ...prev,
           isChecking: false,
-          camera: { ...prev.camera, hasError: true, errorMessage: '카메라 점검 실패' },
-          microphone: { ...prev.microphone, hasError: true, errorMessage: '마이크 점검 실패' },
+          camera: { ...prev.camera, hasError: true, errorMessage: ERROR_MESSAGES.CAMERA_CHECK_FAILED },
+          microphone: { ...prev.microphone, hasError: true, errorMessage: ERROR_MESSAGES.MICROPHONE_CHECK_FAILED },
         }));
       }
     };
@@ -228,13 +229,16 @@ export default function DeviceCheckPanel({
       </div>
 
       {/* Info Message */}
-      {state.camera.hasError || state.microphone.hasError ? (
-        <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg">
-          <p className="text-sm text-yellow-800 dark:text-yellow-200">
-            💡 권한이 거부된 경우, 브라우저 설정에서 권한을 변경하거나 페이지를 새로고침하세요.
-          </p>
-        </div>
-      ) : null}
+      {(state.camera.hasError || state.microphone.hasError) && (() => {
+        const style = getMessageStyle('info');
+        return (
+          <div className={`mt-6 p-4 ${style.bgClass} border ${style.borderClass} rounded-lg`}>
+            <p className={`text-sm ${style.textClass} font-medium`}>
+              {style.icon} 권한이 거부된 경우, 브라우저 설정에서 권한을 변경하거나 페이지를 새로고침하세요.
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }

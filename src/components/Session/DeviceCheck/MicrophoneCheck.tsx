@@ -3,6 +3,7 @@ import { useMetricsStore } from '../../../stores/metricsStore';
 import { Logger } from '../../../config/env';
 import { PermissionErrorCard } from '../../Common/PermissionErrorCard';
 import { getVadStatusSummary } from '../../../utils/vadMetricsHelper';
+import { getMessageStyle, ERROR_MESSAGES } from '../../../utils/messageHelper';
 
 interface MicrophoneCheckProps {
   available: boolean;
@@ -64,7 +65,7 @@ export default function MicrophoneCheck({
       Logger.info('🎤 Requesting microphone permission');
 
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('마이크를 지원하지 않는 브라우저입니다');
+        throw new Error(ERROR_MESSAGES.MICROPHONE_NOT_SUPPORTED);
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -199,11 +200,16 @@ export default function MicrophoneCheck({
       )}
 
       {/* Generic Error Message (fallback) */}
-      {errorMessage && !showPermissionError && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-300 text-sm">
-          {errorMessage}
-        </div>
-      )}
+      {errorMessage && !showPermissionError && (() => {
+        const style = getMessageStyle('error');
+        return (
+          <div className={`mb-4 p-3 ${style.bgClass} border ${style.borderClass} rounded-lg`}>
+            <p className={`${style.textClass} text-sm font-medium`}>
+              {style.icon} {errorMessage}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Audio Level Meter (User-Friendly) */}
       {isMonitoring && !showPermissionError && (() => {
@@ -255,11 +261,16 @@ export default function MicrophoneCheck({
         </div>
       )}
 
-      {!available && (
-        <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded text-yellow-700 dark:text-yellow-300 text-sm">
-          ⚠️ 이 브라우저에서는 마이크를 지원하지 않습니다.
-        </div>
-      )}
+      {!available && (() => {
+        const style = getMessageStyle('warning');
+        return (
+          <div className={`p-3 ${style.bgClass} border ${style.borderClass} rounded-lg`}>
+            <p className={`${style.textClass} text-sm font-medium`}>
+              {style.icon} {ERROR_MESSAGES.MICROPHONE_NOT_SUPPORTED}
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
