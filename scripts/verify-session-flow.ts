@@ -332,7 +332,8 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     }
 
     // Give the Dashboard component time to render
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000); // Increased wait time
+    log('Dashboard loaded', 'info');
     await captureScreenshot(page, 'phase-1-dashboard-loaded');
 
     // Step 5: Look for session start button
@@ -340,11 +341,11 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
 
     // Try different selectors with longer timeout
     let startButton = page.locator('button:has-text("세션 시작")');
-    let buttonVisible = await startButton.isVisible({ timeout: 5000 }).catch(() => false);
+    let buttonVisible = await startButton.isVisible({ timeout: 10000 }).catch(() => false);
 
     if (!buttonVisible) {
       startButton = page.getByRole('button', { name: /세션 시작|Start Session/i });
-      buttonVisible = await startButton.isVisible({ timeout: 5000 }).catch(() => false);
+      buttonVisible = await startButton.isVisible({ timeout: 10000 }).catch(() => false);
     }
 
     if (!buttonVisible) {
@@ -355,20 +356,9 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     // Step 6: Click session start button
     log('Clicking start session button...', 'info');
 
-    // Wait for API response (60s timeout for cold start)
-    const [response] = await Promise.all([
-      page.waitForResponse(
-        response => response.url().includes('/api/session/start') && response.status() === 201,
-        { timeout: 90000 } // 90s for cold start
-      ).catch(() => null),
-      startButton.click({ timeout: 90000 }) // Allow 90s for navigation
-    ]);
-
-    if (response) {
-      log('✓ Initial session start API call detected', 'success');
-    } else {
-      log('⚠️  No initial session start API response (checking after modals)', 'warn');
-    }
+    // Note: First click may trigger modals (cookie consent, onboarding)
+    // rather than starting the session immediately
+    await startButton.click({ timeout: 10000 });
 
     // Wait for any modals to appear and animations to complete
     await page.waitForTimeout(5000);
@@ -593,12 +583,14 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
           throw new Error(`Session start failed: ${errorMessage}`);
         }
 
-        // Check if we navigated to /session or if session-info appeared
-        const currentUrl = page.url();
-        log(`Current URL: ${currentUrl}`, 'info');
-
-        if (currentUrl.includes('/session') || currentUrl.includes('/app/session')) {
-          log('✓ Navigated to session page', 'success');
+        // Wait for URL navigation
+        try {
+          await page.waitForURL(/\/(app\/)?session/, { timeout: 10000 });
+          const currentUrl = page.url();
+          log(`✓ Navigated to session page: ${currentUrl}`, 'success');
+        } catch {
+          const currentUrl = page.url();
+          log(`⚠️  Still on: ${currentUrl}`, 'warn');
         }
       } else {
         log('⚠️  Session start button not found after onboarding', 'warn');
