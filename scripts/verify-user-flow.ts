@@ -9,7 +9,8 @@
  * - 성공/실패 리포트 생성
  */
 
-import { chromium, type Browser, type Page } from '@playwright/test';
+import { chromium } from 'playwright';
+import type { Browser, Page } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 
