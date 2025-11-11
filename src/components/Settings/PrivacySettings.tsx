@@ -182,13 +182,13 @@ export function PrivacySettings() {
               {t('settings.privacy.selectiveDownload') || '선택적 다운로드'}
             </h4>
             <div className="space-y-2">
-              <button className="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+              <button className="w-full text-left px-4 py-2 min-h-[44px] rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                 📋 {t('settings.privacy.sessionHistory') || '세션 히스토리'} (.json)
               </button>
-              <button className="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+              <button className="w-full text-left px-4 py-2 min-h-[44px] rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                 💬 {t('settings.privacy.messageHistory') || '메시지 히스토리'} (.json)
               </button>
-              <button className="w-full text-left px-3 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
+              <button className="w-full text-left px-4 py-2 min-h-[44px] rounded-lg bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                 📊 {t('settings.privacy.emotionAnalysis') || '감정 분석 데이터'} (.csv)
               </button>
             </div>

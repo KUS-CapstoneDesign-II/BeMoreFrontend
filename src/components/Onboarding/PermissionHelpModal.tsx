@@ -17,7 +17,7 @@ export function PermissionHelpModal({ isOpen, onClose }: PermissionHelpModalProp
         </ol>
         <div className="mt-4 text-xs text-gray-500">Safari: 사파리 &gt; 설정 &gt; 웹사이트 &gt; 카메라/마이크에서 도메인 권한을 확인하세요.</div>
         <div className="mt-5 text-right">
-          <button onClick={onClose} className="px-3 py-2 rounded-lg border text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700">닫기</button>
+          <button onClick={onClose} className="px-4 py-2 min-h-[44px] rounded-lg border text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">닫기</button>
         </div>
       </div>
     </div>

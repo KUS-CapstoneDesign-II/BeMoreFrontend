@@ -21,7 +21,7 @@ export function ErrorState({ message = '오류가 발생했습니다', requestId
       <div className="text-sm text-red-800 dark:text-red-200">{message}</div>
       {requestId && <div className="text-[11px] text-red-700/80 dark:text-red-300/80 mt-1">requestId: {requestId}</div>}
       {onRetry && (
-        <button onClick={onRetry} className="mt-2 px-2 py-1 text-xs rounded-md bg-red-600 text-white hover:bg-red-700">다시 시도</button>
+        <button onClick={onRetry} className="mt-2 px-4 py-2 min-h-[44px] text-sm rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors">다시 시도</button>
       )}
     </div>
   );

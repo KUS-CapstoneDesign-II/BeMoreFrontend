@@ -83,8 +83,8 @@ export function DeviceTestStep({ onOpenHelp }: DeviceTestStepProps) {
         </div>
       </div>
       <div className="flex gap-2">
-        <button onClick={startTest} className="px-3 py-2 rounded-lg text-sm bg-primary-600 hover:bg-primary-700 text-white">테스트 시작</button>
-        <button onClick={onOpenHelp} className="px-3 py-2 rounded-lg border text-sm bg-white text-gray-700 border-gray-300">권한 문제 해결</button>
+        <button onClick={startTest} className="px-4 py-2 min-h-[44px] rounded-lg text-sm bg-primary-600 hover:bg-primary-700 text-white transition-colors">테스트 시작</button>
+        <button onClick={onOpenHelp} className="px-4 py-2 min-h-[44px] rounded-lg border text-sm bg-white text-gray-700 border-gray-300 hover:bg-gray-50 transition-colors">권한 문제 해결</button>
       </div>
     </div>
   );
