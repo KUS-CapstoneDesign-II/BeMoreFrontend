@@ -354,61 +354,121 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
 
     // Step 6: Click session start button
     log('Clicking start session button...', 'info');
-    await startButton.click();
 
-    // Wait for any modals to appear
-    await page.waitForTimeout(3000);
+    // Wait for API response (60s timeout for cold start)
+    const [response] = await Promise.all([
+      page.waitForResponse(
+        response => response.url().includes('/api/session/start') && response.status() === 201,
+        { timeout: 90000 } // 90s for cold start
+      ).catch(() => null),
+      startButton.click({ timeout: 90000 }) // Allow 90s for navigation
+    ]);
+
+    if (response) {
+      log('✓ Initial session start API call detected', 'success');
+    } else {
+      log('⚠️  No initial session start API response (checking after modals)', 'warn');
+    }
+
+    // Wait for any modals to appear and animations to complete
+    await page.waitForTimeout(5000);
     await captureScreenshot(page, 'phase-1-after-session-start');
+
+    // Debug: Log all visible buttons
+    log('Debugging: Checking all visible buttons...', 'info');
+    const allButtons = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll('button'));
+      return buttons
+        .filter(btn => {
+          const rect = btn.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        })
+        .map(btn => ({
+          text: btn.textContent?.trim() || '',
+          ariaLabel: btn.getAttribute('aria-label') || '',
+          className: btn.className
+        }));
+    });
+    log(`Found ${allButtons.length} visible buttons:`, 'info');
+    allButtons.forEach((btn, i) => {
+      log(`  ${i + 1}. "${btn.text}" (aria: "${btn.ariaLabel}")`, 'info');
+    });
 
     // Step 6.5: Handle cookie consent modal if it appears
     log('Checking for cookie consent modal...', 'info');
-    const acceptCookieButton = page.locator('button:has-text("모두 허용")');
-    const hasCookieButton = await acceptCookieButton.isVisible({ timeout: 3000 }).catch(() => false);
 
-    if (hasCookieButton) {
-      log('Cookie consent modal detected, clicking "모두 허용"...', 'info');
-      await acceptCookieButton.click();
+    // Try multiple selector strategies
+    let cookieHandled = false;
+
+    // Strategy 1: getByRole
+    const cookieByRole = page.getByRole('button', { name: '모두 허용' });
+    if (await cookieByRole.isVisible({ timeout: 2000 }).catch(() => false)) {
+      log('Cookie consent found via getByRole, clicking...', 'info');
+      await cookieByRole.click();
       await page.waitForTimeout(2000);
       await captureScreenshot(page, 'phase-1-cookie-accepted');
-    } else {
+      cookieHandled = true;
+    }
+
+    // Strategy 2: text content search
+    if (!cookieHandled) {
+      const cookieByText = page.locator('button', { hasText: '모두 허용' });
+      if (await cookieByText.isVisible({ timeout: 2000 }).catch(() => false)) {
+        log('Cookie consent found via hasText, clicking...', 'info');
+        await cookieByText.click();
+        await page.waitForTimeout(2000);
+        await captureScreenshot(page, 'phase-1-cookie-accepted');
+        cookieHandled = true;
+      }
+    }
+
+    if (!cookieHandled) {
       log('No cookie consent modal found', 'info');
     }
 
     // Step 6.6: Handle onboarding flow if it appears
     log('Checking for onboarding flow...', 'info');
 
-    // First, try to find and click skip button
-    const skipButton = page.locator('button:has-text("건너뛰기")');
-    const hasSkipButton = await skipButton.isVisible({ timeout: 3000 }).catch(() => false);
+    // Strategy 1: Try skip button first (most efficient)
+    const skipByRole = page.getByRole('button', { name: '건너뛰기' });
+    const skipByAriaLabel = page.getByRole('button', { name: '온보딩 건너뛰기' });
 
-    if (hasSkipButton) {
-      log('Onboarding skip button found, clicking...', 'info');
-      await skipButton.click();
+    let skipHandled = false;
+
+    if (await skipByRole.isVisible({ timeout: 2000 }).catch(() => false)) {
+      log('Skip button found via getByRole, clicking...', 'info');
+      await skipByRole.click();
       await page.waitForTimeout(2000);
       await captureScreenshot(page, 'phase-1-onboarding-skipped');
-    } else {
-      // If no skip button, check if there's a "다음" button (onboarding steps)
-      const nextButton = page.locator('button:has-text("다음")');
-      const hasNextButton = await nextButton.isVisible({ timeout: 2000 }).catch(() => false);
+      skipHandled = true;
+    } else if (await skipByAriaLabel.isVisible({ timeout: 2000 }).catch(() => false)) {
+      log('Skip button found via aria-label, clicking...', 'info');
+      await skipByAriaLabel.click();
+      await page.waitForTimeout(2000);
+      await captureScreenshot(page, 'phase-1-onboarding-skipped');
+      skipHandled = true;
+    }
 
-      if (hasNextButton) {
-        log('Onboarding "다음" button found, stepping through...', 'info');
+    // Strategy 2: If no skip, step through onboarding
+    if (!skipHandled) {
+      const nextByRole = page.getByRole('button', { name: '다음' });
+
+      if (await nextByRole.isVisible({ timeout: 2000 }).catch(() => false)) {
+        log('Onboarding flow detected, stepping through...', 'info');
 
         // Click through all steps (max 5 steps)
         for (let i = 0; i < 5; i++) {
-          const next = page.locator('button:has-text("다음")');
-          const hasNext = await next.isVisible({ timeout: 1000 }).catch(() => false);
+          const next = page.getByRole('button', { name: '다음' });
 
-          if (hasNext) {
+          if (await next.isVisible({ timeout: 1000 }).catch(() => false)) {
             log(`Onboarding step ${i + 1}, clicking "다음"...`, 'info');
             await next.click();
-            await page.waitForTimeout(1000);
+            await page.waitForTimeout(1500);
           } else {
             // Check for completion button
-            const doneButton = page.locator('button:has-text("완료"), button:has-text("시작하기")');
-            const hasDone = await doneButton.isVisible({ timeout: 1000 }).catch(() => false);
+            const doneButton = page.getByRole('button', { name: /시작하기|완료/ });
 
-            if (hasDone) {
+            if (await doneButton.isVisible({ timeout: 1000 }).catch(() => false)) {
               log('Found completion button, clicking...', 'info');
               await doneButton.click();
               await page.waitForTimeout(2000);
@@ -416,6 +476,7 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
             }
 
             // No more buttons, assume we're done
+            log('No more onboarding buttons, continuing...', 'info');
             break;
           }
         }
@@ -424,6 +485,127 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
       } else {
         log('No onboarding flow detected', 'info');
       }
+    }
+
+    // Step 6.7: After handling modals, click session start button again
+    log('Checking if we need to click session start button again...', 'info');
+    const sessionInfoVisible = await page.getByTestId('session-info').isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (!sessionInfoVisible) {
+      log('Session not started yet, clicking session start button again...', 'info');
+      await page.waitForTimeout(3000); // Wait longer for any transitions
+
+      // Debug: Log all visible buttons after onboarding
+      log('Debugging: Checking all visible buttons after onboarding...', 'info');
+      const allButtonsAfter = await page.evaluate(() => {
+        const buttons = Array.from(document.querySelectorAll('button'));
+        return buttons
+          .filter(btn => {
+            const rect = btn.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0;
+          })
+          .map(btn => ({
+            text: btn.textContent?.trim() || '',
+            ariaLabel: btn.getAttribute('aria-label') || '',
+            className: btn.className,
+            visible: true
+          }));
+      });
+      log(`Found ${allButtonsAfter.length} visible buttons after onboarding:`, 'info');
+      allButtonsAfter.forEach((btn, i) => {
+        log(`  ${i + 1}. "${btn.text}" (aria: "${btn.ariaLabel}")`, 'info');
+      });
+
+      // Scroll to the button area (might be out of viewport)
+      await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'smooth' }));
+      await page.waitForTimeout(1000);
+
+      // Find and click the session start button again
+      // Note: There are TWO buttons with "세션 시작" text after onboarding:
+      // - Button with "세션 시작 →" (no aria-label) in the main content area ← THIS IS THE ONE WE NEED
+      // - Button with "세션 시작" (aria-label="세션 시작") in the sidebar
+      // We need to click the one in the main content area (the one WITHOUT aria-label)
+
+      log('Looking for main "세션 시작 →" button (the one in content area)...', 'info');
+
+      // Get all buttons with "세션 시작" and find the one WITHOUT aria-label
+      const allStartButtons = await page.locator('button').filter({ hasText: '세션 시작' }).all();
+      log(`Found ${allStartButtons.length} buttons with "세션 시작" text`, 'info');
+
+      let startButtonAgain: any = null;
+      let startButtonVisible = false;
+
+      for (let i = 0; i < allStartButtons.length; i++) {
+        const isVisible = await allStartButtons[i].isVisible().catch(() => false);
+        const ariaLabel = await allStartButtons[i].getAttribute('aria-label').catch(() => null);
+        const text = await allStartButtons[i].textContent().catch(() => '');
+
+        log(`  Button ${i + 1}: visible=${isVisible}, aria-label="${ariaLabel || ''}", text="${text?.trim()}"`, 'info');
+
+        // We want the button WITHOUT aria-label (the main content button)
+        if (isVisible && !ariaLabel) {
+          log(`Selecting button ${i + 1} (main content button)...`, 'info');
+          startButtonAgain = allStartButtons[i];
+          startButtonVisible = true;
+          break;
+        }
+      }
+
+      if (!startButtonVisible) {
+        log('Main content button not found, trying any visible button...', 'info');
+        for (let i = 0; i < allStartButtons.length; i++) {
+          const isVisible = await allStartButtons[i].isVisible().catch(() => false);
+          if (isVisible) {
+            log(`Falling back to button ${i + 1}...`, 'info');
+            startButtonAgain = allStartButtons[i];
+            startButtonVisible = true;
+            break;
+          }
+        }
+      }
+
+      if (startButtonVisible) {
+        log('Session start button found, clicking...', 'info');
+
+        // Wait for navigation or API response
+        const [response] = await Promise.all([
+          page.waitForResponse(
+            response => response.url().includes('/api/session/start') && response.status() === 201,
+            { timeout: 60000 } // 60s for cold start
+          ).catch(() => null),
+          startButtonAgain.click()
+        ]);
+
+        if (response) {
+          log('✓ Session start API call successful', 'success');
+        } else {
+          log('⚠️  No session start API response detected (might have failed)', 'warn');
+        }
+
+        // Wait for either URL navigation or error message
+        await page.waitForTimeout(3000);
+        await captureScreenshot(page, 'phase-1-session-start-clicked-again');
+
+        // Check for error messages
+        const errorMessage = await page.locator('.text-red-500, [role="alert"]').textContent({ timeout: 2000 }).catch(() => null);
+        if (errorMessage) {
+          log(`❌ Error detected: ${errorMessage}`, 'error');
+          throw new Error(`Session start failed: ${errorMessage}`);
+        }
+
+        // Check if we navigated to /session or if session-info appeared
+        const currentUrl = page.url();
+        log(`Current URL: ${currentUrl}`, 'info');
+
+        if (currentUrl.includes('/session') || currentUrl.includes('/app/session')) {
+          log('✓ Navigated to session page', 'success');
+        }
+      } else {
+        log('⚠️  Session start button not found after onboarding', 'warn');
+        await captureScreenshot(page, 'phase-1-button-not-found-after-onboarding');
+      }
+    } else {
+      log('Session already started, skipping second click', 'info');
     }
 
     // Step 7: Wait for session info to appear (indicates session started)
