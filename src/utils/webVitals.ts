@@ -9,6 +9,8 @@
  * - FCP (First Contentful Paint): 첫 번째 콘텐츠 표시
  */
 
+import { getAnalyticsEnabled } from '../config/features';
+
 /**
  * Performance API Extended Types for Web Vitals
  */
@@ -233,9 +235,7 @@ let analyticsEndpointAvailable: boolean | null = null;
  *   - CORS 오류 시 로깅 후 무시
  */
 export async function sendVitalsToAnalytics(metric: VitalsMetric): Promise<void> {
-  // 분석 비활성화 확인
-  const analyticsEnabled = import.meta.env.VITE_ANALYTICS_ENABLED !== 'false';
-
+  // 개발 환경: 로컬 로깅만 수행
   if (import.meta.env.DEV) {
     console.log(`📊 Web Vitals: ${metric.name}`, {
       value: `${metric.value}${metric.name === 'CLS' ? '' : 'ms'}`,
@@ -245,11 +245,8 @@ export async function sendVitalsToAnalytics(metric: VitalsMetric): Promise<void>
     return;
   }
 
-  // 프로덕션 && 분석 활성화 상태에서만 전송
-  if (!analyticsEnabled) {
-    if (import.meta.env.DEV) {
-      console.log('📊 Analytics disabled via VITE_ANALYTICS_ENABLED');
-    }
+  // Analytics 비활성화 확인 (Feature Flag)
+  if (!getAnalyticsEnabled()) {
     return;
   }
 

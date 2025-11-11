@@ -8,6 +8,7 @@
  * - 성능 트렌드 추적
  */
 
+import { getAnalyticsEnabled } from '../config/features';
 import type { VitalsMetric } from './webVitals';
 
 export interface PerformanceReport {
@@ -234,6 +235,14 @@ export class PerformanceReportingManager {
    * 성능 경고 전송 (프로덕션)
    */
   private sendAlert(message: string): void {
+    // Analytics 비활성화 시 스킵
+    if (!getAnalyticsEnabled()) {
+      if (import.meta.env.DEV) {
+        console.log('📊 Analytics disabled - would send alert:', message);
+      }
+      return;
+    }
+
     if (import.meta.env.PROD) {
       // TODO: Replace with actual analytics endpoint
       fetch('/api/analytics/alert', {
