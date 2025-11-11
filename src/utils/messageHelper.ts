@@ -69,6 +69,10 @@ export const ERROR_MESSAGES = {
   // 네트워크 관련
   NETWORK_ERROR: '네트워크 연결에 문제가 발생했습니다',
   REQUEST_FAILED: '요청이 실패했습니다',
+  SERVER_CONNECTION_FAILED: '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+  CORS_ERROR: '서버 설정 작업이 진행 중입니다. 잠시 후 다시 시도해주세요.',
+  SERVER_ERROR: '서버에서 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+  TIMEOUT_ERROR: '요청 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.',
 
   // 세션 관련
   SESSION_START_FAILED: '세션 시작에 실패했습니다',

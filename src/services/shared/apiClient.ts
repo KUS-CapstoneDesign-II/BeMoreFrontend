@@ -11,7 +11,7 @@ import {
   sanitizeUrlForLogging,
   maskSensitiveDataInObject,
 } from '../../utils/requestTracking';
-import { logApiError } from './errorHandler';
+import { logApiError, getUserFriendlyErrorMessage } from './errorHandler';
 import type { ApiResponse } from './types';
 
 // Extend Axios config to include custom properties
@@ -164,6 +164,10 @@ apiClient.interceptors.response.use(
     if (monitoring) {
       apiMonitoring.recordRequest(monitoring, false, statusCode, isTimeout);
     }
+
+    // 사용자 친화적 에러 메시지 추가
+    const userMessage = getUserFriendlyErrorMessage(error);
+    (error as AxiosError & { userMessage?: string }).userMessage = userMessage;
 
     return Promise.reject(error);
   }

@@ -1,5 +1,6 @@
 import { maskSessionId } from '../../utils/security';
 import { sanitizeUrlForLogging, maskSensitiveDataInObject } from '../../utils/requestTracking';
+import { ERROR_MESSAGES } from '../../utils/messageHelper';
 import type { CORSErrorDetails } from './types';
 import type { AxiosError } from 'axios';
 
@@ -112,4 +113,59 @@ export function logApiError(
       console.error(`❌ API Error [${maskedReqId}] (${statusCode}): ${sanitizedUrl}`);
     }
   }
+}
+
+/**
+ * 사용자 친화적 에러 메시지 생성
+ * CORS, 타임아웃, 서버 에러 등을 감지하여 적절한 메시지 반환
+ */
+export function getUserFriendlyErrorMessage(error: unknown): string {
+  // Type guard for error object
+  if (typeof error !== 'object' || error === null) {
+    return ERROR_MESSAGES.UNKNOWN_ERROR;
+  }
+
+  const axiosError = error as Partial<AxiosError>;
+
+  // 1. CORS 에러 감지
+  const corsError = detectCORSError(error);
+  if (corsError.isCORS) {
+    return ERROR_MESSAGES.CORS_ERROR;
+  }
+
+  // 2. 타임아웃 에러 감지
+  const isTimeout =
+    axiosError.code === 'ECONNABORTED' ||
+    (axiosError.message || '').toLowerCase().includes('timeout');
+  if (isTimeout) {
+    return ERROR_MESSAGES.TIMEOUT_ERROR;
+  }
+
+  // 3. 네트워크 연결 실패 (TypeError with "Failed to fetch" or "Network Error")
+  const isNetworkError =
+    (axiosError.message || '').includes('Network Error') ||
+    (axiosError.message || '').includes('Failed to fetch') ||
+    axiosError.code === 'ERR_NETWORK';
+  if (isNetworkError) {
+    return ERROR_MESSAGES.SERVER_CONNECTION_FAILED;
+  }
+
+  // 4. HTTP 상태 코드별 메시지
+  const statusCode = axiosError.response?.status;
+  if (statusCode) {
+    // 5xx: 서버 에러
+    if (statusCode >= 500) {
+      return ERROR_MESSAGES.SERVER_ERROR;
+    }
+
+    // 4xx: 클라이언트 에러 (백엔드 응답 메시지가 있으면 사용)
+    const serverMessage = (axiosError.response?.data as { error?: { message?: string } })?.error
+      ?.message;
+    if (serverMessage && typeof serverMessage === 'string') {
+      return serverMessage; // 백엔드가 제공한 사용자 친화적 메시지 사용
+    }
+  }
+
+  // 5. 기본 에러 메시지
+  return ERROR_MESSAGES.REQUEST_FAILED;
 }
