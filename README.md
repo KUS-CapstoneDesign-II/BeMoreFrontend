@@ -88,9 +88,25 @@ VITE_LOG_LEVEL=info
 # Feature Flags
 VITE_ENABLE_MOCK_STT=false
 VITE_ENABLE_MOCK_MEDIAPIPE=false
+
+# Analytics (Phase 11)
+VITE_ANALYTICS_ENABLED=false  # Production에서 true로 설정
 ```
 
 **⚠️ 보안**: `.env` 파일은 절대 커밋하지 마세요. `.gitignore`에 포함되어 있습니다.
+
+### 로컬 개발 환경 설정 (.env.local)
+
+백엔드 통합 테스트 시 `.env.local` 파일을 생성하여 프로덕션 환경 연결:
+
+```bash
+# Backend Integration Testing
+VITE_API_URL=https://bemorebackend.onrender.com
+VITE_WS_URL=wss://bemorebackend.onrender.com
+VITE_ANALYTICS_ENABLED=true  # Analytics 엔드포인트 활성화
+```
+
+**참고**: [FRONTEND_VERIFICATION_CHECKLIST.md](./FRONTEND_VERIFICATION_CHECKLIST.md) - 백엔드 통합 검증 가이드
 
 ---
 
@@ -159,6 +175,9 @@ VITE_ENABLE_MOCK_MEDIAPIPE=false
 - [x] **다크 모드**: class-based 테마 전환
 - [x] **키보드 내비게이션**: 전체 UI 키보드 접근 가능
 - [x] **배치 API 최적화**: 60x 요청 감소 (1/min vs 1/sec)
+- [x] **CORS-Friendly 에러 핸들러**: 사용자 친화적 한국어 에러 메시지 (Phase 11)
+- [x] **Analytics Feature Flag**: 백엔드 준비 상태에 따른 선택적 활성화 (Phase 11)
+- [x] **Backend Integration Ready**: 통합 문서 및 검증 체크리스트 완비 (Phase 11)
 
 ### 계획 중 📋
 
@@ -459,6 +478,49 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - **[Frontend Code Quality Update (2025-11-11)](./FRONTEND_CODE_QUALITY_UPDATE_2025_11_11.md)** - 코드 품질 개선 완료 보고서 (ESLint 0, TypeScript 0, 백엔드 영향 없음)
 - **[Frontend UX Update - AI Overlay (2025-11-11)](./FRONTEND_UX_UPDATE_AI_OVERLAY_2025_11_11.md)** - AI 메시지 오버레이 UX 개선 완료 보고서 (백엔드 영향 없음)
 
+#### 🔗 Backend Integration (Phase 11 - 2025-01-11) ✅
+
+**완료된 작업**:
+- ✅ P0: CORS-Friendly Error Handler (사용자 친화적 한국어 에러 메시지)
+- ✅ P1: Analytics Feature Flag System (백엔드 준비 전까지 404 에러 방지)
+- ✅ Backend 통합 문서 작성 (3개)
+- ✅ Frontend 검증 체크리스트 및 결과 템플릿
+
+**통합 문서**:
+- **[Backend Integration Guide](./BACKEND_INTEGRATION_GUIDE.md)** (14KB) - 백엔드 팀 전달용 상세 가이드
+  - 프론트엔드 완료 작업 (P0, P1)
+  - 백엔드 요청 사항 (에러 메시지 한국어, CORS 설정, Analytics 엔드포인트)
+  - 통합 테스트 시나리오 (3개)
+  - FAQ (5개)
+- **[Backend Integration Brief](./BACKEND_INTEGRATION_BRIEF.md)** (3KB) - 3분 만에 읽는 핵심 요약
+  - 요청 사항 요약 (에러 메시지, CORS, Analytics)
+  - 주요 엔드포인트별 권장 메시지 표
+  - 빠른 테스트 방법
+  - 구현 완료 체크리스트
+- **[Frontend Verification Checklist](./FRONTEND_VERIFICATION_CHECKLIST.md)** (12KB) - 프론트엔드 검증 절차
+  - 6개 에러 처리 시나리오 (로그인, 회원가입, Rate Limit, 5xx, 네트워크, 타임아웃)
+  - CORS 검증 (OPTIONS, POST 요청)
+  - Analytics 검증 (Web Vitals 전송)
+  - 검증 결과 보고 템플릿
+- **[Verification Result Template](./VERIFICATION_RESULT.md)** - 검증 결과 기록 템플릿
+
+**Feature Flags**:
+```bash
+# src/config/features.ts
+ANALYTICS_ENABLED: false  # 기본값: 비활성화
+PERFORMANCE_MONITORING: true
+ERROR_REPORTING: true
+
+# .env에서 오버라이드 가능
+VITE_ANALYTICS_ENABLED=true
+```
+
+**에러 처리 우선순위**:
+1. `userMessage` (axios interceptor) - CORS, 타임아웃, 네트워크 에러
+2. `error.message` (백엔드 제공) - 4xx 에러 (한국어 필수)
+3. `Error.message` - 기본 에러 메시지
+4. `UNKNOWN_ERROR` - 폴백
+
 #### 🎨 UX/HCI 개선 (Phase 11)
 
 - **[UX/HCI Improvement Guidelines](./UX_HCI_IMPROVEMENT_GUIDELINES.md)** - 7가지 UX 법칙 기반 실행 가이드라인 (현재 86.4/100, 목표 A 등급)
@@ -514,6 +576,7 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - **2025-11-06**: SUMMARY.md 추가, README 개편, Prettier 설정
 - **2025-01-10**: Phase 10 AI 음성 상담 구현 완료 (음성 대화 자동화, Backend API 호환성 수정, 8개 감정 지원 확인)
 - **2025-11-11**: 코드 품질 100% 달성 (ESLint 0 warnings, TypeScript `noUncheckedIndexedAccess` 활성화, 13개 파일 타입 안전성 강화)
+- **2025-01-11**: Phase 11 Backend Integration 완료 (CORS-friendly error handler, Analytics Feature Flag, 통합 문서 3개, 검증 체크리스트)
 
 ### 상세 변경 내역 (2025-11-11)
 
