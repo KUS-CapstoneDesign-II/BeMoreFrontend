@@ -21,6 +21,7 @@
     "preview": "vite preview",
     "prepare": "husky",
     "verify": "tsx scripts/verify-project.ts",
+    "verify:flow": "tsx scripts/verify-user-flow.ts",
     "verify:full": "npm run verify && npm run e2e",
     "verify:ci": "npm run verify && npm run build && npm run e2e"
   },

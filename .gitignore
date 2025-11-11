@@ -31,6 +31,12 @@ dist-ssr
 # Coverage reports
 coverage/
 
+# Verification reports
+verification-report.json
+verification-report.html
+user-flow-report.html
+flow-screenshots/
+
 # claude
 .claude/
 
