@@ -356,60 +356,74 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     log('Clicking start session button...', 'info');
     await startButton.click();
 
+    // Wait for any modals to appear
+    await page.waitForTimeout(3000);
+    await captureScreenshot(page, 'phase-1-after-session-start');
+
     // Step 6.5: Handle cookie consent modal if it appears
     log('Checking for cookie consent modal...', 'info');
-    const cookieModal = page.locator('text=개인정보 및 쿠키 동의').or(page.locator('text=모두 허용'));
-    const hasCookieModal = await cookieModal.isVisible({ timeout: 2000 }).catch(() => false);
+    const acceptCookieButton = page.locator('button:has-text("모두 허용")');
+    const hasCookieButton = await acceptCookieButton.isVisible({ timeout: 3000 }).catch(() => false);
 
-    if (hasCookieModal) {
-      log('Cookie consent modal detected, accepting...', 'info');
-      const acceptButton = page.locator('button:has-text("모두 허용")');
-      await acceptButton.click();
-      await page.waitForTimeout(1000);
+    if (hasCookieButton) {
+      log('Cookie consent modal detected, clicking "모두 허용"...', 'info');
+      await acceptCookieButton.click();
+      await page.waitForTimeout(2000);
       await captureScreenshot(page, 'phase-1-cookie-accepted');
+    } else {
+      log('No cookie consent modal found', 'info');
     }
 
-    // Step 6.6: Handle onboarding flow if it appears (skip all steps)
+    // Step 6.6: Handle onboarding flow if it appears
     log('Checking for onboarding flow...', 'info');
-    const onboardingModal = page.locator('text=환영합니다!').or(page.locator('text=단계 1'));
-    const hasOnboarding = await onboardingModal.isVisible({ timeout: 2000 }).catch(() => false);
 
-    if (hasOnboarding) {
-      log('Onboarding flow detected, skipping...', 'info');
+    // First, try to find and click skip button
+    const skipButton = page.locator('button:has-text("건너뛰기")');
+    const hasSkipButton = await skipButton.isVisible({ timeout: 3000 }).catch(() => false);
 
-      // Try to find skip button first
-      const skipButton = page.locator('button:has-text("건너뛰기")').or(page.locator('button:has-text("Skip")'));
-      const hasSkip = await skipButton.isVisible({ timeout: 1000 }).catch(() => false);
+    if (hasSkipButton) {
+      log('Onboarding skip button found, clicking...', 'info');
+      await skipButton.click();
+      await page.waitForTimeout(2000);
+      await captureScreenshot(page, 'phase-1-onboarding-skipped');
+    } else {
+      // If no skip button, check if there's a "다음" button (onboarding steps)
+      const nextButton = page.locator('button:has-text("다음")');
+      const hasNextButton = await nextButton.isVisible({ timeout: 2000 }).catch(() => false);
 
-      if (hasSkip) {
-        await skipButton.click();
-        log('Onboarding skipped', 'info');
-      } else {
-        // Click "다음" button multiple times to go through all steps
-        log('Going through onboarding steps...', 'info');
+      if (hasNextButton) {
+        log('Onboarding "다음" button found, stepping through...', 'info');
+
+        // Click through all steps (max 5 steps)
         for (let i = 0; i < 5; i++) {
-          const nextButton = page.locator('button:has-text("다음")').or(page.locator('button:has-text("Next")'));
-          const hasNext = await nextButton.isVisible({ timeout: 1000 }).catch(() => false);
+          const next = page.locator('button:has-text("다음")');
+          const hasNext = await next.isVisible({ timeout: 1000 }).catch(() => false);
 
           if (hasNext) {
-            await nextButton.click();
-            await page.waitForTimeout(500);
+            log(`Onboarding step ${i + 1}, clicking "다음"...`, 'info');
+            await next.click();
+            await page.waitForTimeout(1000);
           } else {
-            // Last step might have "완료" or "시작하기" button
-            const doneButton = page.locator('button:has-text("완료"), button:has-text("시작하기"), button:has-text("Done"), button:has-text("Start")');
+            // Check for completion button
+            const doneButton = page.locator('button:has-text("완료"), button:has-text("시작하기")');
             const hasDone = await doneButton.isVisible({ timeout: 1000 }).catch(() => false);
+
             if (hasDone) {
+              log('Found completion button, clicking...', 'info');
               await doneButton.click();
-              log('Onboarding completed', 'info');
+              await page.waitForTimeout(2000);
               break;
             }
+
+            // No more buttons, assume we're done
             break;
           }
         }
-      }
 
-      await page.waitForTimeout(2000);
-      await captureScreenshot(page, 'phase-1-onboarding-done');
+        await captureScreenshot(page, 'phase-1-onboarding-completed');
+      } else {
+        log('No onboarding flow detected', 'info');
+      }
     }
 
     // Step 7: Wait for session info to appear (indicates session started)
