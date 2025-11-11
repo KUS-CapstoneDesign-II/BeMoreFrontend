@@ -359,7 +359,6 @@ npm run dev
 - Mock API 지원 (`VITE_TEST_MODE=mock`)
 
 **📚 상세 문서**: [VERIFICATION_SYSTEM.md](./VERIFICATION_SYSTEM.md)
-```
 
 ### 현재 품질 상태 (2025-11-11)
 
