@@ -218,13 +218,34 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     await page.fill('input[type="email"]', 'test@example.com');
     await page.fill('input[type="password"]', 'password123');
 
-    // Step 3: Submit login form
+    // Step 3: Submit login form and wait for network response
     log('Submitting login form...', 'info');
+
+    // Wait for the login API call to complete
+    const loginPromise = page.waitForResponse(
+      response => response.url().includes('/api/auth/login') && response.status() === 200,
+      { timeout: 30000 } // Render free tier can be slow on cold start
+    );
+
     await page.click('button[type="submit"]');
+
+    try {
+      await loginPromise;
+      log('Login API response received', 'info');
+    } catch {
+      log('Login API timeout or failed, checking for error messages...', 'warn');
+      await captureScreenshot(page, 'phase-1-login-api-timeout');
+
+      // Check if there's an error message
+      const errorMessage = await page.locator('.text-red-500, [role="alert"]').textContent({ timeout: 1000 }).catch(() => null);
+      if (errorMessage) {
+        throw new Error(`Login failed: ${errorMessage}`);
+      }
+    }
 
     // Step 4: Wait for navigation to /app
     log('Waiting for redirect to /app...', 'info');
-    await page.waitForURL('**/app**', { timeout: 10000 });
+    await page.waitForURL('**/app**', { timeout: 15000 });
     await page.waitForLoadState('networkidle');
     await captureScreenshot(page, 'phase-1-after-login');
 
