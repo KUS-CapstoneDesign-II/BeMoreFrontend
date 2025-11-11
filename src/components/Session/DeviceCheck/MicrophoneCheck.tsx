@@ -1,12 +1,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { useMetricsStore } from '../../../stores/metricsStore';
 import { Logger } from '../../../config/env';
-
-interface PermissionGuide {
-  title: string;
-  steps: string[];
-  icon?: string;
-}
+import { PermissionErrorCard } from '../../Common/PermissionErrorCard';
 
 interface MicrophoneCheckProps {
   available: boolean;
@@ -14,7 +9,6 @@ interface MicrophoneCheckProps {
   hasError: boolean;
   errorMessage?: string;
   onPermissionRequested?: (granted: boolean) => void;
-  guide?: PermissionGuide;
 }
 
 /**
@@ -29,14 +23,13 @@ export default function MicrophoneCheck({
   hasError,
   errorMessage,
   onPermissionRequested,
-  guide,
 }: MicrophoneCheckProps) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const [permissionStatus, setPermissionStatus] = useState(permission);
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [showGuide, setShowGuide] = useState(false);
+  const [showPermissionError, setShowPermissionError] = useState(false);
 
   const setAudioLevelMetric = useMetricsStore((s) => s.setAudioLevel);
 
@@ -96,9 +89,8 @@ export default function MicrophoneCheck({
       setIsMonitoring(false);
       onPermissionRequested?.(false);
 
-      if (guide && permission === 'prompt') {
-        setShowGuide(true);
-      }
+      // Show friendly error card
+      setShowPermissionError(true);
     }
   };
 
@@ -191,15 +183,29 @@ export default function MicrophoneCheck({
         </span>
       </div>
 
-      {/* Error Message */}
-      {errorMessage && (
+      {/* Permission Error Card - 친화적 오류 처리 */}
+      {showPermissionError && permissionStatus === 'denied' && (
+        <div className="mb-4">
+          <PermissionErrorCard
+            type="microphone"
+            onRetry={() => {
+              setShowPermissionError(false);
+              requestPermission();
+            }}
+            onSkip={() => setShowPermissionError(false)}
+          />
+        </div>
+      )}
+
+      {/* Generic Error Message (fallback) */}
+      {errorMessage && !showPermissionError && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-300 text-sm">
           {errorMessage}
         </div>
       )}
 
       {/* Audio Level Meter */}
-      {isMonitoring && (
+      {isMonitoring && !showPermissionError && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -219,43 +225,22 @@ export default function MicrophoneCheck({
         </div>
       )}
 
-      {/* Permission Guide */}
-      {showGuide && guide && (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
-          <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">{guide.title}</h4>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 dark:text-blue-200">
-            {guide.steps.map((step, idx) => (
-              <li key={idx}>{step}</li>
-            ))}
-          </ol>
-        </div>
-      )}
-
       {/* Action Buttons */}
-      {available && (
+      {available && !showPermissionError && (
         <div className="flex gap-2">
           {permissionStatus !== 'granted' ? (
             <button
               onClick={requestPermission}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition min-h-[44px]"
             >
               🎤 권한 요청
             </button>
           ) : (
             <button
               onClick={stopMonitoring}
-              className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition"
+              className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition min-h-[44px]"
             >
               🛑 모니터링 중지
-            </button>
-          )}
-
-          {!available && (
-            <button
-              onClick={() => setShowGuide(!showGuide)}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-900/30 transition"
-            >
-              {showGuide ? '📖 가이드 숨기기' : '📖 가이드 보기'}
             </button>
           )}
         </div>

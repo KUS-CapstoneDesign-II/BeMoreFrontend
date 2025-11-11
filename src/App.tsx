@@ -4,6 +4,7 @@ import { VideoFeed } from './components/VideoFeed';
 import { STTSubtitle } from './components/STT';
 import { EmotionCard, EmotionTimeline } from './components/Emotion';
 import { SessionControls } from './components/Session';
+import { SessionEndProgressModal } from './components/Session/SessionEndProgressModal';
 import { AIMessageOverlay } from './components/AIChat/AIMessageOverlay';
 // import { Landing } from './components/Landing/Landing';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -19,6 +20,7 @@ import { sessionAPI } from './services/api';
 import { useWebSocket } from './hooks/useWebSocket';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './contexts/ThemeContext';
+import { useOverallConnectionStatus } from './hooks/useOverallConnectionStatus';
 import type { EmotionType, VADMetrics } from './types';
 import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { VADMonitorSkeleton } from './components/Skeleton/Skeleton';
@@ -322,6 +324,9 @@ function App() {
       Logger.debug(`WebSocket channel status changed: ${channel} → ${status}`);
     },
   });
+
+  // 통합 연결 상태 (3채널 → 단일 상태)
+  const overallStatus = useOverallConnectionStatus(wsConnected, connectionStatus);
 
   // Ref to track current connection status (avoids closure issues in Promise polling)
   const connectionStatusRef = useRef(connectionStatus);
@@ -1068,33 +1073,22 @@ function App() {
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 p-3 sm:p-4 animate-slide-in-left" style={{animationDelay: '0.2s'}}>
                   <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2 sm:mb-3">시스템 상태</h2>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">WebSocket</span>
-                      <span className={`${wsConnected ? 'text-green-600' : 'text-red-600'} font-medium`}>
-                        <span aria-hidden="true">● </span>
-                        {wsConnected ? '연결됨' : '연결 끊김'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Landmarks</span>
-                      <span className={`${connectionStatus.landmarks === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
-                        <span aria-hidden="true">● </span>
-                        {connectionStatus.landmarks}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Voice</span>
-                      <span className={`${connectionStatus.voice === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
-                        <span aria-hidden="true">● </span>
-                        {connectionStatus.voice}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600 dark:text-gray-400">Session</span>
-                      <span className={`${connectionStatus.session === 'connected' ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-600'} font-medium`}>
-                        <span aria-hidden="true">● </span>
-                        {connectionStatus.session}
-                      </span>
+                    {/* 통합 연결 상태 (Miller's Law 준수 - 단일 정보) */}
+                    <div
+                      className="flex justify-between items-center group"
+                      title={`세부: Landmarks(${overallStatus.details.landmarks}), Voice(${overallStatus.details.voice}), Session(${overallStatus.details.session})`}
+                    >
+                      <span className="text-gray-600 dark:text-gray-400">연결 상태</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`${overallStatus.statusColor} font-medium`}>
+                          <span aria-hidden="true">● </span>
+                          {overallStatus.statusText}
+                        </span>
+                        {/* 상세 정보 아이콘 (호버 시 툴팁 표시) */}
+                        <span className="text-gray-400 dark:text-gray-600 text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-help">
+                          ℹ️
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1228,42 +1222,8 @@ function App() {
         <TermsOfServiceModal isOpen={showTerms} onClose={() => setShowTerms(false)} />
       </Suspense>
 
-      {/* 🎬 세션 종료 후 결과 로딩 모달 - 끝에 배치하여 다른 요소의 영향을 받지 않도록 */}
-      {isWaitingForSessionEnd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="결과 대기 중">
-          <div className="absolute inset-0 bg-black/40" />
-          <div className="relative bg-white dark:bg-gray-900 rounded-xl shadow-soft-lg p-8 max-w-md mx-auto">
-            <div className="flex flex-col items-center">
-              {/* 스피너 */}
-              <div className="mb-4">
-                <div className="relative w-12 h-12">
-                  <div className="absolute inset-0 border-4 border-primary-200 dark:border-primary-900 rounded-full" />
-                  <div className="absolute inset-0 border-4 border-transparent border-t-primary-500 dark:border-t-primary-400 rounded-full animate-spin" />
-                </div>
-              </div>
-
-              {/* 텍스트 */}
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">결과 분석 중...</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                세션 데이터를 분석하고 있습니다.<br />
-                잠시만 기다려주세요. 🎯
-              </p>
-
-              {/* 진행 상황 표시 */}
-              <div className="mt-6 space-y-2 text-xs text-gray-500 dark:text-gray-400">
-                <div className="flex items-center">
-                  <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2" />
-                  감정 분석 완료
-                </div>
-                <div className="flex items-center">
-                  <span className="inline-block w-2 h-2 bg-primary-500 rounded-full mr-2 animate-pulse" />
-                  종합 분석 중...
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 🎬 세션 종료 후 결과 로딩 모달 - Peak-End Rule 적용 */}
+      <SessionEndProgressModal isOpen={isWaitingForSessionEnd} />
     </div>
   );
 }

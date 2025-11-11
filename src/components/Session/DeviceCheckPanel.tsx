@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useMetricsStore } from '../../stores/metricsStore';
 import { sessionAPI } from '../../services/api';
 import { Logger } from '../../config/env';
-import { getCameraGuideForBrowser, getMicrophoneGuideForBrowser } from '../../utils/permissionGuide';
 import CameraCheck from './DeviceCheck/CameraCheck';
 import MicrophoneCheck from './DeviceCheck/MicrophoneCheck';
 import NetworkCheck from './DeviceCheck/NetworkCheck';
@@ -184,7 +183,6 @@ export default function DeviceCheckPanel({
           hasError={state.camera.hasError}
           errorMessage={state.camera.errorMessage}
           onPermissionRequested={handleCameraPermissionRequested}
-          guide={getCameraGuideForBrowser()}
         />
 
         {/* Microphone Check */}
@@ -194,7 +192,6 @@ export default function DeviceCheckPanel({
           hasError={state.microphone.hasError}
           errorMessage={state.microphone.errorMessage}
           onPermissionRequested={handleMicrophonePermissionRequested}
-          guide={getMicrophoneGuideForBrowser()}
         />
 
         {/* Network Check */}

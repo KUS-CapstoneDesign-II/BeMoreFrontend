@@ -1,11 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Logger } from '../../../config/env';
-
-interface PermissionGuide {
-  title: string;
-  steps: string[];
-  icon?: string;
-}
+import { PermissionErrorCard } from '../../Common/PermissionErrorCard';
 
 interface CameraCheckProps {
   available: boolean;
@@ -13,7 +8,6 @@ interface CameraCheckProps {
   hasError: boolean;
   errorMessage?: string;
   onPermissionRequested?: (granted: boolean) => void;
-  guide?: PermissionGuide;
 }
 
 /**
@@ -27,12 +21,11 @@ export default function CameraCheck({
   hasError,
   errorMessage,
   onPermissionRequested,
-  guide,
 }: CameraCheckProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [previewActive, setPreviewActive] = useState(false);
   const [permissionStatus, setPermissionStatus] = useState(permission);
-  const [showGuide, setShowGuide] = useState(false);
+  const [showPermissionError, setShowPermissionError] = useState(false);
 
   useEffect(() => {
     setPermissionStatus(permission);
@@ -69,10 +62,8 @@ export default function CameraCheck({
       setPreviewActive(false);
       onPermissionRequested?.(false);
 
-      // Show guide if available
-      if (guide && permission === 'prompt') {
-        setShowGuide(true);
-      }
+      // Show friendly error card
+      setShowPermissionError(true);
     }
   };
 
@@ -118,15 +109,29 @@ export default function CameraCheck({
         </span>
       </div>
 
-      {/* Error Message */}
-      {errorMessage && (
+      {/* Permission Error Card - 친화적 오류 처리 */}
+      {showPermissionError && permissionStatus === 'denied' && (
+        <div className="mb-4">
+          <PermissionErrorCard
+            type="camera"
+            onRetry={() => {
+              setShowPermissionError(false);
+              requestPermission();
+            }}
+            onSkip={() => setShowPermissionError(false)}
+          />
+        </div>
+      )}
+
+      {/* Generic Error Message (fallback) */}
+      {errorMessage && !showPermissionError && (
         <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded text-red-700 dark:text-red-300 text-sm">
           {errorMessage}
         </div>
       )}
 
       {/* Video Preview */}
-      {available && (
+      {available && !showPermissionError && (
         <div className="mb-4">
           {previewActive ? (
             <div className="bg-black rounded-lg overflow-hidden">
@@ -150,43 +155,22 @@ export default function CameraCheck({
         </div>
       )}
 
-      {/* Permission Guide */}
-      {showGuide && guide && (
-        <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded">
-          <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">{guide.title}</h4>
-          <ol className="list-decimal list-inside space-y-1 text-sm text-blue-800 dark:text-blue-200">
-            {guide.steps.map((step, idx) => (
-              <li key={idx}>{step}</li>
-            ))}
-          </ol>
-        </div>
-      )}
-
       {/* Action Buttons */}
-      {available && (
+      {available && !showPermissionError && (
         <div className="flex gap-2">
           {permissionStatus !== 'granted' ? (
             <button
               onClick={requestPermission}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition"
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition min-h-[44px]"
             >
               🎥 권한 요청
             </button>
           ) : (
             <button
               onClick={stopCamera}
-              className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition"
+              className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition min-h-[44px]"
             >
               🛑 카메라 중지
-            </button>
-          )}
-
-          {!available && (
-            <button
-              onClick={() => setShowGuide(!showGuide)}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-900/30 transition"
-            >
-              {showGuide ? '📖 가이드 숨기기' : '📖 가이드 보기'}
             </button>
           )}
         </div>
