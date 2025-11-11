@@ -4,6 +4,7 @@ import { useMetricsStore } from '../../stores/metricsStore';
 import { useTimelineStore } from '../../stores/timelineStore';
 import { Logger } from '../../config/env';
 import { useToast } from '../../contexts/ToastContext';
+import { getVadStatusSummary } from '../../utils/vadMetricsHelper';
 
 interface ActiveSessionViewProps {
   sessionId: string;
@@ -194,23 +195,33 @@ export default function ActiveSessionView({
                 </p>
               </div>
 
-              {/* Audio Level */}
+              {/* Voice Status (User-Friendly) */}
               <div className="p-4 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-gray-600">
-                <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">음성 레벨</p>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-green-500 to-red-500 transition-all"
-                      style={{ width: `${metricsState.audioLevel}%` }}
-                    />
-                  </div>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white w-10 text-right">
-                    {Math.round(metricsState.audioLevel)}%
-                  </p>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {metricsState.vadState === 'voice' ? '🗣️ 음성 감지' : '🔇 침묵'}
-                </p>
+                {(() => {
+                  const vadStatus = getVadStatusSummary(metricsState.audioLevel, metricsState.vadState);
+                  return (
+                    <>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">목소리</p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex-1 h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all"
+                            style={{ width: `${metricsState.audioLevel}%` }}
+                          />
+                        </div>
+                        <p className={`text-sm font-bold w-14 text-right ${vadStatus.colorClass}`}>
+                          {vadStatus.levelIcon} {vadStatus.levelText}
+                        </p>
+                      </div>
+                      <p className={`text-xs font-medium ${vadStatus.colorClass}`}>
+                        {vadStatus.icon} {vadStatus.text}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        {vadStatus.guidance}
+                      </p>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Network Latency */}

@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { useMetricsStore } from '../../../stores/metricsStore';
 import { Logger } from '../../../config/env';
 import { PermissionErrorCard } from '../../Common/PermissionErrorCard';
+import { getVadStatusSummary } from '../../../utils/vadMetricsHelper';
 
 interface MicrophoneCheckProps {
   available: boolean;
@@ -204,26 +205,34 @@ export default function MicrophoneCheck({
         </div>
       )}
 
-      {/* Audio Level Meter */}
-      {isMonitoring && !showPermissionError && (
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              음성 레벨
-            </label>
-            <span className="text-sm text-gray-600 dark:text-gray-400">{Math.round(audioLevel)}%</span>
+      {/* Audio Level Meter (User-Friendly) */}
+      {isMonitoring && !showPermissionError && (() => {
+        const vadStatus = getVadStatusSummary(audioLevel, audioLevel > 30 ? 'voice' : 'silence');
+        return (
+          <div className={`mb-4 p-3 rounded-lg ${vadStatus.bgClass}`}>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                목소리
+              </label>
+              <span className={`text-sm font-bold ${vadStatus.colorClass}`}>
+                {vadStatus.levelIcon} {vadStatus.levelText}
+              </span>
+            </div>
+            <div className="w-full h-8 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all duration-100"
+                style={{ width: `${audioLevel}%` }}
+              />
+            </div>
+            <p className={`text-sm font-medium mt-2 ${vadStatus.colorClass}`}>
+              {vadStatus.icon} {vadStatus.text}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {vadStatus.guidance}
+            </p>
           </div>
-          <div className="w-full h-8 bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-green-500 via-yellow-500 to-red-500 transition-all duration-100"
-              style={{ width: `${audioLevel}%` }}
-            />
-          </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-            {audioLevel > 30 ? '✅ 음성이 감지되었습니다' : '🔇 말씀해주세요...'}
-          </p>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Action Buttons */}
       {available && !showPermissionError && (
