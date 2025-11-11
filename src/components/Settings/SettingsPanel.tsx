@@ -46,10 +46,18 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300" aria-label="닫기">✕</button>
         </div>
 
-        <div className="mt-4 space-y-6">
-          <section>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">글꼴 크기</h3>
-            <div className="mt-2 grid grid-cols-4 gap-2">
+        {/* 설정 항목 (Hick의 법칙: 아코디언으로 정보 계층화) */}
+        <div className="mt-4 space-y-3">
+          <details className="group rounded-lg border border-gray-200 dark:border-gray-700" open>
+            <summary className="flex items-center justify-between cursor-pointer px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg list-none">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">🎨 외관 설정</h3>
+              <span className="text-gray-500 dark:text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="px-4 py-3 space-y-4">
+              {/* 글꼴 크기 */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">글꼴 크기</h4>
+                <div className="grid grid-cols-4 gap-2">
               {(['sm','md','lg','xl'] as const).map((s) => (
                 <button
                   key={s}
@@ -58,26 +66,34 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   aria-pressed={fontScale===s}
                 >{s.toUpperCase()}</button>
               ))}
-            </div>
-          </section>
+                </div>
+              </div>
 
-          <section>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">레이아웃 밀도</h3>
-            <div className="mt-2 flex gap-2">
-              {(['compact','spacious'] as const).map((d) => (
-                <button
-                  key={d}
-                  className={`px-3 py-2 rounded border text-sm ${layoutDensity===d? 'bg-primary-500 text-white border-primary-500':'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700'}`}
-                  onClick={() => { setLayoutDensity(d); addToast('레이아웃 밀도를 적용했습니다', 'success', 2200); }}
-                  aria-pressed={layoutDensity===d}
-                >{d === 'compact' ? '컴팩트' : '넓게'}</button>
-              ))}
+              {/* 레이아웃 밀도 */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">레이아웃 밀도</h4>
+                <div className="flex gap-2">
+                  {(['compact','spacious'] as const).map((d) => (
+                    <button
+                      key={d}
+                      className={`px-3 py-2 rounded border text-sm ${layoutDensity===d? 'bg-primary-500 text-white border-primary-500':'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700'}`}
+                      onClick={() => { setLayoutDensity(d); addToast('레이아웃 밀도를 적용했습니다', 'success', 2200); }}
+                      aria-pressed={layoutDensity===d}
+                    >{d === 'compact' ? '컴팩트' : '넓게'}</button>
+                  ))}
+                </div>
+              </div>
             </div>
-          </section>
+          </details>
 
-          <section>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">언어</h3>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+          <details className="group rounded-lg border border-gray-200 dark:border-gray-700" open>
+            <summary className="flex items-center justify-between cursor-pointer px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg list-none">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">🌐 언어 및 지역</h3>
+              <span className="text-gray-500 dark:text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="px-4 py-3">
+              <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">언어</h4>
+              <div className="grid grid-cols-2 gap-2">
               {(['ko','en'] as const).map((lng) => (
                 <button
                   key={lng}
@@ -86,12 +102,17 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   aria-pressed={language===lng}
                 >{lng === 'ko' ? '한국어' : 'English'}</button>
               ))}
+              </div>
             </div>
-          </section>
+          </details>
 
-          <section>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">알림</h3>
-            <div className="mt-2 flex items-center justify-between">
+          <details className="group rounded-lg border border-gray-200 dark:border-gray-700">
+            <summary className="flex items-center justify-between cursor-pointer px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg list-none">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">🔔 알림 설정</h3>
+              <span className="text-gray-500 dark:text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="px-4 py-3">
+              <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 dark:text-gray-300">브라우저 알림 허용</span>
               <button
                 className={`px-3 py-2 rounded border text-sm ${notificationsOptIn? 'bg-green-600 text-white border-green-600':'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-700'}`}
@@ -113,12 +134,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 }}
                 aria-pressed={notificationsOptIn}
               >{notificationsOptIn ? '허용됨' : '요청'}</button>
+              </div>
             </div>
-          </section>
+          </details>
 
-          <section>
-            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">접근성</h3>
-            <div className="mt-2 space-y-2">
+          <details className="group rounded-lg border border-gray-200 dark:border-gray-700">
+            <summary className="flex items-center justify-between cursor-pointer px-4 py-3 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-lg list-none">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">♿ 접근성</h3>
+              <span className="text-gray-500 dark:text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+            </summary>
+            <div className="px-4 py-3 space-y-2">
               <label className="flex items-center justify-between gap-4">
                 <span className="text-sm text-gray-700 dark:text-gray-300">고대비 모드</span>
                 <input type="checkbox" checked={highContrast} onChange={(e) => { setHighContrast(e.target.checked); addToast('고대비 모드를 변경했습니다', 'success', 2000); }} />
@@ -128,7 +153,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                 <input type="checkbox" checked={reducedMotion} onChange={(e) => { setReducedMotion(e.target.checked); addToast('모션 감소 설정을 변경했습니다', 'success', 2000); }} />
               </label>
             </div>
-          </section>
+          </details>
         </div>
       </div>
     </div>
