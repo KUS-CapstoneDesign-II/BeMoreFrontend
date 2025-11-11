@@ -37,16 +37,32 @@ const ERROR_MESSAGES = {
 
 /**
  * API 오류 응답을 사용자 친화적인 메시지로 변환
+ *
+ * Priority:
+ * 1. userMessage from axios interceptor (CORS, timeout, network errors)
+ * 2. ApiError with error code mapping
+ * 3. Error.message
+ * 4. UNKNOWN_ERROR
  */
 export function getErrorMessage(error: ApiError | Error | unknown): string {
-  // ApiError 타입인 경우
+  // 1. Check for userMessage property from axios interceptor (P0: CORS/timeout/network errors)
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'userMessage' in error &&
+    typeof (error as { userMessage?: string }).userMessage === 'string'
+  ) {
+    return (error as { userMessage: string }).userMessage;
+  }
+
+  // 2. ApiError 타입인 경우
   if (isApiError(error)) {
     const code = error.error.code;
     const messageFromCode = (ERROR_MESSAGES as Record<string, string>)[code];
     return messageFromCode ?? error.error.message ?? ERROR_MESSAGES.UNKNOWN_ERROR;
   }
 
-  // Error 객체인 경우
+  // 3. Error 객체인 경우
   if (error instanceof Error) {
     // 네트워크 오류
     if (error.message.includes('Failed to fetch') || error.message.includes('Network')) {
@@ -55,7 +71,7 @@ export function getErrorMessage(error: ApiError | Error | unknown): string {
     return error.message;
   }
 
-  // 알 수 없는 오류
+  // 4. 알 수 없는 오류
   return ERROR_MESSAGES.UNKNOWN_ERROR ?? '알 수 없는 오류가 발생했습니다.';
 }
 
