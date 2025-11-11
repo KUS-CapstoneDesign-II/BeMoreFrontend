@@ -356,9 +356,65 @@ async function executePhase1(page: Page, phase: PhaseResult): Promise<void> {
     log('Clicking start session button...', 'info');
     await startButton.click();
 
+    // Step 6.5: Handle cookie consent modal if it appears
+    log('Checking for cookie consent modal...', 'info');
+    const cookieModal = page.locator('text=개인정보 및 쿠키 동의').or(page.locator('text=모두 허용'));
+    const hasCookieModal = await cookieModal.isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (hasCookieModal) {
+      log('Cookie consent modal detected, accepting...', 'info');
+      const acceptButton = page.locator('button:has-text("모두 허용")');
+      await acceptButton.click();
+      await page.waitForTimeout(1000);
+      await captureScreenshot(page, 'phase-1-cookie-accepted');
+    }
+
+    // Step 6.6: Handle onboarding flow if it appears (skip all steps)
+    log('Checking for onboarding flow...', 'info');
+    const onboardingModal = page.locator('text=환영합니다!').or(page.locator('text=단계 1'));
+    const hasOnboarding = await onboardingModal.isVisible({ timeout: 2000 }).catch(() => false);
+
+    if (hasOnboarding) {
+      log('Onboarding flow detected, skipping...', 'info');
+
+      // Try to find skip button first
+      const skipButton = page.locator('button:has-text("건너뛰기")').or(page.locator('button:has-text("Skip")'));
+      const hasSkip = await skipButton.isVisible({ timeout: 1000 }).catch(() => false);
+
+      if (hasSkip) {
+        await skipButton.click();
+        log('Onboarding skipped', 'info');
+      } else {
+        // Click "다음" button multiple times to go through all steps
+        log('Going through onboarding steps...', 'info');
+        for (let i = 0; i < 5; i++) {
+          const nextButton = page.locator('button:has-text("다음")').or(page.locator('button:has-text("Next")'));
+          const hasNext = await nextButton.isVisible({ timeout: 1000 }).catch(() => false);
+
+          if (hasNext) {
+            await nextButton.click();
+            await page.waitForTimeout(500);
+          } else {
+            // Last step might have "완료" or "시작하기" button
+            const doneButton = page.locator('button:has-text("완료"), button:has-text("시작하기"), button:has-text("Done"), button:has-text("Start")');
+            const hasDone = await doneButton.isVisible({ timeout: 1000 }).catch(() => false);
+            if (hasDone) {
+              await doneButton.click();
+              log('Onboarding completed', 'info');
+              break;
+            }
+            break;
+          }
+        }
+      }
+
+      await page.waitForTimeout(2000);
+      await captureScreenshot(page, 'phase-1-onboarding-done');
+    }
+
     // Step 7: Wait for session info to appear (indicates session started)
     log('Waiting for session to start...', 'info');
-    await page.getByTestId('session-info').waitFor({ state: 'visible', timeout: step.timeout });
+    await page.getByTestId('session-info').waitFor({ state: 'visible', timeout: 20000 });
 
     // Verify session ID is present
     const sessionId = await page.getByTestId('session-id').textContent({ timeout: 1000 });
