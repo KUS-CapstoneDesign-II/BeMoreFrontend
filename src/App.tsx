@@ -898,12 +898,12 @@ function App() {
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">AI 심리 상담 시스템</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Language and Theme */}
-              <div className="hidden sm:flex items-center gap-2">
+            <div className="flex items-center gap-3 sm:gap-4">
+              {/* 환경설정 그룹 (Gestalt 원칙: 유사성 + 근접성) */}
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600">
                 <select
                   aria-label="언어 선택"
-                  className="px-2 py-2 rounded border text-xs bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600"
+                  className="px-2 py-1.5 rounded border text-xs bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600"
                   onChange={(e) => {
                     const val = e.target.value as 'ko'|'en';
                     try {
@@ -921,54 +921,55 @@ function App() {
                 </select>
                 <ThemeToggle />
               </div>
-              {/* Settings Button - Navigate to settings page */}
-              <button
-                onClick={() => navigate('/settings')}
-                className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
-                aria-label="설정 페이지 열기"
-              >⚙️ 설정</button>
-              {/* Shortcuts Help Button */}
-              <button
-                onClick={() => setShowShortcutsHelp(true)}
-                className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
-                aria-label="단축키 도움말 열기"
-                title="키보드 단축키(?)"
-              >?</button>
-              {/* Session Timer */}
-              <SessionTimer running={sessionStatus === 'active'} resetKey={sessionId} initialElapsedMs={sessionStartAt ? Date.now() - sessionStartAt : 0} />
-              {/* 세션 시작 버튼 */}
-              {!sessionId && (
+
+              {/* 유틸리티 그룹 (Gestalt 원칙: 기능적 유사성) */}
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={handleStartSession}
-                  disabled={isLoading}
-                  className="px-4 py-2 min-h-[44px] bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-lg shadow-soft hover:shadow-soft-lg transition-all text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 active:scale-95 transform disabled:opacity-50 disabled:cursor-not-allowed"
-                  aria-label="세션 시작"
-                >
-                  {isLoading ? '시작 중...' : '세션 시작'}
-                </button>
-              )}
-              {/* 세션 히스토리 버튼 */}
-              {!sessionId && (
+                  onClick={() => navigate('/settings')}
+                  className="px-3 py-2 min-h-[44px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  aria-label="설정 페이지 열기"
+                >⚙️ 설정</button>
                 <button
-                  onClick={() => navigate('/history')}
-                  className="px-3 py-2 min-h-[36px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-colors"
-                  aria-label="세션 히스토리 보기"
-                  title="이전 세션 목록 보기"
-                >
-                  📋 히스토리
-                </button>
-              )}
-              {/* 세션 ID */}
+                  onClick={() => setShowShortcutsHelp(true)}
+                  className="px-3 py-2 min-h-[44px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  aria-label="단축키 도움말 열기"
+                  title="키보드 단축키(?)"
+                >?</button>
+              </div>
+
+              {/* 세션 정보 그룹 (Gestalt 원칙: 공통 영역으로 묶기) */}
               {sessionId && (
-                <div className="hidden sm:block text-xs sm:text-sm text-gray-500">
-                  세션 ID: <span className="font-mono text-gray-700">{sessionId.slice(0, 20)}...</span>
+                <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
+                  <SessionTimer running={sessionStatus === 'active'} resetKey={sessionId} initialElapsedMs={sessionStartAt ? Date.now() - sessionStartAt : 0} />
+                  <div className="hidden sm:block text-xs text-blue-700 dark:text-blue-300">
+                    세션 ID: <span className="font-mono">{sessionId.slice(0, 20)}...</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} aria-hidden="true"></div>
+                    <span className="text-xs text-blue-700 dark:text-blue-300">{wsConnected ? '연결됨' : '연결 끊김'}</span>
+                  </div>
                 </div>
               )}
-              {/* WebSocket 상태 */}
-              {sessionId && (
-                <div className="flex items-center space-x-1">
-                  <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} aria-hidden="true"></div>
-                  <span className="text-xs text-gray-500">{wsConnected ? '연결됨' : '연결 끊김'}</span>
+
+              {/* 주요 액션 그룹 (Gestalt 원칙: 연속성) */}
+              {!sessionId && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleStartSession}
+                    disabled={isLoading}
+                    className="px-4 py-2 min-h-[44px] bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-lg shadow-soft hover:shadow-soft-lg transition-all text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 active:scale-95 transform disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="세션 시작"
+                  >
+                    {isLoading ? '시작 중...' : '세션 시작'}
+                  </button>
+                  <button
+                    onClick={() => navigate('/history')}
+                    className="px-3 py-2 min-h-[44px] rounded-lg border text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-400 transition-colors"
+                    aria-label="세션 히스토리 보기"
+                    title="이전 세션 목록 보기"
+                  >
+                    📋 히스토리
+                  </button>
                 </div>
               )}
             </div>
