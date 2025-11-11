@@ -35,6 +35,7 @@ coverage/
 verification-report.json
 verification-report.html
 user-flow-report.html
+session-flow-report.html
 flow-screenshots/
 
 # claude

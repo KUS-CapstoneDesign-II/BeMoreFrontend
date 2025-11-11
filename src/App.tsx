@@ -939,14 +939,14 @@ function App() {
 
               {/* 세션 정보 그룹 (Gestalt 원칙: 공통 영역으로 묶기) */}
               {sessionId && (
-                <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 sm:gap-3 px-2 sm:px-3 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700" data-testid="session-info">
                   <SessionTimer running={sessionStatus === 'active'} resetKey={sessionId} initialElapsedMs={sessionStartAt ? Date.now() - sessionStartAt : 0} />
                   <div className="hidden sm:block text-xs text-blue-700 dark:text-blue-300">
-                    세션 ID: <span className="font-mono">{sessionId.slice(0, 20)}...</span>
+                    세션 ID: <span className="font-mono" data-testid="session-id">{sessionId.slice(0, 20)}...</span>
                   </div>
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-1" data-testid="ws-status">
                     <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} aria-hidden="true"></div>
-                    <span className="text-xs text-blue-700 dark:text-blue-300">{wsConnected ? '연결됨' : '연결 끊김'}</span>
+                    <span className="text-xs text-blue-700 dark:text-blue-300" data-testid="ws-status-text">{wsConnected ? '연결됨' : '연결 끊김'}</span>
                   </div>
                 </div>
               )}
@@ -1041,11 +1041,11 @@ function App() {
 
             {sidebarTab === 'analyze' && (
               <>
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-3 sm:p-4 animate-slide-in-left">
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 p-3 sm:p-4 animate-slide-in-left" data-testid="emotion-panel">
                   <div className="flex items-center justify-between mb-2 sm:mb-3">
                     <h2 className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200">현재 감정</h2>
                     {emotionUpdateCount > 0 && (
-                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-2 py-1 rounded-full">
+                      <span className="text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 px-2 py-1 rounded-full" data-testid="emotion-update-count">
                         ✨ 실시간 업데이트 ({emotionUpdateCount}회)
                       </span>
                     )}

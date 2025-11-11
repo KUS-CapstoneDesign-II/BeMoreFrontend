@@ -176,7 +176,7 @@ export function VideoFeed({
   }, [isReady, startCamera, stopCamera, startTrigger]);
 
   return (
-    <div className={`relative ${className}`} role="region" aria-label="실시간 영상 분석">
+    <div className={`relative ${className}`} role="region" aria-label="실시간 영상 분석" data-testid="video-feed">
       {/* 비디오 스트림 */}
       <video
         ref={videoRef}
@@ -185,6 +185,7 @@ export function VideoFeed({
         muted
         className="w-full h-full object-cover rounded-lg transform -scale-x-100"
         aria-label="사용자 카메라 영상"
+        data-testid="video-stream"
       />
 
       {/* 랜드마크 오버레이 캔버스 */}
@@ -200,13 +201,14 @@ export function VideoFeed({
           className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg"
           role="status"
           aria-live="polite"
+          data-testid="video-loading"
         >
           <div className="text-center text-white">
             <div
               className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"
               aria-hidden="true"
             ></div>
-            <p className="text-sm">
+            <p className="text-sm" data-testid="camera-state">
               {cameraState === 'requesting-permission' && '카메라 권한 요청 중...'}
               {cameraState === 'connecting' && '카메라 연결 중...'}
               {cameraState === 'idle' && isReady && '카메라 시작 중...'}
@@ -222,6 +224,7 @@ export function VideoFeed({
           className="absolute inset-0 flex items-center justify-center bg-red-500 bg-opacity-90 rounded-lg"
           role="alert"
           aria-live="assertive"
+          data-testid="video-error"
         >
           <div className="text-center text-white p-6 max-w-md">
             <svg
@@ -275,6 +278,7 @@ export function VideoFeed({
           className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded"
           role="status"
           aria-label="얼굴 감지 중"
+          data-testid="face-detection-active"
         >
           <span aria-hidden="true">● </span>감지 중
         </div>
