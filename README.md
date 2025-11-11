@@ -457,6 +457,13 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - **[Backend Emotion Support Check](./BACKEND_EMOTION_CHECK.md)** - 백엔드 8개 감정 지원 범위 점검 (✅ 확인 완료)
 - **[Analytics Endpoint Request](./BACKEND_ANALYTICS_ENDPOINT_REQUEST.md)** - 성능 모니터링 엔드포인트 스펙 (선택)
 - **[Frontend Code Quality Update (2025-11-11)](./FRONTEND_CODE_QUALITY_UPDATE_2025_11_11.md)** - 코드 품질 개선 완료 보고서 (ESLint 0, TypeScript 0, 백엔드 영향 없음)
+- **[Frontend UX Update - AI Overlay (2025-11-11)](./FRONTEND_UX_UPDATE_AI_OVERLAY_2025_11_11.md)** - AI 메시지 오버레이 UX 개선 완료 보고서 (백엔드 영향 없음)
+
+#### 🎨 UX/HCI 개선 (Phase 11)
+
+- **[UX/HCI Improvement Guidelines](./UX_HCI_IMPROVEMENT_GUIDELINES.md)** - 7가지 UX 법칙 기반 실행 가이드라인 (현재 86.4/100, 목표 A 등급)
+- **[UX Quick Checklist](./docs/UX_CHECKLIST.md)** - 개발/리뷰 시 즉시 확인용 체크리스트
+- **[UX Analysis Report (2025-11-11)](./UX_ANALYSIS_REPORT_2025_11_11.md)** - 전체 프로젝트 UX 전문가 분석 보고서
 
 ### Phase 9 성과
 
@@ -489,6 +496,12 @@ Phase 9 Frontend 구현이 완료되었으며, Backend와의 통합 문서가 �
 - [Phase 9 Completion Report](./PHASE_9_COMPLETION_REPORT.md)
 - [Backend Integration Docs](./docs/integration/)
 - [Frontend Code Quality Update (2025-11-11)](./FRONTEND_CODE_QUALITY_UPDATE_2025_11_11.md) - ESLint/TypeScript 품질 개선 완료
+- [Frontend UX Update - AI Overlay (2025-11-11)](./FRONTEND_UX_UPDATE_AI_OVERLAY_2025_11_11.md) - AI 메시지 오버레이 UX 개선
+
+### UX/HCI 문서
+- [UX/HCI Improvement Guidelines](./UX_HCI_IMPROVEMENT_GUIDELINES.md) - 실행 가이드라인 (86.4/100 → A 등급 목표)
+- [UX Quick Checklist](./docs/UX_CHECKLIST.md) - 개발/리뷰 체크리스트
+- [UX Analysis Report (2025-11-11)](./UX_ANALYSIS_REPORT_2025_11_11.md) - 전문가 분석 보고서
 
 ---
 
