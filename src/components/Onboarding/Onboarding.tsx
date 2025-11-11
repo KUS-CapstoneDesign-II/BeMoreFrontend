@@ -126,6 +126,13 @@ export function Onboarding({ onComplete, onSkip }: OnboardingProps) {
 
         {/* 하단: 진행 표시 및 버튼 */}
         <div className="space-y-4">
+          {/* 진행 단계 표시 (Miller의 법칙: 명확한 진행 상태) */}
+          <div className="text-center mb-2">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              단계 {currentStep + 1} / {onboardingSteps.length}
+            </p>
+          </div>
+
           {/* 진행 표시 점 */}
           <div className="flex justify-center space-x-2" role="group" aria-label="온보딩 진행 상태">
             {onboardingSteps.map((_, index) => (

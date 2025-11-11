@@ -106,33 +106,46 @@ export default function OnboardingPanel({
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800 p-4">
       <div className="max-w-2xl mx-auto">
-        {/* Progress Indicator */}
+        {/* Progress Indicator (Miller의 법칙: 명확한 진행 상태) */}
         <div className="mb-8">
+          {/* 진행 단계 텍스트 */}
+          <div className="text-center mb-4">
+            <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+              진행 중: {['device_check', 'session_init', 'ready'].indexOf(step) + 1} / 3 단계
+            </p>
+          </div>
+
+          {/* 진행 바 */}
           <div className="flex items-center justify-between mb-4">
             {[
               { step: ONBOARDING_STEPS.DEVICE_CHECK, label: '기기 점검' },
               { step: ONBOARDING_STEPS.SESSION_INIT, label: '세션 초기화' },
               { step: ONBOARDING_STEPS.READY, label: '준비 완료' },
             ].map((item, idx) => (
-              <div key={item.step} className="flex items-center">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition ${
-                    step === item.step
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : ['device_check', 'session_init', 'ready'].indexOf(step) >
-                          ['device_check', 'session_init', 'ready'].indexOf(item.step)
-                        ? 'bg-green-500 text-white'
-                        : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
-                  }`}
-                >
-                  {['device_check', 'session_init', 'ready'].indexOf(step) >
-                  ['device_check', 'session_init', 'ready'].indexOf(item.step)
-                    ? '✅'
-                    : idx + 1}
+              <div key={item.step} className="flex items-center flex-1">
+                <div className="flex flex-col items-center flex-1">
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm transition mb-2 ${
+                      step === item.step
+                        ? 'bg-blue-600 text-white shadow-lg'
+                        : ['device_check', 'session_init', 'ready'].indexOf(step) >
+                            ['device_check', 'session_init', 'ready'].indexOf(item.step)
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    {['device_check', 'session_init', 'ready'].indexOf(step) >
+                    ['device_check', 'session_init', 'ready'].indexOf(item.step)
+                      ? '✅'
+                      : idx + 1}
+                  </div>
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 text-center">
+                    {item.label}
+                  </span>
                 </div>
                 {idx < 2 && (
                   <div
-                    className={`w-12 h-1 mx-2 transition ${
+                    className={`h-1 w-full transition ${
                       ['device_check', 'session_init', 'ready'].indexOf(step) >
                       ['device_check', 'session_init', 'ready'].indexOf(item.step)
                         ? 'bg-green-500'
@@ -140,9 +153,6 @@ export default function OnboardingPanel({
                     }`}
                   />
                 )}
-                <span className="text-xs font-medium text-gray-700 dark:text-gray-300 hidden sm:inline ml-2">
-                  {item.label}
-                </span>
               </div>
             ))}
           </div>
@@ -177,7 +187,7 @@ export default function OnboardingPanel({
                   <p className="text-red-700 dark:text-red-300 font-medium mb-4">{error}</p>
                   <button
                     onClick={handleRetry}
-                    className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+                    className="px-6 py-2 min-h-[44px] bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
                   >
                     🔄 다시 시도
                   </button>
