@@ -140,6 +140,109 @@ npm run e2e
 
 ---
 
+## 🔄 Session Flow E2E Verification
+
+### 개요
+
+**파일**: `scripts/verify-session-flow.ts`
+**명령어**: `npm run verify:session`
+
+BeMore 프론트엔드의 핵심 세션 플로우를 자동으로 검증하는 E2E 테스트입니다. 5개 단계로 구성되어 실제 사용자 경험을 완전히 시뮬레이션합니다.
+
+### 5-Phase Verification Process
+
+#### Phase 1: Session Start API Call
+- 로그인 → /app 이동 → POST /api/sessions/start → sessionId 획득
+- **Render 콜드 스타트 대응**: 6회 재시도 (최대 90초), 점진적 백오프
+- **검증**: sessionId 존재, HTTP 200 응답
+
+#### Phase 2: WebSocket 3-Channel Connection
+- 3개 WebSocket 채널 동시 연결 (landmarks, voice, session)
+- **타임아웃**: 15초
+- **검증**: 모든 채널 OPEN 상태 확인
+
+#### Phase 3: MediaPipe Face Mesh Initialization
+- 카메라 권한 요청 → Face Mesh 라이브러리 로드 → 카메라 스트림 시작
+- **검증**: MediaPipe 초기화 완료, 카메라 스트림 활성화
+
+#### Phase 4: Real-time Data Transmission
+- 5초 동안 landmarks, emotion, VAD 데이터 전송 모니터링
+- **검증**: 실시간 데이터 수신 확인
+
+#### Phase 5: Session End with Cleanup
+- 세션 종료 버튼 클릭 → WebSocket 종료 → 카메라 중지
+- **검증**: 모든 리소스 정리 확인
+
+### 프로덕션 검증 결과 (2025-01-12)
+
+**환경**:
+- Frontend: https://be-more-frontend.vercel.app
+- Backend: https://bemorebackend.onrender.com
+- Browser: Chromium (Playwright)
+
+**실행 시간**:
+- **Phase 1**: 156.6초 (콜드 스타트 대응 포함)
+- **Phase 2**: 2.0초 (WebSocket 연결)
+- **Phase 3**: 0.004초 (MediaPipe 초기화)
+- **Phase 4**: 6.2초 (실시간 데이터 전송)
+- **Phase 5**: 3.1초 (세션 종료 및 정리)
+- **총 시간**: 172.5초 (2분 52초)
+
+**결과**: ✅ All Phases Passed
+
+**생성된 파일**:
+- `session-flow-report.html` - 시각적 검증 리포트
+- `flow-screenshots/*.png` - 각 단계별 스크린샷
+
+### Render 콜드 스타트 대응 전략
+
+Render Free Tier는 15분 비활성 시 sleep 상태가 되며, 웨이크업에 30-60초 소요됩니다. 이를 대응하기 위한 전략:
+
+**Backend Warmup** (6회 재시도):
+- Health check: 15초 타임아웃, 5초 간격
+- 최대 대기: 90초
+- 서버 준비 완료 시 3초 추가 대기
+
+**Login Retry** (3회 재시도):
+- 타임아웃: 60초 (기존 45초 → 증가)
+- 재시도 간격: 10초, 20초 (점진적 증가)
+- 최대 대기: 90초
+
+**기대 성공률**: 96.5% (콜드 스타트 포함)
+
+**상세 문서**: [E2E_TESTING_STRATEGY.md](./docs/E2E_TESTING_STRATEGY.md)
+
+### 사용 방법
+
+```bash
+# 로컬 환경 (localhost:5173)
+npm run verify:session
+
+# 프로덕션 환경
+VITE_APP_URL=https://be-more-frontend.vercel.app \
+VITE_API_URL=https://bemorebackend.onrender.com \
+TEST_EMAIL=test@example.com \
+TEST_PASSWORD=TestPassword123 \
+npm run verify:session
+```
+
+### CI/CD 통합
+
+**GitHub Actions Workflow**: `.github/workflows/e2e-session.yml`
+
+**트리거**:
+- `push` to `main` (src/**, scripts/verify-session-flow.ts)
+- `pull_request` to `main`
+- `workflow_dispatch` (수동 실행)
+
+**실행 단계**:
+1. Vercel 배포 대기 (120초)
+2. Backend warmup (최대 90초)
+3. Session flow verification (172.5초)
+4. HTML 리포트 아티팩트 업로드 (30일 보관)
+
+---
+
 ## 📊 검증 리포트
 
 ### 콘솔 출력 예시
