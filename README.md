@@ -358,6 +358,7 @@ npm run verify:ci
 - **환경**: Vercel (Frontend) + Render (Backend)
 - **아티팩트**: HTML 리포트, 스크린샷 (30일 보관)
 - **PR 자동 코멘트**: 테스트 결과 요약
+- 🚀 **활성화**: [CI/CD 파이프라인 활성화 가이드](./docs/CI_CD_ACTIVATION_GUIDE.md) (30분)
 
 **4. 개발자 대시보드** (`/dev-tools`):
 ```bash
@@ -377,6 +378,7 @@ npm run dev  # → http://localhost:5173/dev-tools
 - [VERIFICATION_SYSTEM.md](./VERIFICATION_SYSTEM.md) - 전체 검증 시스템
 - [PHASE_12_E2E_COMPLETION.md](./docs/PHASE_12_E2E_COMPLETION.md) - Phase 12 완료 보고서
 - [E2E_TESTING_STRATEGY.md](./docs/E2E_TESTING_STRATEGY.md) - Render 콜드 스타트 대응 전략
+- **[CI_CD_ACTIVATION_GUIDE.md](./docs/CI_CD_ACTIVATION_GUIDE.md)** - 🚀 **CI/CD 파이프라인 활성화 가이드 (30분)**
 
 ### 현재 품질 상태 (2025-01-12)
 
