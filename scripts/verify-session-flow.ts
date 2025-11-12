@@ -1021,13 +1021,18 @@ async function main() {
 
   try {
     // Launch browser
+    // Use headless mode in CI environments (GitHub Actions, etc.)
+    const isCI = process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true';
+
     browser = await chromium.launch({
-      headless: false, // Show browser for debugging
+      headless: isCI, // Headless in CI, headed locally for debugging
       args: [
         '--use-fake-ui-for-media-stream', // Auto-grant camera permissions
         '--use-fake-device-for-media-stream', // Use fake camera
       ],
     });
+
+    log(`Browser mode: ${isCI ? 'headless (CI)' : 'headed (local)'}`, 'info');
 
     const context = await browser.newContext({
       viewport: { width: 1280, height: 720 },
