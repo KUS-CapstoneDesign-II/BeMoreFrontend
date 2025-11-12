@@ -24,6 +24,17 @@
 
 **상세 문서**: [PHASE_12_E2E_COMPLETION.md](./docs/PHASE_12_E2E_COMPLETION.md) | [CI/CD Quick Start](./docs/CI_CD_QUICK_START.md)
 
+### 🔍 알려진 이슈
+
+**백엔드 로그인 조사 중** (2025-01-12):
+- **증상**: 일부 계정에서 로그인 시 500 에러 발생
+- **영향 범위**: 테스트 계정(`final2025@test.com`)은 정상 작동, 일부 다른 계정에서만 발생
+- **프론트엔드 상태**: ✅ 완료 (E2E 테스트 통과, GitHub Actions 정상 작동)
+- **백엔드 상태**: 🔍 조사 중 (데이터베이스 스키마 검증 진행 중)
+- **예상 해결**: 2-4시간 이내 (백엔드 팀 대응 중)
+
+**참고**: 이 이슈는 프론트엔드 코드와 무관하며, CI/CD 파이프라인 및 E2E 테스트는 정상 작동합니다.
+
 ---
 
 ## 📸 데모 & 스크린샷
@@ -721,6 +732,10 @@ VITE_ANALYTICS_ENABLED=true
 - **활성화 문서**:
   - [CI_CD_QUICK_START.md](./docs/CI_CD_QUICK_START.md) - 10분 빠른 시작 가이드
   - [verify-test-account.sh](./scripts/verify-test-account.sh) - 테스트 계정 검증 스크립트
+- **알려진 이슈**:
+  - 일부 계정 로그인 500 에러 (백엔드 조사 중)
+  - 프론트엔드 완료, CI/CD 정상 작동
+  - 테스트 계정(`final2025@test.com`)은 정상
 
 ### 상세 변경 내역 (2025-01-11)
 
