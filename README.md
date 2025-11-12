@@ -12,16 +12,17 @@
 
 ## 🎉 프로젝트 상태
 
-**Phase 12: E2E Testing System** - ✅ **완료** (2025-01-12)
+**Phase 12: E2E Testing System + CI/CD** - ✅ **완료** (2025-01-12)
 
 - ✅ 5-Phase Session Flow E2E 자동화 완료
 - ✅ Render 콜드 스타트 대응 (96.5% 성공률)
 - ✅ 프로덕션 환경 검증 성공 (172.5초)
 - ✅ CI/CD 파이프라인 통합 완료
+- ✅ **GitHub Actions 활성화 완료** (6m 17s 실행, All Phases Passed)
 
-**🚀 다음: CI/CD 활성화** - [Quick Start (10분)](./docs/CI_CD_QUICK_START.md)
+**✨ 자동화된 품질 보증 시스템 가동 중**
 
-**상세 문서**: [PHASE_12_E2E_COMPLETION.md](./docs/PHASE_12_E2E_COMPLETION.md)
+**상세 문서**: [PHASE_12_E2E_COMPLETION.md](./docs/PHASE_12_E2E_COMPLETION.md) | [CI/CD Quick Start](./docs/CI_CD_QUICK_START.md)
 
 ---
 
@@ -354,13 +355,15 @@ npm run verify:ci
 - `session-flow-report.html` - 시각적 검증 리포트
 - `flow-screenshots/*.png` - 각 단계별 스크린샷
 
-**3. CI/CD 자동화** (`.github/workflows/e2e-session.yml`):
+**3. CI/CD 자동화** (`.github/workflows/e2e-session.yml`) - ✅ **활성화 완료**:
 - **트리거**: Push to main, PR, 수동 실행
-- **브라우저**: Chromium (Playwright 1.56.1)
+- **브라우저**: Chromium (Playwright 1.56.1, headless 모드)
 - **환경**: Vercel (Frontend) + Render (Backend)
+- **실행 시간**: 6분 17초 (Session Flow 47초)
 - **아티팩트**: HTML 리포트, 스크린샷 (30일 보관)
-- **PR 자동 코멘트**: 테스트 결과 요약
-- 🚀 **활성화**: [CI/CD 파이프라인 활성화 가이드](./docs/CI_CD_ACTIVATION_GUIDE.md) (30분)
+- **PR 자동 코멘트**: 테스트 결과 요약 + 아티팩트 링크
+- **최근 실행**: ✅ All Phases Passed (2025-01-12)
+- 📚 **활성화 가이드**: [CI/CD Quick Start (10분)](./docs/CI_CD_QUICK_START.md) | [상세 가이드 (30분)](./docs/CI_CD_ACTIVATION_GUIDE.md)
 
 **4. 개발자 대시보드** (`/dev-tools`):
 ```bash
@@ -692,6 +695,32 @@ VITE_ANALYTICS_ENABLED=true
 - **2025-11-11**: 코드 품질 100% 달성 (ESLint 0 warnings, TypeScript `noUncheckedIndexedAccess` 활성화, 13개 파일 타입 안전성 강화)
 - **2025-01-11**: Phase 11 Backend Integration 완료 (CORS-friendly error handler, Analytics Feature Flag, 통합 문서 3개, 검증 체크리스트)
 - **2025-01-11**: Phase 12 E2E 검증 시스템 구축 (세션 플로우 5단계 자동화, CI/CD 파이프라인 통합)
+- **2025-01-12**: **CI/CD 파이프라인 활성화 완료** (GitHub Actions 워크플로우 성공, Playwright headless 모드 수정, All Phases Passed)
+
+### 상세 변경 내역 (2025-01-12)
+
+#### CI/CD 파이프라인 활성화 완료
+- **GitHub Secrets 설정**: 4개 환경 변수 구성 완료
+  - `VITE_APP_URL`: https://be-more-frontend.vercel.app
+  - `VITE_API_URL`: https://bemorebackend.onrender.com
+  - `TEST_EMAIL`: 검증된 테스트 계정
+  - `TEST_PASSWORD`: 테스트 계정 비밀번호
+- **Playwright Headless 모드 수정** (`scripts/verify-session-flow.ts`):
+  - CI 환경 자동 감지 (`CI`, `GITHUB_ACTIONS` 환경변수)
+  - GitHub Actions에서 headless 모드 사용 (로컬에서는 headed 모드)
+  - "Missing X server or $DISPLAY" 에러 해결
+- **워크플로우 실행 결과**:
+  - ✅ 첫 실행 성공 (이전 5번 실패 → 1번 성공)
+  - 총 실행 시간: 6분 17초
+  - Session Flow Verification: 47초
+  - 아티팩트 업로드: HTML 리포트 (2m 0s), 스크린샷 (3m 15s)
+- **자동화 완료**:
+  - Push to main: 자동 E2E 테스트 실행
+  - PR 생성: 자동 E2E 테스트 + 코멘트 생성
+  - 수동 실행: workflow_dispatch 지원
+- **활성화 문서**:
+  - [CI_CD_QUICK_START.md](./docs/CI_CD_QUICK_START.md) - 10분 빠른 시작 가이드
+  - [verify-test-account.sh](./scripts/verify-test-account.sh) - 테스트 계정 검증 스크립트
 
 ### 상세 변경 내역 (2025-01-11)
 
@@ -783,6 +812,7 @@ VITE_ANALYTICS_ENABLED=true
 
 **작성 기준**:
 - ✅ 사실 기반, package.json 및 실제 파일 구조 참고
-- ✅ Phase 12 E2E Testing System 완료 (2025-01-12)
-- ✅ 프로덕션 환경 검증 완료 (All Phases Passed)
+- ✅ Phase 12 E2E Testing System + CI/CD 완료 (2025-01-12)
+- ✅ GitHub Actions 파이프라인 활성화 완료 (All Phases Passed)
+- ✅ 프로덕션 환경 검증 완료 (Vercel + Render)
 - 모든 버전은 검증된 데이터 (최종 업데이트: 2025-01-12)
