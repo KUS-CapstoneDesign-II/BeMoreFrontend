@@ -997,7 +997,6 @@ function App() {
               <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
                 <VideoFeed
                   className="w-full h-full"
-                  startTrigger={sessionId}
                   sessionId={sessionId}
                   landmarksWebSocket={landmarksWs}
                   onLandmarks={() => {

@@ -146,23 +146,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
       setChannels(newChannels);
 
-      // 메시지 핸들러 등록
-      if (onLandmarksMessage) {
-        newChannels.landmarks.onMessage(onLandmarksMessage);
-      }
-      if (onVoiceMessage) {
-        newChannels.voice.onMessage(onVoiceMessage);
-      }
-      if (onSessionMessage) {
-        newChannels.session.onMessage(onSessionMessage);
-      }
+      // 메시지 핸들러는 useEffect에서 관리됩니다 (중복 등록 방지)
 
       console.log('[WebSocket] ✅ useWebSocket: Channel initialization started');
       console.log('[WebSocket] 🔌 Landmarks URL:', wsUrls.landmarks);
       console.log('[WebSocket] 🔌 Voice URL:', wsUrls.voice);
       console.log('[WebSocket] 🔌 Session URL:', wsUrls.session);
     },
-    [onLandmarksMessage, onVoiceMessage, onSessionMessage, onStatusChange]
+    [onStatusChange]
   );
 
   // WebSocket 연결 해제
@@ -222,6 +213,46 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     },
     [channels]
   );
+
+  // 메시지 핸들러 등록 (중복 등록 방지)
+  useEffect(() => {
+    if (!channels) return;
+
+    const cleanupFunctions: (() => void)[] = [];
+
+    // 각 채널의 메시지 핸들러 등록 및 cleanup 함수 저장
+    if (onLandmarksMessage) {
+      const cleanup = channels.landmarks.onMessage(onLandmarksMessage);
+      cleanupFunctions.push(cleanup);
+      if (import.meta.env.DEV) {
+        console.log('[useWebSocket] 🟢 Landmarks message handler registered');
+      }
+    }
+
+    if (onVoiceMessage) {
+      const cleanup = channels.voice.onMessage(onVoiceMessage);
+      cleanupFunctions.push(cleanup);
+      if (import.meta.env.DEV) {
+        console.log('[useWebSocket] 🔵 Voice message handler registered');
+      }
+    }
+
+    if (onSessionMessage) {
+      const cleanup = channels.session.onMessage(onSessionMessage);
+      cleanupFunctions.push(cleanup);
+      if (import.meta.env.DEV) {
+        console.log('[useWebSocket] 🟡 Session message handler registered');
+      }
+    }
+
+    // Cleanup: 핸들러 제거
+    return () => {
+      cleanupFunctions.forEach((cleanup) => cleanup());
+      if (import.meta.env.DEV) {
+        console.log('[useWebSocket] 🧹 Message handlers cleaned up');
+      }
+    };
+  }, [channels, onLandmarksMessage, onVoiceMessage, onSessionMessage]);
 
   // 컴포넌트 언마운트 시 연결 해제
   useEffect(() => {

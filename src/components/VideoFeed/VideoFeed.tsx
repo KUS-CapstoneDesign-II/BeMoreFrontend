@@ -1,12 +1,10 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import { useMediaPipe } from '../../hooks/useMediaPipe';
 import type { Results } from '@mediapipe/face_mesh';
 
 interface VideoFeedProps {
   onLandmarks?: (results: Results) => void;
   className?: string;
-  /** When this value changes, the component will attempt to (re)start the camera */
-  startTrigger?: string | number | null;
   /** Current session ID - used to determine if session is active */
   sessionId?: string | null;
   /** WebSocket for sending landmarks data */
@@ -22,13 +20,15 @@ interface VideoFeedProps {
 export function VideoFeed({
   onLandmarks,
   className = '',
-  startTrigger = null,
   sessionId = null,
   landmarksWebSocket = null
 }: VideoFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameCountRef = useRef(0);
+
+  // 카메라 초기화 상태 추적 (한 번만 시작하도록)
+  const [isCameraInitialized, setIsCameraInitialized] = useState(false);
 
   // 🔧 FIX: Use ref for synchronous access to isSessionActive
   // state update is async, so frame callbacks may execute before state reflects the change
@@ -162,18 +162,29 @@ export function VideoFeed({
     onResults: handleResults,
   });
 
-  // 카메라 시작: 준비되었거나 startTrigger가 변경될 때 시도
+  // 카메라 시작: 준비되면 한 번만 시작 (불필요한 재시작 방지)
   useEffect(() => {
-    if (isReady) {
-      // startTrigger가 변경될 때마다 이전 카메라 중지 후 재시작
-      startCamera().catch(() => {
-        // Camera start failed - error will be displayed in UI
-      });
+    if (isReady && !isCameraInitialized) {
+      startCamera()
+        .then(() => {
+          setIsCameraInitialized(true);
+          if (import.meta.env.DEV) {
+            console.log('✅ 카메라 초기화 완료 (한 번만 시작)');
+          }
+        })
+        .catch(() => {
+          // Camera start failed - error will be displayed in UI
+          if (import.meta.env.DEV) {
+            console.error('❌ 카메라 시작 실패');
+          }
+        });
     }
     return () => {
       stopCamera();
+      // 컴포넌트 언마운트 시 초기화 상태 리셋
+      setIsCameraInitialized(false);
     };
-  }, [isReady, startCamera, stopCamera, startTrigger]);
+  }, [isReady, startCamera, stopCamera]);
 
   return (
     <div className={`relative ${className}`} role="region" aria-label="실시간 영상 분석" data-testid="video-feed">

@@ -402,9 +402,14 @@ export class ReconnectingWebSocket {
 
   /**
    * 억제 해제 (필요시 테스트용)
+   * 세션 종료 후 재시작 시 재연결을 가능하게 합니다
    */
   clearReconnectSuppression(): void {
     this.reconnectSuppressed = false;
+    this.shouldReconnect = true;
+    if (import.meta.env.DEV) {
+      console.log(`[WebSocket] ${this.name}: Reconnect suppression cleared, reconnect enabled`);
+    }
   }
 
   /**
@@ -547,6 +552,19 @@ export class WebSocketManager {
     if (this.channels) {
       Object.values(this.channels).forEach((ws) => ws.suppressReconnect());
       console.log('[WebSocket] Reconnect suppressed for all channels');
+    }
+  }
+
+  /**
+   * 모든 채널의 재연결 억제 해제
+   * 세션 종료 후 재시작 시 재연결을 가능하게 합니다
+   */
+  clearReconnectSuppressionAll(): void {
+    if (this.channels) {
+      Object.values(this.channels).forEach((ws) => ws.clearReconnectSuppression());
+      if (import.meta.env.DEV) {
+        console.log('[WebSocket] Reconnect suppression cleared for all channels');
+      }
     }
   }
 
