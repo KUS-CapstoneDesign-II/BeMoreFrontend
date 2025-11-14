@@ -6,6 +6,7 @@ import { EmotionCard, EmotionTimeline } from './components/Emotion';
 import { SessionControls } from './components/Session';
 import { SessionEndProgressModal } from './components/Session/SessionEndProgressModal';
 import { AIMessageOverlay } from './components/AIChat/AIMessageOverlay';
+import { AIVoiceChat } from './components/AIChat/AIVoiceChat';
 // import { Landing } from './components/Landing/Landing';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConsentDialog } from './components/Common/ConsentDialog';
@@ -21,7 +22,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './contexts/ThemeContext';
 import { useOverallConnectionStatus } from './hooks/useOverallConnectionStatus';
-import type { EmotionType, VADMetrics } from './types';
+import type { EmotionType, VADMetrics, WSMessage } from './types';
 import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { VADMonitorSkeleton } from './components/Skeleton/Skeleton';
 import { collectWebVitals, logPerformanceMetrics } from './utils/performance';
@@ -150,6 +151,14 @@ function App() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isOverlayStreaming, setIsOverlayStreaming] = useState(false);
   const [isTTSSpeaking, setIsTTSSpeaking] = useState(false);
+
+  // 🎯 Session message handlers 등록 시스템
+  const sessionMessageHandlersRef = useRef<Array<(message: WSMessage) => void>>([]);
+
+  // 🔧 Session message handler 등록 함수
+  const registerSessionMessageHandler = useCallback((handler: (message: WSMessage) => void) => {
+    sessionMessageHandlersRef.current.push(handler);
+  }, []);
 
   // WebSocket 연결
   const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs, sendToSession } = useWebSocket({
@@ -304,6 +313,12 @@ function App() {
       if (message.type === 'status_update') {
         // 세션 상태 업데이트 처리
       }
+
+      // 🔧 모든 등록된 핸들러 호출
+      sessionMessageHandlersRef.current.forEach((handler) => {
+        handler(message);
+      });
+
       // AI streaming events (example schema)
       if (message.type === 'ai_stream_begin') {
         window.dispatchEvent(new CustomEvent('ai:begin'));
@@ -1092,6 +1107,17 @@ function App() {
                     </div>
                   </div>
                 </div>
+                {/* AI 음성 상담 */}
+                {sessionId && (
+                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 animate-slide-in-left" style={{animationDelay: '0.3s'}}>
+                    <AIVoiceChat
+                      sessionId={sessionId}
+                      sendToSession={sendToSession}
+                      currentEmotion={currentEmotion}
+                      onSessionMessage={registerSessionMessageHandler}
+                    />
+                  </div>
+                )}
               </>
             )}
 
