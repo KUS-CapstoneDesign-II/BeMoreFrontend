@@ -94,7 +94,7 @@ export function measureLCP(callback: (metric: VitalsMetric) => void): void {
       callback(metric);
     });
 
-    observer.observe({ entryTypes: ['largest-contentful-paint'], buffered: true });
+    observer.observe({ type: 'largest-contentful-paint', buffered: true });
   } catch (error) {
     console.warn('LCP measurement failed:', error);
   }
@@ -126,7 +126,7 @@ export function measureFID(callback: (metric: VitalsMetric) => void): void {
       callback(metric);
     });
 
-    observer.observe({ entryTypes: ['first-input'], buffered: true });
+    observer.observe({ type: 'first-input', buffered: true });
   } catch (error) {
     console.warn('FID measurement failed:', error);
   }
@@ -166,7 +166,7 @@ export function measureCLS(callback: (metric: VitalsMetric) => void): void {
       }
     });
 
-    observer.observe({ entryTypes: ['layout-shift'], buffered: true });
+    observer.observe({ type: 'layout-shift', buffered: true });
   } catch (error) {
     console.warn('CLS measurement failed:', error);
   }
@@ -198,7 +198,7 @@ export function measureFCP(callback: (metric: VitalsMetric) => void): void {
       callback(metric);
     });
 
-    observer.observe({ entryTypes: ['paint'], buffered: true });
+    observer.observe({ type: 'paint', buffered: true });
   } catch (error) {
     console.warn('FCP measurement failed:', error);
   }

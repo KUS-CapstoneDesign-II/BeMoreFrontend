@@ -29,8 +29,10 @@ export function enforceHttps(): void {
  * - font-src 'self' data:: 폰트 (데이터 URI 허용)
  * - connect-src 'self' https: wss:: 네트워크 요청 (HTTPS, WebSocket)
  * - worker-src 'self' blob:: Web Workers (MediaPipe 지원)
- * - frame-ancestors 'none': iframe 로드 차단
  * - upgrade-insecure-requests: HTTP 자동 업그레이드
+ *
+ * 주의: frame-ancestors는 meta 태그에서 무시됩니다.
+ * 프로덕션 환경에서는 HTTP 헤더로 설정하세요 (vercel.json, nginx.conf 참조)
  */
 export function setContentSecurityPolicy(): void {
   const cspContent = [
@@ -41,7 +43,7 @@ export function setContentSecurityPolicy(): void {
     "font-src 'self' data:",
     "connect-src 'self' https: wss:", // HTTPS + WebSocket
     "worker-src 'self' blob:", // MediaPipe Web Worker 지원
-    "frame-ancestors 'none'",
+    // Note: frame-ancestors는 meta 태그에서 무시됨 (HTTP 헤더에서만 동작)
     "upgrade-insecure-requests",
   ].join('; ');
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Emotion } from '../../types/ai-chat';
 
 interface AIMessageOverlayProps {
   message: string;
@@ -6,6 +7,8 @@ interface AIMessageOverlayProps {
   isStreaming: boolean;
   isVisible: boolean;
   isSpeaking: boolean;
+  emotion?: Emotion;
+  error?: string;
 }
 
 /**
@@ -22,6 +25,8 @@ export function AIMessageOverlay({
   isStreaming,
   isVisible,
   isSpeaking,
+  emotion,
+  error,
 }: AIMessageOverlayProps) {
   const [showOverlay, setShowOverlay] = useState(false);
   const [fadeOut, setFadeOut] = useState(false);
@@ -47,6 +52,18 @@ export function AIMessageOverlay({
     return null;
   }
 
+  // 감정 라벨 매핑
+  const emotionLabels: Record<Emotion, string> = {
+    happy: '행복',
+    sad: '슬픔',
+    angry: '분노',
+    anxious: '불안',
+    neutral: '중립',
+    surprised: '놀람',
+    disgusted: '혐오',
+    fearful: '두려움',
+  };
+
   // 역할별 스타일
   const roleStyles = {
     user: {
@@ -55,9 +72,9 @@ export function AIMessageOverlay({
       label: '사용자',
     },
     ai: {
-      bg: 'bg-slate-700/90',
+      bg: error ? 'bg-red-600/90' : 'bg-slate-700/90',
       text: 'text-white',
-      label: 'AI 상담사',
+      label: error ? '오류' : 'AI 상담사',
     },
   };
 
@@ -84,6 +101,11 @@ export function AIMessageOverlay({
           <span className="text-xs font-semibold opacity-80">
             {currentStyle.label}
           </span>
+          {role === 'user' && emotion && (
+            <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs">
+              {emotionLabels[emotion]}
+            </span>
+          )}
           {isStreaming && (
             <span className="flex items-center gap-1 text-xs opacity-70">
               <span className="animate-pulse">●</span>
@@ -100,8 +122,15 @@ export function AIMessageOverlay({
 
         {/* 메시지 내용 */}
         <div className="text-sm md:text-base leading-relaxed whitespace-pre-wrap break-words">
-          {message}
+          {error || message}
         </div>
+
+        {/* 에러 메시지 안내 */}
+        {error && (
+          <div className="mt-2 text-xs opacity-80">
+            💡 세션이 만료되었을 수 있습니다. 페이지를 새로고침해주세요.
+          </div>
+        )}
       </div>
     </div>
   );

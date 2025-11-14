@@ -6,7 +6,6 @@ import { EmotionCard, EmotionTimeline } from './components/Emotion';
 import { SessionControls } from './components/Session';
 import { SessionEndProgressModal } from './components/Session/SessionEndProgressModal';
 import { AIMessageOverlay } from './components/AIChat/AIMessageOverlay';
-import { AIVoiceChat } from './components/AIChat/AIVoiceChat';
 // import { Landing } from './components/Landing/Landing';
 import { ThemeToggle } from './components/ThemeToggle';
 import { ConsentDialog } from './components/Common/ConsentDialog';
@@ -22,7 +21,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './contexts/ThemeContext';
 import { useOverallConnectionStatus } from './hooks/useOverallConnectionStatus';
-import type { EmotionType, VADMetrics, WSMessage } from './types';
+import type { EmotionType, VADMetrics } from './types';
 import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { VADMonitorSkeleton } from './components/Skeleton/Skeleton';
 import { collectWebVitals, logPerformanceMetrics } from './utils/performance';
@@ -151,14 +150,8 @@ function App() {
   const [isOverlayVisible, setIsOverlayVisible] = useState(false);
   const [isOverlayStreaming, setIsOverlayStreaming] = useState(false);
   const [isTTSSpeaking, setIsTTSSpeaking] = useState(false);
-
-  // 🎯 Session message handlers 등록 시스템
-  const sessionMessageHandlersRef = useRef<Array<(message: WSMessage) => void>>([]);
-
-  // 🔧 Session message handler 등록 함수
-  const registerSessionMessageHandler = useCallback((handler: (message: WSMessage) => void) => {
-    sessionMessageHandlersRef.current.push(handler);
-  }, []);
+  const [overlayEmotion, setOverlayEmotion] = useState<EmotionType | null>(null);
+  const [overlayError, setOverlayError] = useState<string | undefined>(undefined);
 
   // WebSocket 연결
   const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs, sendToSession } = useWebSocket({
@@ -314,11 +307,6 @@ function App() {
         // 세션 상태 업데이트 처리
       }
 
-      // 🔧 모든 등록된 핸들러 호출
-      sessionMessageHandlersRef.current.forEach((handler) => {
-        handler(message);
-      });
-
       // AI streaming events (example schema)
       if (message.type === 'ai_stream_begin') {
         window.dispatchEvent(new CustomEvent('ai:begin'));
@@ -363,6 +351,8 @@ function App() {
       setOverlayRole('user');
       setIsOverlayVisible(true);
       setIsOverlayStreaming(false);
+      setOverlayEmotion(currentEmotion); // 현재 감정 저장
+      setOverlayError(undefined); // 에러 초기화
 
       // 3초 후 자동 사라짐
       if (userMessageTimeout) clearTimeout(userMessageTimeout);
@@ -378,6 +368,8 @@ function App() {
       setIsOverlayVisible(true);
       setIsOverlayStreaming(true);
       setIsTTSSpeaking(false);
+      setOverlayEmotion(null); // AI 메시지는 감정 없음
+      setOverlayError(undefined); // 에러 초기화
     };
 
     // AI 청크 추가 (스트리밍)
@@ -399,14 +391,26 @@ function App() {
       const customEvent = event as CustomEvent<{ error: string }>;
       const { error } = customEvent.detail;
 
-      setOverlayMessage(`오류: ${error}`);
+      // Backend foreign key 에러 감지
+      const isForeignKeyError = error.includes('foreign key') ||
+                                error.includes('conversations') ||
+                                error.includes('session_id');
+
+      const userFriendlyError = isForeignKeyError
+        ? '세션이 만료되었습니다'
+        : error;
+
+      setOverlayMessage(userFriendlyError);
       setOverlayRole('ai');
       setIsOverlayVisible(true);
       setIsOverlayStreaming(false);
+      setOverlayEmotion(null);
+      setOverlayError(userFriendlyError); // 에러 상태 설정
 
       // 5초 후 자동 사라짐
       setTimeout(() => {
         setIsOverlayVisible(false);
+        setOverlayError(undefined);
       }, 5000);
     };
 
@@ -1028,6 +1032,8 @@ function App() {
                   isStreaming={isOverlayStreaming}
                   isVisible={isOverlayVisible}
                   isSpeaking={isTTSSpeaking}
+                  emotion={overlayEmotion || undefined}
+                  error={overlayError}
                 />
               </div>
             </div>
@@ -1107,17 +1113,6 @@ function App() {
                     </div>
                   </div>
                 </div>
-                {/* AI 음성 상담 */}
-                {sessionId && (
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-soft dark:shadow-gray-900/30 hover:shadow-soft-lg transition-all duration-300 animate-slide-in-left" style={{animationDelay: '0.3s'}}>
-                    <AIVoiceChat
-                      sessionId={sessionId}
-                      sendToSession={sendToSession}
-                      currentEmotion={currentEmotion}
-                      onSessionMessage={registerSessionMessageHandler}
-                    />
-                  </div>
-                )}
               </>
             )}
 
