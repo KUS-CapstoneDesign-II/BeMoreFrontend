@@ -1,6 +1,6 @@
-# BeMore Frontend
+# BeMore 프론트엔드
 
-React-based web client for BeMore, a multimodal emotion recognition and counseling system. This frontend captures facial expressions, voice, and text inputs to provide real-time emotion analysis and AI-powered counseling sessions.
+BeMore 멀티모달 감정 인식 및 상담 시스템의 React 기반 웹 클라이언트입니다. 얼굴 표정, 음성, 텍스트 입력을 캡처하여 실시간 감정 분석과 AI 기반 상담 세션을 제공합니다.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19.1-61dafb?logo=react)](https://react.dev/)
@@ -8,447 +8,447 @@ React-based web client for BeMore, a multimodal emotion recognition and counseli
 
 ---
 
-## Overview
+## 개요
 
-BeMore Frontend is a **React 19 + TypeScript** web application that:
+BeMore 프론트엔드는 **React 19 + TypeScript** 기반 웹 애플리케이션으로:
 
-- Records multimodal session data (facial landmarks, voice activity, speech transcripts)
-- Analyzes emotions in real-time using MediaPipe Face Mesh (468 landmarks)
-- Provides AI voice counseling with automatic conversation flow (STT → AI response → TTS)
-- Displays emotion timelines and session summaries for user reflection
+- 멀티모달 세션 데이터 기록 (얼굴 랜드마크, 음성 활동, 음성 전사)
+- MediaPipe Face Mesh를 사용한 실시간 감정 분석 (468개 랜드마크)
+- 자동 대화 흐름을 갖춘 AI 음성 상담 제공 (STT → AI 응답 → TTS)
+- 사용자 성찰을 위한 감정 타임라인 및 세션 요약 표시
 
-The app communicates with the BeMore backend via REST API (authentication, session management) and WebSocket (real-time data streams).
-
----
-
-## Key Screens & Flows
-
-### Public Routes
-- **Landing Page** (`/`): Product introduction, login/signup prompts
-- **Login** (`/auth/login`): Email/password authentication
-- **Signup** (`/auth/signup`): User registration form
-
-### Protected Routes (Authenticated Users)
-- **Dashboard** (`/app`): Session overview, quick start button
-- **Session Recording** (`/app/session`): Main UI for active counseling sessions
-  - Live camera feed with facial emotion recognition
-  - Real-time voice activity detection (VAD) visualization
-  - STT live subtitles displaying speech transcription
-  - AI message overlay showing counseling responses with emotion badges
-  - Session controls (start, pause, end)
-- **History** (`/app/history`): Past session list (UI implemented, backend integration pending)
-- **Settings** (`/app/settings`): User preferences panel (UI implemented, partial functionality)
-
-### Development Only
-- **Dev Tools** (`/dev-tools`): System health checks, API testing, manual verification checklist
+백엔드와 REST API (인증, 세션 관리) 및 WebSocket (실시간 데이터 스트림)을 통해 통신합니다.
 
 ---
 
-## Features
+## 주요 화면 및 플로우
 
-### Implemented ✅
+### 공개 라우트
+- **랜딩 페이지** (`/`): 제품 소개, 로그인/회원가입 안내
+- **로그인** (`/auth/login`): 이메일/비밀번호 인증
+- **회원가입** (`/auth/signup`): 사용자 등록 폼
 
-**Session Recording & Analysis**:
-- Real-time facial emotion recognition (MediaPipe Face Mesh, 468 facial landmarks)
-- Voice Activity Detection (VAD) with waveform visualization
-- Speech-to-Text (STT) live subtitles (Web Speech API)
-- Text-to-Speech (TTS) for AI responses
-- 8 emotion types: happy, sad, angry, anxious, neutral, surprised, disgusted, fearful
-- Emotion timeline visualization
+### 보호된 라우트 (인증된 사용자)
+- **대시보드** (`/app`): 세션 개요, 빠른 시작 버튼
+- **세션 기록** (`/app/session`): 활성 상담 세션을 위한 메인 UI
+  - 얼굴 감정 인식이 포함된 실시간 카메라 피드
+  - 실시간 음성 활동 감지(VAD) 시각화
+  - 음성 전사를 표시하는 STT 실시간 자막
+  - 감정 배지가 포함된 상담 응답을 보여주는 AI 메시지 오버레이
+  - 세션 컨트롤 (시작, 일시정지, 종료)
+- **히스토리** (`/app/history`): 과거 세션 목록 (UI 구현됨, 백엔드 연동 대기 중)
+- **설정** (`/app/settings`): 사용자 설정 패널 (UI 구현됨, 일부 기능만 작동)
 
-**AI Voice Counseling**:
-- Automatic conversation flow: user speech → STT → AI response request → TTS playback
-- Emotion-aware AI prompts (current emotion sent with user message)
-- Streaming AI responses with real-time display
-- Video overlay UI for chat messages with emotion badges
-- User-friendly error handling (session expiry, network issues)
+### 개발 전용
+- **개발 도구** (`/dev-tools`): 시스템 상태 확인, API 테스트, 수동 검증 체크리스트
 
-**Communication**:
-- WebSocket 3-channel communication (landmarks, voice, session control)
-- REST API for authentication and session management
-- Automatic reconnection with exponential backoff
-- Keep-alive pings to prevent backend cold starts
+---
 
-**Quality & Accessibility**:
-- PWA support with Service Worker v1.2.0 (offline caching)
-- Dark mode (class-based theme switching)
-- WCAG AAA color contrast (7:1 ratio)
-- Keyboard navigation support
-- axe-core accessibility validation (development mode)
-- Onboarding flow with camera/microphone permission requests
+## 기능
 
-**Testing & CI/CD**:
-- E2E testing with Playwright (5-phase session flow automation)
-- GitHub Actions CI/CD pipeline (automated testing on push/PR)
-- Unit tests with Vitest (utilities 100% coverage)
+### 구현 완료 ✅
+
+**세션 기록 및 분석**:
+- 실시간 얼굴 감정 인식 (MediaPipe Face Mesh, 468개 얼굴 랜드마크)
+- 파형 시각화가 포함된 음성 활동 감지(VAD)
+- 음성-텍스트 변환(STT) 실시간 자막 (Web Speech API)
+- AI 응답을 위한 텍스트-음성 변환(TTS)
+- 8가지 감정 유형: 행복, 슬픔, 분노, 불안, 중립, 놀람, 혐오, 두려움
+- 감정 타임라인 시각화
+
+**AI 음성 상담**:
+- 자동 대화 흐름: 사용자 음성 → STT → AI 응답 요청 → TTS 재생
+- 감정 인식 AI 프롬프트 (현재 감정이 사용자 메시지와 함께 전송됨)
+- 실시간 표시가 포함된 스트리밍 AI 응답
+- 감정 배지가 포함된 채팅 메시지용 비디오 오버레이 UI
+- 사용자 친화적 오류 처리 (세션 만료, 네트워크 문제)
+
+**통신**:
+- WebSocket 3채널 통신 (landmarks, voice, session control)
+- 인증 및 세션 관리를 위한 REST API
+- 지수 백오프를 사용한 자동 재연결
+- 백엔드 콜드 스타트 방지를 위한 Keep-alive ping
+
+**품질 및 접근성**:
+- Service Worker v1.2.0을 사용한 PWA 지원 (오프라인 캐싱)
+- 다크 모드 (클래스 기반 테마 전환)
+- WCAG AAA 색상 대비 (7:1 비율)
+- 키보드 내비게이션 지원
+- axe-core 접근성 검증 (개발 모드)
+- 카메라/마이크 권한 요청이 포함된 온보딩 플로우
+
+**테스트 및 CI/CD**:
+- Playwright를 사용한 E2E 테스트 (5단계 세션 플로우 자동화)
+- GitHub Actions CI/CD 파이프라인 (push/PR 시 자동 테스트)
+- Vitest를 사용한 유닛 테스트 (유틸리티 100% 커버리지)
 - TypeScript strict mode + `noUncheckedIndexedAccess`
-- ESLint zero warnings
+- ESLint 경고 0개
 
-### Partially Implemented ⚠️
+### 부분 구현 ⚠️
 
-- **History Page**: UI components exist, backend integration incomplete
-- **Settings Page**: UI panels exist, some features need backend sync
-- **Internationalization (i18n)**: Context structure exists, translation resources minimal
+- **히스토리 페이지**: UI 컴포넌트 존재, 백엔드 연동 미완성
+- **설정 페이지**: UI 패널 존재, 일부 기능은 백엔드 동기화 필요
+- **다국어 지원(i18n)**: Context 구조 존재, 번역 리소스 최소화
 
-### Planned 📋
+### 계획 중 📋
 
-- Full multi-language support (complete i18n resource files)
-- User preferences synchronization across devices
-- Advanced data visualization (session insights, trend analysis)
-- Enhanced responsive design for mobile devices
-- Improved screen reader optimization
+- 완전한 다국어 지원 (완전한 i18n 리소스 파일)
+- 기기 간 사용자 설정 동기화
+- 고급 데이터 시각화 (세션 인사이트, 트렌드 분석)
+- 모바일 기기를 위한 향상된 반응형 디자인
+- 향상된 스크린 리더 최적화
 
 ---
 
-## Tech Stack
+## 기술 스택
 
-### Core Framework
-| Package | Version | Purpose |
+### 핵심 프레임워크
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| React | 19.1.1 | UI library |
-| TypeScript | 5.9.3 | Type safety |
-| Vite | 5.4.21 | Build tool with HMR |
-| React Router | 6.30.1 | Client-side routing |
+| React | 19.1.1 | UI 라이브러리 |
+| TypeScript | 5.9.3 | 타입 안정성 |
+| Vite | 5.4.21 | HMR을 갖춘 빌드 도구 |
+| React Router | 6.30.1 | 클라이언트 사이드 라우팅 |
 
-### State Management & HTTP
-| Package | Version | Purpose |
+### 상태 관리 및 HTTP
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| Zustand | 5.0.8 | Global state management |
-| Axios | 1.12.2 | HTTP client |
-| Native WebSocket | - | Real-time bidirectional communication |
+| Zustand | 5.0.8 | 전역 상태 관리 |
+| Axios | 1.12.2 | HTTP 클라이언트 |
+| Native WebSocket | - | 실시간 양방향 통신 |
 
-### UI & Styling
-| Package | Version | Purpose |
+### UI 및 스타일링
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| Tailwind CSS | 3.4.18 | Utility-first CSS framework |
-| React Hot Toast | 2.6.0 | Toast notifications |
+| Tailwind CSS | 3.4.18 | 유틸리티 우선 CSS 프레임워크 |
+| React Hot Toast | 2.6.0 | 토스트 알림 |
 
-### Forms & Validation
-| Package | Version | Purpose |
+### 폼 및 검증
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| React Hook Form | 7.65.0 | Form state management |
-| Zod | 4.1.12 | Schema validation |
+| React Hook Form | 7.65.0 | 폼 상태 관리 |
+| Zod | 4.1.12 | 스키마 검증 |
 
-### AI & Media
-| Package | Version | Purpose |
+### AI 및 미디어
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| @mediapipe/face_mesh | 0.4.1633559619 | 468-point facial landmark tracking |
-| @mediapipe/camera_utils | 0.3.1675466862 | Camera utilities |
+| @mediapipe/face_mesh | 0.4.1633559619 | 468포인트 얼굴 랜드마크 추적 |
+| @mediapipe/camera_utils | 0.3.1675466862 | 카메라 유틸리티 |
 | Web Speech API | - | STT (SpeechRecognition) & TTS (SpeechSynthesis) |
 
-### Monitoring & Accessibility
-| Package | Version | Purpose |
+### 모니터링 및 접근성
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| @sentry/browser | 7.120.0 | Error tracking & performance monitoring |
-| @axe-core/react | 4.9.1 | Automated accessibility testing |
+| @sentry/browser | 7.120.0 | 오류 추적 및 성능 모니터링 |
+| @axe-core/react | 4.9.1 | 자동화된 접근성 테스트 |
 
-### Testing
-| Package | Version | Purpose |
+### 테스트
+| 패키지 | 버전 | 용도 |
 |---------|---------|---------|
-| Vitest | 2.1.4 | Unit testing framework |
-| Playwright | 1.56.1 | E2E testing (Chromium, headless) |
+| Vitest | 2.1.4 | 유닛 테스트 프레임워크 |
+| Playwright | 1.56.1 | E2E 테스트 (Chromium, headless) |
 
 ---
 
-## Project Structure
+## 프로젝트 구조
 
 ```
 src/
-├── components/          # UI components
-│   ├── AIChat/         # AI message overlay, voice chat UI
-│   ├── Auth/           # Login, signup, auth guards
-│   ├── Charts/         # VAD timeline, emotion charts
-│   ├── Common/         # Shared components (buttons, cards, modals)
-│   ├── Emotion/        # Emotion card, emotion timeline
-│   ├── Layout/         # App layout wrapper
-│   ├── Onboarding/     # Permission requests, device checks
-│   ├── Session/        # Session controls, summary, results
-│   ├── Settings/       # Settings panels
-│   ├── STT/            # Speech-to-text subtitle display
-│   ├── VAD/            # Voice activity detection monitor
-│   └── VideoFeed/      # Camera stream with MediaPipe overlay
-├── pages/              # Page-level components
+├── components/          # UI 컴포넌트
+│   ├── AIChat/         # AI 메시지 오버레이, 음성 채팅 UI
+│   ├── Auth/           # 로그인, 회원가입, 인증 가드
+│   ├── Charts/         # VAD 타임라인, 감정 차트
+│   ├── Common/         # 공통 컴포넌트 (버튼, 카드, 모달)
+│   ├── Emotion/        # 감정 카드, 감정 타임라인
+│   ├── Layout/         # 앱 레이아웃 래퍼
+│   ├── Onboarding/     # 권한 요청, 장치 확인
+│   ├── Session/        # 세션 컨트롤, 요약, 결과
+│   ├── Settings/       # 설정 패널
+│   ├── STT/            # 음성-텍스트 자막 표시
+│   ├── VAD/            # 음성 활동 감지 모니터
+│   └── VideoFeed/      # MediaPipe 오버레이가 있는 카메라 스트림
+├── pages/              # 페이지 수준 컴포넌트
 │   ├── Auth/           # LoginPage, SignupPage
 │   ├── Home/           # Dashboard
-│   ├── History/        # Session history list
-│   ├── Landing/        # Landing page
-│   ├── Settings/       # Settings page
-│   └── DevTools.tsx    # Development verification dashboard
-├── hooks/              # Custom React hooks
-│   ├── useSession.ts   # Session lifecycle management
-│   ├── useWebSocket.ts # WebSocket connection & reconnection
-│   ├── useMediaPipe.ts # MediaPipe Face Mesh integration
-│   ├── useVAD.ts       # Voice activity detection
-│   ├── useEmotion.ts   # Emotion analysis
+│   ├── History/        # 세션 히스토리 목록
+│   ├── Landing/        # 랜딩 페이지
+│   ├── Settings/       # 설정 페이지
+│   └── DevTools.tsx    # 개발 검증 대시보드
+├── hooks/              # 커스텀 React 훅
+│   ├── useSession.ts   # 세션 생명주기 관리
+│   ├── useWebSocket.ts # WebSocket 연결 및 재연결
+│   ├── useMediaPipe.ts # MediaPipe Face Mesh 통합
+│   ├── useVAD.ts       # 음성 활동 감지
+│   ├── useEmotion.ts   # 감정 분석
 │   └── ...
-├── contexts/           # React Context providers
-│   ├── AuthContext.tsx         # Authentication state
-│   ├── SessionContext.tsx      # Session state
-│   ├── ThemeContext.tsx        # Light/dark theme
-│   ├── I18nContext.tsx         # Internationalization (basic structure)
-│   ├── NetworkContext.tsx      # Network status
-│   ├── AccessibilityContext.tsx # Accessibility settings
+├── contexts/           # React Context 프로바이더
+│   ├── AuthContext.tsx         # 인증 상태
+│   ├── SessionContext.tsx      # 세션 상태
+│   ├── ThemeContext.tsx        # 라이트/다크 테마
+│   ├── I18nContext.tsx         # 다국어 지원 (기본 구조)
+│   ├── NetworkContext.tsx      # 네트워크 상태
+│   ├── AccessibilityContext.tsx # 접근성 설정
 │   └── ...
-├── stores/             # Zustand global stores
-│   ├── sessionStore.ts  # Session data
-│   ├── emotionStore.ts  # Emotion history
-│   ├── vadStore.ts      # VAD metrics
+├── stores/             # Zustand 전역 스토어
+│   ├── sessionStore.ts  # 세션 데이터
+│   ├── emotionStore.ts  # 감정 히스토리
+│   ├── vadStore.ts      # VAD 메트릭
 │   └── ...
-├── services/           # API & WebSocket clients
-│   ├── api/            # Modular API services
-│   │   ├── auth.api.ts       # Login, signup, logout
-│   │   ├── session.api.ts    # Session start/end
-│   │   ├── emotion.api.ts    # Emotion data retrieval
+├── services/           # API 및 WebSocket 클라이언트
+│   ├── api/            # 모듈화된 API 서비스
+│   │   ├── auth.api.ts       # 로그인, 회원가입, 로그아웃
+│   │   ├── session.api.ts    # 세션 시작/종료
+│   │   ├── emotion.api.ts    # 감정 데이터 조회
 │   │   └── ...
-│   ├── shared/         # Shared API utilities (apiClient, types)
-│   └── websocket.ts    # WebSocket manager (3-channel)
-├── utils/              # Utility functions
-│   ├── a11y.ts         # Accessibility helpers
-│   ├── performance.ts  # Performance optimization
-│   ├── security.ts     # Security utilities (CSP, HTTPS)
-│   ├── vadUtils.ts     # VAD data transformation
-│   ├── imageCompression.ts # Image compression (50-70% size reduction)
-│   ├── analytics.ts    # Analytics tracking
+│   ├── shared/         # 공유 API 유틸리티 (apiClient, types)
+│   └── websocket.ts    # WebSocket 매니저 (3채널)
+├── utils/              # 유틸리티 함수
+│   ├── a11y.ts         # 접근성 헬퍼
+│   ├── performance.ts  # 성능 최적화
+│   ├── security.ts     # 보안 유틸리티 (CSP, HTTPS)
+│   ├── vadUtils.ts     # VAD 데이터 변환
+│   ├── imageCompression.ts # 이미지 압축 (50-70% 크기 감소)
+│   ├── analytics.ts    # 분석 추적
 │   └── ...
-├── types/              # TypeScript type definitions
-│   ├── index.ts        # Common types (EmotionType, VADMetrics, etc.)
-│   └── session.ts      # Session-related types
-├── config/             # Configuration
-│   └── env.ts          # Environment variable management
+├── types/              # TypeScript 타입 정의
+│   ├── index.ts        # 공통 타입 (EmotionType, VADMetrics 등)
+│   └── session.ts      # 세션 관련 타입
+├── config/             # 설정
+│   └── env.ts          # 환경 변수 관리
 ├── workers/            # Web Workers
-│   └── landmarksWorker.ts # Background landmark processing
-├── locales/            # i18n translation files (minimal)
-└── assets/             # Static assets (images, fonts)
+│   └── landmarksWorker.ts # 백그라운드 랜드마크 처리
+├── locales/            # i18n 번역 파일 (최소화)
+└── assets/             # 정적 에셋 (이미지, 폰트)
 ```
 
-**Total Files**: ~150 TypeScript/TSX files
+**총 파일 수**: 약 150개 TypeScript/TSX 파일
 
 ---
 
-## Setup & Scripts
+## 설치 및 스크립트
 
-### Prerequisites
+### 사전 요구사항
 
 - **Node.js**: >=18.0.0
 - **npm**: >=9.0.0
-- **Browser Permissions**: Camera + Microphone access required
+- **브라우저 권한**: 카메라 + 마이크 접근 권한 필요
 
-### Installation
+### 설치
 
 ```bash
-# Clone repository
+# 저장소 클론
 git clone <repository-url>
 cd BeMoreFrontend
 
-# Install dependencies
+# 의존성 설치
 npm install
 
-# Set up environment variables
+# 환경 변수 설정
 cp .env.example .env
-# Edit .env with your backend URLs
+# .env 파일을 백엔드 URL로 편집
 ```
 
-### Environment Variables
+### 환경 변수
 
-Copy `.env.example` to `.env` and configure:
+`.env.example`을 `.env`로 복사하고 설정:
 
 ```bash
-# Development (default)
+# 개발 환경 (기본값)
 VITE_API_URL=http://localhost:8000
 VITE_WS_URL=ws://localhost:8000
 
-# Production (Render backend)
+# 프로덕션 (Render 백엔드)
 VITE_API_URL=https://bemorebackend.onrender.com
 VITE_WS_URL=wss://bemorebackend.onrender.com
 
-# Logging
+# 로깅
 VITE_LOG_LEVEL=info  # debug | info | warn | error
 
-# Feature Flags
+# 기능 플래그
 VITE_ENABLE_MOCK_STT=false
 VITE_ENABLE_MOCK_MEDIAPIPE=false
 ```
 
-**Note**: `.env` is gitignored. Never commit sensitive credentials.
+**참고**: `.env`는 gitignore에 포함되어 있습니다. 민감한 자격 증명을 커밋하지 마세요.
 
-### Development
+### 개발
 
 ```bash
-# Start dev server (http://localhost:5173)
+# 개발 서버 시작 (http://localhost:5173)
 npm run dev
 
-# Dev server with backend on localhost:8000
-# (Backend must be running separately)
+# localhost:8000에서 백엔드와 함께 개발 서버 실행
+# (백엔드는 별도로 실행되어야 함)
 ```
 
-### Build & Preview
+### 빌드 및 미리보기
 
 ```bash
-# Type check
+# 타입 체크
 npm run typecheck
 
-# Lint
+# 린트
 npm run lint
 
-# Production build
+# 프로덕션 빌드
 npm run build
 
-# Preview production build
+# 프로덕션 빌드 미리보기
 npm run preview
 
-# Build with bundle analysis
+# 번들 분석과 함께 빌드
 npm run build:analyze
 ```
 
-### Testing
+### 테스트
 
 ```bash
-# Unit tests (Vitest)
+# 유닛 테스트 (Vitest)
 npm run test
 
-# Unit tests watch mode
+# 유닛 테스트 워치 모드
 npm run test:watch
 
-# E2E tests (Playwright)
+# E2E 테스트 (Playwright)
 npm run e2e
 
-# E2E tests UI mode
+# E2E 테스트 UI 모드
 npm run e2e:ui
 
-# Session flow E2E verification (5-phase)
+# 세션 플로우 E2E 검증 (5단계)
 npm run verify:session
 
-# Full verification (build + E2E)
+# 전체 검증 (빌드 + E2E)
 npm run verify:full
 
-# CI verification (build + type check + lint + E2E)
+# CI 검증 (빌드 + 타입 체크 + 린트 + E2E)
 npm run verify:ci
 ```
 
 ---
 
-## Backend Integration
+## 백엔드 연동
 
-### Communication Protocols
+### 통신 프로토콜
 
 **REST API** (Axios):
-- Authentication: `POST /api/auth/login`, `POST /api/auth/signup`
-- Session Management: `POST /api/sessions/start`, `POST /api/sessions/end`
-- Data Retrieval: `GET /api/sessions/:id`, `GET /api/emotions/:sessionId`
+- 인증: `POST /api/auth/login`, `POST /api/auth/signup`
+- 세션 관리: `POST /api/sessions/start`, `POST /api/sessions/end`
+- 데이터 조회: `GET /api/sessions/:id`, `GET /api/emotions/:sessionId`
 
-**WebSocket** (3 Channels):
-1. **Landmarks Channel** (`/ws/landmarks`): Facial landmark data → backend emotion analysis
-2. **Voice Channel** (`/ws/voice`): Audio stream → backend STT + VAD analysis
-3. **Session Channel** (`/ws/session`): Control messages (start, pause, end, AI requests)
+**WebSocket** (3채널):
+1. **Landmarks 채널** (`/ws/landmarks`): 얼굴 랜드마크 데이터 → 백엔드 감정 분석
+2. **Voice 채널** (`/ws/voice`): 오디오 스트림 → 백엔드 STT + VAD 분석
+3. **Session 채널** (`/ws/session`): 제어 메시지 (시작, 일시정지, 종료, AI 요청)
 
-### Connection Flow
+### 연결 플로우
 
-1. User logs in via REST API → receives auth token
-2. User starts session → REST API creates session → receives `sessionId`
-3. Frontend establishes 3 WebSocket connections (includes `sessionId` in URL/headers)
-4. Frontend sends real-time data (landmarks @ 5fps, audio chunks)
-5. Backend sends analysis results (emotions, STT text, VAD metrics, AI responses)
-6. User ends session → Frontend closes WebSockets → REST API finalizes session
+1. 사용자가 REST API를 통해 로그인 → 인증 토큰 수신
+2. 사용자가 세션 시작 → REST API가 세션 생성 → `sessionId` 수신
+3. 프론트엔드가 3개 WebSocket 연결 설정 (URL/헤더에 `sessionId` 포함)
+4. 프론트엔드가 실시간 데이터 전송 (landmarks @ 5fps, 오디오 청크)
+5. 백엔드가 분석 결과 전송 (감정, STT 텍스트, VAD 메트릭, AI 응답)
+6. 사용자가 세션 종료 → 프론트엔드가 WebSocket 닫기 → REST API가 세션 마무리
 
-### Base URLs
+### Base URL
 
-Configured via environment variables:
-- **Dev**: `http://localhost:8000` (HTTP) + `ws://localhost:8000` (WebSocket)
-- **Prod**: `https://bemorebackend.onrender.com` (HTTPS) + `wss://bemorebackend.onrender.com` (WebSocket)
+환경 변수를 통해 설정:
+- **개발**: `http://localhost:8000` (HTTP) + `ws://localhost:8000` (WebSocket)
+- **프로덕션**: `https://bemorebackend.onrender.com` (HTTPS) + `wss://bemorebackend.onrender.com` (WebSocket)
 
-Auto-detects protocol upgrade in production (HTTP→HTTPS, WS→WSS).
+프로덕션에서 프로토콜 업그레이드 자동 감지 (HTTP→HTTPS, WS→WSS).
 
 ---
 
-## Limitations & Future Work
+## 제약사항 및 향후 작업
 
-### Known Limitations
+### 알려진 제약사항
 
 **UI/UX**:
-- Responsive design incomplete (desktop-first, mobile layout needs improvement)
-- Some modals/overlays may overflow on small screens
-- Loading states inconsistent across components
+- 반응형 디자인 미완성 (데스크톱 우선, 모바일 레이아웃 개선 필요)
+- 일부 모달/오버레이가 작은 화면에서 오버플로우될 수 있음
+- 컴포넌트 간 로딩 상태 불일치
 
-**Functionality**:
-- History page: UI exists but no backend integration (cannot fetch past sessions)
-- Settings page: Some preferences (notifications, personalization) not synced with backend
-- Error handling: Some edge cases show generic error messages
-- Internationalization: Only English supported (i18n structure exists, resources incomplete)
+**기능**:
+- 히스토리 페이지: UI 존재하지만 백엔드 연동 없음 (과거 세션 조회 불가)
+- 설정 페이지: 일부 설정 (알림, 개인화)이 백엔드와 동기화되지 않음
+- 오류 처리: 일부 엣지 케이스에서 일반적인 오류 메시지 표시
+- 다국어 지원: 영어만 지원 (i18n 구조 존재, 리소스 미완성)
 
-**Accessibility**:
-- Screen reader support needs testing and optimization
-- Some interactive elements missing ARIA labels
-- Keyboard shortcuts not fully documented
+**접근성**:
+- 스크린 리더 지원 테스트 및 최적화 필요
+- 일부 인터랙티브 요소에 ARIA 라벨 누락
+- 키보드 단축키가 완전히 문서화되지 않음
 
-**Performance**:
-- Large session data may cause memory pressure (pagination not implemented)
-- No virtualization for long lists (history, timeline events)
+**성능**:
+- 대용량 세션 데이터로 인한 메모리 압박 가능 (페이지네이션 미구현)
+- 긴 목록에 대한 가상화 없음 (히스토리, 타임라인 이벤트)
 
-### Planned Improvements
+### 계획된 개선사항
 
-- [ ] Complete mobile responsive design (breakpoints, touch gestures)
-- [ ] Implement history page backend integration
-- [ ] Add multi-language support (Korean, English at minimum)
-- [ ] Improve error messages with actionable guidance
-- [ ] Add comprehensive screen reader testing
-- [ ] Implement data pagination for large sessions
-- [ ] Add advanced data visualizations (charts, trend analysis)
-- [ ] Session resumption after page refresh
-- [ ] Optimize bundle size (code splitting, lazy loading)
+- [ ] 모바일 반응형 디자인 완성 (브레이크포인트, 터치 제스처)
+- [ ] 히스토리 페이지 백엔드 연동 구현
+- [ ] 다국어 지원 추가 (최소 한국어, 영어)
+- [ ] 실행 가능한 가이드가 포함된 오류 메시지 개선
+- [ ] 포괄적인 스크린 리더 테스트 추가
+- [ ] 대용량 세션을 위한 데이터 페이지네이션 구현
+- [ ] 고급 데이터 시각화 추가 (차트, 트렌드 분석)
+- [ ] 페이지 새로고침 후 세션 재개
+- [ ] 번들 크기 최적화 (코드 분할, 지연 로딩)
 
 ---
 
-## Quality Status
+## 품질 상태
 
-| Check | Status | Details |
+| 검사 항목 | 상태 | 세부사항 |
 |-------|--------|---------|
-| **TypeScript** | ✅ 0 errors | Strict mode + `noUncheckedIndexedAccess` |
-| **ESLint** | ✅ 0 warnings | All warnings fixed |
-| **Build** | ✅ Success | 1.67s, 280KB bundle (gzip: 89KB) |
-| **Unit Tests** | ✅ 109 passed | Utilities 100% coverage |
-| **E2E Tests** | ✅ Passing | 5-phase session flow verified |
-| **CI/CD** | ✅ Active | GitHub Actions on push/PR |
+| **TypeScript** | ✅ 0 오류 | Strict mode + `noUncheckedIndexedAccess` |
+| **ESLint** | ✅ 0 경고 | 모든 경고 수정 완료 |
+| **Build** | ✅ 성공 | 1.67초, 280KB 번들 (gzip: 89KB) |
+| **Unit Tests** | ✅ 109개 통과 | 유틸리티 100% 커버리지 |
+| **E2E Tests** | ✅ 통과 | 5단계 세션 플로우 검증 완료 |
+| **CI/CD** | ✅ 활성화 | push/PR 시 GitHub Actions |
 
 ---
 
-## Documentation
+## 문서
 
-### Project Docs
-- **[SUMMARY.md](./SUMMARY.md)**: Project status overview (tech stack, quality metrics)
-- **[VERIFICATION_SYSTEM.md](./VERIFICATION_SYSTEM.md)**: Testing & verification guide
-- **[docs/PHASE_12_E2E_COMPLETION.md](./docs/PHASE_12_E2E_COMPLETION.md)**: E2E testing system details
-- **[docs/CI_CD_QUICK_START.md](./docs/CI_CD_QUICK_START.md)**: CI/CD pipeline setup (10 min)
+### 프로젝트 문서
+- **[SUMMARY.md](./SUMMARY.md)**: 프로젝트 상태 개요 (기술 스택, 품질 메트릭)
+- **[VERIFICATION_SYSTEM.md](./VERIFICATION_SYSTEM.md)**: 테스트 및 검증 가이드
+- **[docs/PHASE_12_E2E_COMPLETION.md](./docs/PHASE_12_E2E_COMPLETION.md)**: E2E 테스트 시스템 세부사항
+- **[docs/CI_CD_QUICK_START.md](./docs/CI_CD_QUICK_START.md)**: CI/CD 파이프라인 설정 (10분)
 
-### Backend Integration Docs
-- **[BACKEND_INTEGRATION_GUIDE.md](./BACKEND_INTEGRATION_GUIDE.md)**: Detailed integration guide for backend team
-- **[BACKEND_INTEGRATION_BRIEF.md](./BACKEND_INTEGRATION_BRIEF.md)**: Quick summary (3 min read)
-- **[FRONTEND_VERIFICATION_CHECKLIST.md](./FRONTEND_VERIFICATION_CHECKLIST.md)**: Frontend verification steps
+### 백엔드 연동 문서
+- **[BACKEND_INTEGRATION_GUIDE.md](./BACKEND_INTEGRATION_GUIDE.md)**: 백엔드 팀을 위한 상세 연동 가이드
+- **[BACKEND_INTEGRATION_BRIEF.md](./BACKEND_INTEGRATION_BRIEF.md)**: 빠른 요약 (3분 소요)
+- **[FRONTEND_VERIFICATION_CHECKLIST.md](./FRONTEND_VERIFICATION_CHECKLIST.md)**: 프론트엔드 검증 단계
 
-### UX/HCI Docs
-- **[UX_HCI_IMPROVEMENT_GUIDELINES.md](./UX_HCI_IMPROVEMENT_GUIDELINES.md)**: UX improvement guidelines
-- **[docs/UX_CHECKLIST.md](./docs/UX_CHECKLIST.md)**: Quick UX checklist
+### UX/HCI 문서
+- **[UX_HCI_IMPROVEMENT_GUIDELINES.md](./UX_HCI_IMPROVEMENT_GUIDELINES.md)**: UX 개선 가이드라인
+- **[docs/UX_CHECKLIST.md](./docs/UX_CHECKLIST.md)**: 빠른 UX 체크리스트
 
-### External References
-- [React Documentation](https://react.dev/)
-- [Vite Documentation](https://vitejs.dev/)
+### 외부 참고 자료
+- [React 문서](https://react.dev/)
+- [Vite 문서](https://vitejs.dev/)
 - [MediaPipe Face Mesh](https://developers.google.com/mediapipe/solutions/vision/face_landmarker)
 - [Web Speech API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API)
 - [Tailwind CSS](https://tailwindcss.com/)
 
 ---
 
-## License
+## 라이선스
 
-This project's license status is unclear. Please contact the project owner for licensing information.
-
----
-
-## Contact
-
-**Project Team**: BeMore Team
+이 프로젝트의 라이선스 상태는 불확실합니다. 라이선스 정보는 프로젝트 소유자에게 문의하세요.
 
 ---
 
-**Last Updated**: 2025-01-17
-**Based on**: Actual implementation (React 19.1, TypeScript 5.9, Vite 5.4)
-**Accuracy**: All features, tech stack, and scripts verified from source code
+## 문의
+
+**프로젝트 팀**: BeMore Team
+
+---
+
+**최종 업데이트**: 2025-01-17
+**기준**: 실제 구현 (React 19.1, TypeScript 5.9, Vite 5.4)
+**정확도**: 모든 기능, 기술 스택, 스크립트는 소스 코드에서 검증됨
