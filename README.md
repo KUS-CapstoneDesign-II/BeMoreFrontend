@@ -63,6 +63,15 @@ BeMore 프론트엔드는 **React 19 + TypeScript** 기반 웹 애플리케이�
 - 감정 배지가 포함된 채팅 메시지용 비디오 오버레이 UI
 - 사용자 친화적 오류 처리 (세션 만료, 네트워크 문제)
 
+**CBT 분석 UI**:
+- 인지 왜곡 감지 결과 표시 (9가지 왜곡 유형 지원)
+- 심각도별 색상 코딩 (낮음=노랑, 중간=주황, 높음=빨강)
+- 신뢰도 점수 및 예시 문구 표시
+- CBT 개입 권장 패널 (긴급도별 스타일링)
+- 생각해볼 질문 및 권장 활동 카드
+- 다크모드 및 반응형 디자인 지원
+- 세션 결과 페이지에서 조건부 렌더링
+
 **통신**:
 - WebSocket 3채널 통신 (landmarks, voice, session control)
 - 인증 및 세션 관리를 위한 REST API
@@ -162,7 +171,12 @@ src/
 │   ├── Emotion/        # 감정 카드, 감정 타임라인
 │   ├── Layout/         # 앱 레이아웃 래퍼
 │   ├── Onboarding/     # 권한 요청, 장치 확인
-│   ├── Session/        # 세션 컨트롤, 요약, 결과
+│   ├── Session/        # 세션 컨트롤, 요약, 결과, CBT 분석
+│   │   ├── SessionResult.tsx        # 세션 결과 메인 화면
+│   │   ├── CBTAnalysisSection.tsx   # CBT 분석 메인 섹션
+│   │   ├── CognitiveDistortionCard.tsx  # 인지 왜곡 카드
+│   │   ├── InterventionPanel.tsx    # CBT 개입 패널
+│   │   └── TaskCard.tsx             # 추천 활동 카드
 │   ├── Settings/       # 설정 패널
 │   ├── STT/            # 음성-텍스트 자막 표시
 │   ├── VAD/            # 음성 활동 감지 모니터
