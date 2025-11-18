@@ -153,6 +153,11 @@ function App() {
   const [overlayEmotion, setOverlayEmotion] = useState<EmotionType | null>(null);
   const [overlayError, setOverlayError] = useState<string | undefined>(undefined);
 
+  // STT timeout tracking
+  const sttTimeoutRef = useRef<number | null>(null);
+  const lastSpeechTimeRef = useRef<number>(0);
+  const STT_TIMEOUT_MS = 5000; // 5 seconds
+
   // WebSocket 연결
   const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs, sendToSession } = useWebSocket({
     onVoiceMessage: (message) => {
@@ -162,8 +167,23 @@ function App() {
       });
 
       if (message.type === 'stt_received') {
+        // Clear STT timeout on successful receipt
+        if (sttTimeoutRef.current) {
+          clearTimeout(sttTimeoutRef.current);
+          sttTimeoutRef.current = null;
+          Logger.debug('⏱️ STT timeout cleared');
+        }
+
         const d = message.data as { text?: string };
         const text = d?.text ?? '';
+
+        // Validate STT response
+        if (!text || typeof text !== 'string') {
+          Logger.error('❌ Invalid STT response', { data: message.data });
+          setOverlayError('음성 인식 오류가 발생했습니다');
+          return;
+        }
+
         setSttText(text);
         Logger.debug('📝 STT text updated', { textLength: text.length });
 
@@ -251,6 +271,37 @@ function App() {
               speechBurstCount: vadMetrics.speechBurstCount,
               speechRatio: vadMetrics.speechRatio,
             });
+          }
+
+          // STT timeout management: Reset timeout on every VAD update
+          // This ensures we detect when speech stops without receiving STT
+          if (vadMetrics.speechRatio > 0 || vadMetrics.speechBurstCount > 0) {
+            lastSpeechTimeRef.current = Date.now();
+            Logger.debug('🎤 Speech activity detected, resetting STT timeout', {
+              speechRatio: vadMetrics.speechRatio,
+              speechBurstCount: vadMetrics.speechBurstCount
+            });
+
+            // Clear existing timeout
+            if (sttTimeoutRef.current) {
+              clearTimeout(sttTimeoutRef.current);
+            }
+
+            // Start new timeout - triggers if no STT received after speech ends
+            sttTimeoutRef.current = window.setTimeout(() => {
+              const timeSinceLastSpeech = Date.now() - lastSpeechTimeRef.current;
+              Logger.warn('⏱️ STT timeout triggered', {
+                timeSinceLastSpeech: `${timeSinceLastSpeech}ms`,
+                lastSpeechTime: new Date(lastSpeechTimeRef.current).toISOString()
+              });
+
+              setOverlayError('음성 인식 시간 초과. 다시 말씀해주세요.');
+
+              // Clear timeout ref
+              sttTimeoutRef.current = null;
+            }, STT_TIMEOUT_MS);
+
+            Logger.debug('⏱️ STT timeout reset', { timeoutMs: STT_TIMEOUT_MS });
           }
         } else {
           Logger.error('❌ VAD metrics validation failed - invalid data format', {
@@ -858,6 +909,17 @@ function App() {
       openDialog();
     }
   }, [consent, openDialog]);
+
+  // Cleanup STT timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (sttTimeoutRef.current) {
+        clearTimeout(sttTimeoutRef.current);
+        sttTimeoutRef.current = null;
+        Logger.debug('🧹 STT timeout cleaned up on unmount');
+      }
+    };
+  }, []);
 
 
   return (
