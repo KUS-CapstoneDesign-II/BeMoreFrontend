@@ -160,6 +160,10 @@ function App() {
   const STT_TIMEOUT_MS = 5000; // 5 seconds
   const [sttMode, setSTTMode] = useState<'websocket' | 'fallback' | 'disabled'>('websocket');
 
+  // AI request debouncing
+  const aiRequestDebounceRef = useRef<number | null>(null);
+  const AI_REQUEST_DEBOUNCE_MS = 500; // 500ms debounce
+
   // Fallback STT (Web Speech API)
   const fallbackSTT = useFallbackSTT({
     onResult: (text) => {
@@ -176,15 +180,23 @@ function App() {
         }));
         Logger.debug('🗣️ User message dispatched from fallback STT', { text });
 
-        // Trigger AI response
-        sendToSession({
-          type: 'request_ai_response',
-          data: {
-            message: text,
-            emotion: currentEmotion,
-            timestamp: Date.now()
-          }
-        });
+        // Trigger AI response with debouncing
+        if (aiRequestDebounceRef.current) {
+          clearTimeout(aiRequestDebounceRef.current);
+        }
+
+        aiRequestDebounceRef.current = window.setTimeout(() => {
+          sendToSession({
+            type: 'request_ai_response',
+            data: {
+              message: text,
+              emotion: currentEmotion,
+              timestamp: Date.now()
+            }
+          });
+          Logger.debug('🤖 AI response requested from fallback (debounced)');
+          aiRequestDebounceRef.current = null;
+        }, AI_REQUEST_DEBOUNCE_MS);
       }
     },
     onError: (error) => {
@@ -232,19 +244,30 @@ function App() {
           }));
           Logger.debug('🗣️ User message dispatched to chat', { text });
 
-          // 🤖 Auto-trigger AI response after user speech
-          sendToSession({
-            type: 'request_ai_response',
-            data: {
+          // 🤖 Auto-trigger AI response with debouncing
+          // Clear existing debounce timeout
+          if (aiRequestDebounceRef.current) {
+            clearTimeout(aiRequestDebounceRef.current);
+          }
+
+          // Set new debounced AI request
+          aiRequestDebounceRef.current = window.setTimeout(() => {
+            sendToSession({
+              type: 'request_ai_response',
+              data: {
+                message: text,
+                emotion: currentEmotion,
+                timestamp: Date.now()
+              }
+            });
+            Logger.debug('🤖 AI response requested (debounced)', {
               message: text,
-              emotion: currentEmotion,
-              timestamp: Date.now()
-            }
-          });
-          Logger.debug('🤖 AI response requested', {
-            message: text,
-            emotion: currentEmotion
-          });
+              emotion: currentEmotion
+            });
+            aiRequestDebounceRef.current = null;
+          }, AI_REQUEST_DEBOUNCE_MS);
+
+          Logger.debug('⏱️ AI request debounced', { debounceMs: AI_REQUEST_DEBOUNCE_MS });
         }
       }
 
@@ -957,13 +980,19 @@ function App() {
     }
   }, [consent, openDialog]);
 
-  // Cleanup STT timeout and fallback on unmount
+  // Cleanup STT timeout, AI debounce, and fallback on unmount
   useEffect(() => {
     return () => {
       if (sttTimeoutRef.current) {
         clearTimeout(sttTimeoutRef.current);
         sttTimeoutRef.current = null;
         Logger.debug('🧹 STT timeout cleaned up on unmount');
+      }
+
+      if (aiRequestDebounceRef.current) {
+        clearTimeout(aiRequestDebounceRef.current);
+        aiRequestDebounceRef.current = null;
+        Logger.debug('🧹 AI request debounce cleaned up on unmount');
       }
 
       if (fallbackSTT.isActive) {
