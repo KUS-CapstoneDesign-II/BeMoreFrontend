@@ -89,7 +89,20 @@ export function useVAD(options: UseVADOptions = {}): UseVADReturn {
 
   // 볼륨 분석 및 VAD 로직
   const analyzeAudio = useCallback(() => {
-    if (!analyserRef.current) return;
+    if (!analyserRef.current || !audioContextRef.current) return;
+
+    // AudioContext 상태 확인
+    if (audioContextRef.current.state === 'suspended') {
+      console.warn('⚠️ AudioContext suspended, skipping analysis');
+      // 다음 프레임에 다시 시도
+      animationFrameRef.current = requestAnimationFrame(analyzeAudio);
+      return;
+    }
+
+    if (audioContextRef.current.state === 'closed') {
+      console.error('❌ AudioContext closed, cannot analyze');
+      return;
+    }
 
     const analyser = analyserRef.current;
     const dataArray = new Uint8Array(analyser.frequencyBinCount);
@@ -242,6 +255,44 @@ export function useVAD(options: UseVADOptions = {}): UseVADReturn {
     silenceStartTimeRef.current = null;
     lastStateRef.current = false;
   }, []);
+
+  // AudioContext 생명주기 관리 (탭 포그라운드/백그라운드)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!audioContextRef.current) return;
+
+      if (document.visibilityState === 'visible') {
+        // 탭이 포그라운드로 전환됨
+        if (audioContextRef.current.state === 'suspended') {
+          try {
+            await audioContextRef.current.resume();
+            console.log('✅ AudioContext resumed after tab visible');
+
+            // 분석이 활성화되어 있었다면 재시작
+            if (isListening && !animationFrameRef.current) {
+              analyzeAudio();
+            }
+          } catch (err) {
+            console.error('❌ Failed to resume AudioContext', err);
+            setError('오디오 컨텍스트 재개 실패');
+          }
+        }
+      } else {
+        // 탭이 백그라운드로 전환됨
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+          console.log('⏸️ Audio analysis paused (tab hidden)');
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isListening, analyzeAudio]);
 
   // 컴포넌트 언마운트 시 정리
   useEffect(() => {
