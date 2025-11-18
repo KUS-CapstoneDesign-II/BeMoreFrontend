@@ -248,9 +248,6 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     ? ((summary as Record<string, unknown>).keyObservations as string[])
     : [];
   const domEmotion = ((summary?.dominantEmotion as { emotion?: string } | undefined)?.emotion) || '-';
-  const recommendations: string[] = Array.isArray((summary as Record<string, unknown>)?.recommendations)
-    ? ((summary as Record<string, unknown>).recommendations as string[])
-    : [];
 
   return (
     <Card className="p-6 space-y-6">

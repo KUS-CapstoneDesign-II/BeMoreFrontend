@@ -1,5 +1,5 @@
 import React from 'react';
-import { CognitiveDistortion } from '../../types';
+import type { CognitiveDistortion } from '../../types';
 
 interface CognitiveDistortionCardProps {
   distortion: CognitiveDistortion;

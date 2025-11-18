@@ -1,5 +1,5 @@
 import React from 'react';
-import { CBTAnalysis } from '../../types';
+import type { CBTAnalysis } from '../../types';
 import { CognitiveDistortionCard } from './CognitiveDistortionCard';
 import { InterventionPanel } from './InterventionPanel';
 
@@ -65,7 +65,7 @@ export const CBTAnalysisSection: React.FC<CBTAnalysisSectionProps> = ({ cbtFindi
               {mostCommonDistortion.name_ko}
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-              총 {distortionCounts[mostCommonType]}회 발견
+              총 {mostCommonType ? distortionCounts[mostCommonType] : 0}회 발견
             </div>
           </div>
         )}

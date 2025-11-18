@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Intervention } from '../../types';
+import type { Intervention } from '../../types';
 import { TaskCard } from './TaskCard';
 
 interface InterventionPanelProps {
