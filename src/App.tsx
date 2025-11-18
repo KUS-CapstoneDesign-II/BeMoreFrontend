@@ -21,6 +21,7 @@ import { useWebSocket } from './hooks/useWebSocket';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { useTheme } from './contexts/ThemeContext';
 import { useOverallConnectionStatus } from './hooks/useOverallConnectionStatus';
+import { useFallbackSTT } from './hooks/useFallbackSTT';
 import type { EmotionType, VADMetrics } from './types';
 import type { KeyboardShortcut } from './hooks/useKeyboardShortcuts';
 import { VADMonitorSkeleton } from './components/Skeleton/Skeleton';
@@ -157,6 +158,40 @@ function App() {
   const sttTimeoutRef = useRef<number | null>(null);
   const lastSpeechTimeRef = useRef<number>(0);
   const STT_TIMEOUT_MS = 5000; // 5 seconds
+  const [sttMode, setSTTMode] = useState<'websocket' | 'fallback' | 'disabled'>('websocket');
+
+  // Fallback STT (Web Speech API)
+  const fallbackSTT = useFallbackSTT({
+    onResult: (text) => {
+      Logger.info('✅ Fallback STT result', { text });
+      setSttText(text);
+
+      // Dispatch user message
+      if (text.trim()) {
+        window.dispatchEvent(new CustomEvent('ai:userMessage', {
+          detail: {
+            message: text,
+            timestamp: Date.now()
+          }
+        }));
+        Logger.debug('🗣️ User message dispatched from fallback STT', { text });
+
+        // Trigger AI response
+        sendToSession({
+          type: 'request_ai_response',
+          data: {
+            message: text,
+            emotion: currentEmotion,
+            timestamp: Date.now()
+          }
+        });
+      }
+    },
+    onError: (error) => {
+      Logger.error('❌ Fallback STT error', { error });
+      setOverlayError(`폴백 음성 인식 오류: ${error}`);
+    },
+  });
 
   // WebSocket 연결
   const { isConnected: wsConnected, connectionStatus, connect: connectWS, disconnect: disconnectWS, suppressReconnect: suppressWSReconnect, landmarksWs, sendToSession } = useWebSocket({
@@ -295,7 +330,19 @@ function App() {
                 lastSpeechTime: new Date(lastSpeechTimeRef.current).toISOString()
               });
 
-              setOverlayError('음성 인식 시간 초과. 다시 말씀해주세요.');
+              // Try fallback STT if supported
+              if (sttMode === 'websocket' && fallbackSTT.isSupported()) {
+                Logger.info('🔄 Switching to fallback STT (Web Speech API)');
+                setSTTMode('fallback');
+                fallbackSTT.start();
+                setOverlayError('WebSocket STT 시간 초과. 브라우저 음성 인식으로 전환합니다.');
+              } else if (sttMode === 'fallback') {
+                Logger.warn('⚠️ Fallback STT also timed out');
+                setOverlayError('음성 인식을 사용할 수 없습니다. 네트워크를 확인해주세요.');
+                setSTTMode('disabled');
+              } else {
+                setOverlayError('음성 인식 시간 초과. 다시 말씀해주세요.');
+              }
 
               // Clear timeout ref
               sttTimeoutRef.current = null;
@@ -910,7 +957,7 @@ function App() {
     }
   }, [consent, openDialog]);
 
-  // Cleanup STT timeout on unmount
+  // Cleanup STT timeout and fallback on unmount
   useEffect(() => {
     return () => {
       if (sttTimeoutRef.current) {
@@ -918,8 +965,13 @@ function App() {
         sttTimeoutRef.current = null;
         Logger.debug('🧹 STT timeout cleaned up on unmount');
       }
+
+      if (fallbackSTT.isActive) {
+        fallbackSTT.stop();
+        Logger.debug('🧹 Fallback STT stopped on unmount');
+      }
     };
-  }, []);
+  }, [fallbackSTT]);
 
 
   return (
