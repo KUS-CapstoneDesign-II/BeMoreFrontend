@@ -3,8 +3,9 @@ import { sessionAPI } from '../../services/api';
 import { VADTimeline } from '../Charts/VADTimeline';
 import { LoadingState, ErrorState } from '../Common/States';
 import { Button, Card, MetricCard, TagPill, FilterBar } from '../Common';
+import { CBTAnalysisSection } from './CBTAnalysisSection';
 
-import type { VADMetrics } from '../../types';
+import type { VADMetrics, SessionReport } from '../../types';
 
 interface Props {
   sessionId: string;
@@ -24,6 +25,7 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
   const [selected, setSelected] = useState<{x:number; valence?:number|null; arousal?:number|null; dominance?:number|null} | null>(null);
   const [filter, setFilter] = useState<{ spike:boolean; low:boolean; bookmark:boolean }>({ spike: true, low: true, bookmark: true });
   const [tab, setTab] = useState<'summary'|'details'|'pdf'>('summary');
+  const [report, setReport] = useState<SessionReport | null>(null);
 
   // 🔧 FIX: Fallback sessionId from localStorage if prop is null
   // When session ends, sessionId state in App becomes null before this component
@@ -150,11 +152,12 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     let mounted = true;
     (async () => {
       try {
-        const report = await sessionAPI.getReport(effectiveSessionId);
+        const reportData = await sessionAPI.getReport(effectiveSessionId);
         if (mounted) {
-          setTimeline(report?.vadTimeline || []);
+          setReport(reportData);
+          setTimeline(reportData?.vadTimeline || []);
           // naive auto-markers: big valence delta, low arousal windows
-          const tl = report?.vadTimeline || [];
+          const tl = reportData?.vadTimeline || [];
           const mks: {x:number; label?:string; color?:string; type?:'spike'|'low'}[] = [];
           for (let i = 1; i < tl.length; i++) {
             const prev = tl[i-1];
@@ -179,6 +182,7 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
           console.warn('⚠️ Report API failed, using empty timeline:', e instanceof Error ? e.message : 'Unknown error');
         }
         if (mounted) {
+          setReport(null);
           setTimeline([]);
           setAutoMarkers([]);
         }
@@ -244,8 +248,6 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
     ? ((summary as Record<string, unknown>).keyObservations as string[])
     : [];
   const domEmotion = ((summary?.dominantEmotion as { emotion?: string } | undefined)?.emotion) || '-';
-  const cbt = (summary?.cbt as { totalDistortions?: number; mostCommon?: string } | undefined)
-    ?? { totalDistortions: 0, mostCommon: null };
   const recommendations: string[] = Array.isArray((summary as Record<string, unknown>)?.recommendations)
     ? ((summary as Record<string, unknown>).recommendations as string[])
     : [];
@@ -338,21 +340,10 @@ export function SessionResult({ sessionId, onLoadingChange, vadMetrics }: Props)
             </ul>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
-              <div className="text-xs text-gray-500 mb-1">CBT 하이라이트</div>
-              <div className="text-sm">왜곡 총계: <span className="font-medium">{cbt.totalDistortions}</span></div>
-              <div className="text-sm">가장 흔한 왜곡: <span className="font-medium">{cbt.mostCommon || '-'}</span></div>
-            </div>
-            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-900/40">
-              <div className="text-xs text-gray-500 mb-2">💡 다음 행동 제안</div>
-              <div className="flex flex-wrap gap-2">
-                {(recommendations && recommendations.length ? recommendations : ['4-6 호흡', '감사 저널', '1분 스트레칭']).slice(0,3).map((r, i) => (
-                  <Button key={i} variant="primary" className="text-xs px-3 py-1">{r}</Button>
-                ))}
-              </div>
-            </div>
-          </div>
+          {/* CBT 분석 결과 */}
+          {report && report.cbtFindings && report.cbtFindings.length > 0 && (
+            <CBTAnalysisSection cbtFindings={report.cbtFindings} />
+          )}
 
           {/* 🎤 Speech Analysis (VAD Metrics) */}
           {preservedVadMetrics && (
