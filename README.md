@@ -52,6 +52,7 @@ BeMore 프론트엔드는 **React 19 + TypeScript** 기반 웹 애플리케이�
 - 실시간 얼굴 감정 인식 (MediaPipe Face Mesh, 468개 얼굴 랜드마크)
 - 파형 시각화가 포함된 음성 활동 감지(VAD)
 - 음성-텍스트 변환(STT) 실시간 자막 (Web Speech API)
+- STT 시스템 안정성 개선 (타임아웃 5초, Web Speech API 폴백, AudioContext 생명주기 관리, AI 요청 디바운싱 500ms)
 - AI 응답을 위한 텍스트-음성 변환(TTS)
 - 8가지 감정 유형: 행복, 슬픔, 분노, 불안, 중립, 놀람, 혐오, 두려움
 - 감정 타임라인 시각화
@@ -194,6 +195,7 @@ src/
 │   ├── useMediaPipe.ts # MediaPipe Face Mesh 통합
 │   ├── useVAD.ts       # 음성 활동 감지
 │   ├── useEmotion.ts   # 감정 분석
+│   ├── useFallbackSTT.ts # Web Speech API 폴백 (브라우저 네이티브 음성 인식)
 │   └── ...
 ├── contexts/           # React Context 프로바이더
 │   ├── AuthContext.tsx         # 인증 상태
@@ -437,6 +439,8 @@ npm run verify:ci
 - **[BACKEND_INTEGRATION_GUIDE.md](./BACKEND_INTEGRATION_GUIDE.md)**: 백엔드 팀을 위한 상세 연동 가이드
 - **[BACKEND_INTEGRATION_BRIEF.md](./BACKEND_INTEGRATION_BRIEF.md)**: 빠른 요약 (3분 소요)
 - **[FRONTEND_VERIFICATION_CHECKLIST.md](./FRONTEND_VERIFICATION_CHECKLIST.md)**: 프론트엔드 검증 단계
+- **[docs/integration/backend/BACKEND_STT_IMPROVEMENTS.md](./docs/integration/backend/BACKEND_STT_IMPROVEMENTS.md)**: STT 시스템 개선사항 기술 문서
+- **[docs/integration/backend/BACKEND_HANDOFF_STT_IMPROVEMENTS.md](./docs/integration/backend/BACKEND_HANDOFF_STT_IMPROVEMENTS.md)**: STT 개선사항 백엔드 전달 문서
 
 ### UX/HCI 문서
 - **[UX_HCI_IMPROVEMENT_GUIDELINES.md](./UX_HCI_IMPROVEMENT_GUIDELINES.md)**: UX 개선 가이드라인
@@ -463,6 +467,6 @@ npm run verify:ci
 
 ---
 
-**최종 업데이트**: 2025-01-17
+**최종 업데이트**: 2024-11-18
 **기준**: 실제 구현 (React 19.1, TypeScript 5.9, Vite 5.4)
 **정확도**: 모든 기능, 기술 스택, 스크립트는 소스 코드에서 검증됨
